@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  username     String        @unique
+  passwordHash String
+  role         String        @default("PARTICIPANT") // PARTICIPANT | ADMIN
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  sessions     Session[]
+  participant  Participant?
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Participant {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  age             Int
+  school          String
+  educationLevel  String // SMP | SMA
+  avatar          String   @default("🌸")
+  profilePhotoUrl String?  // foto profil (mis. /uploads/profile/xxx.jpg)
+  xp              Int      @default(0)
+  streakWeeks     Int      @default(0)
+  lastCheckIn     String? // YYYY-MM-DD
+  preTestScore    Int?
+  postTestScore   Int?
+  isDutaCandidate Boolean  @default(false)
+  isDuta          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  missionProgress  MissionProgress[]
+  badges           ParticipantBadge[]
+  ttdCheckIns      TTDCheckIn[]
+  quizResults      QuizResult[]
+  activityLogs     ActivityLog[]
+  videoSubmissions VideoSubmission[]
+  dutaStage        DutaStage?
+  communityContent CommunityContent[]
+  missionShares    MissionShare[]
+}
+
+model MissionProgress {
+  id           String    @id @default(cuid())
+  participantId String
+  participant  Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  missionKey   String // M1..M9
+  status       String    @default("LOCKED") // LOCKED | STARTED | COMPLETED
+  progress     Int       @default(0) // 0-100
+  score        Int? // nilai terbaik saat lulus (0-100)
+  xpAwarded    Int       @default(0) // XP misi yang sudah diberikan (anti duplikasi)
+  dataJson     String?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([participantId, missionKey])
+}
+
+model TTDCheckIn {
+  id            String   @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  date          String // YYYY-MM-DD
+  xp            Int      @default(10)
+  createdAt     DateTime @default(now())
+
+  @@unique([participantId, date])
+}
+
+model ParticipantBadge {
+  id            String   @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  badgeKey      String
+  earnedAt      DateTime @default(now())
+
+  @@unique([participantId, badgeKey])
+}
+
+model QuizResult {
+  id            String   @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  quizKey       String // M1, M2, PRETEST, POSTTEST, MITOS, FINAL_QUIZ
+  score         Int // 0-100
+  correct       Int
+  total         Int
+  detailJson    String?
+  createdAt     DateTime @default(now())
+}
+
+model ActivityLog {
+  id            String   @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  type          String // REGISTER, LOGIN, PRETEST, MISSION_DONE, CHECKIN, BADGE, XP, SHARE, VIDEO_UPLOAD, DUTA_STAGE
+  meta          String?
+  createdAt     DateTime @default(now())
+}
+
+model VideoSubmission {
+  id            String   @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  missionKey    String // M8 | DUTA_VIDEO
+  fileName      String
+  fileUrl       String
+  durationSec   Int?
+  status        String   @default("PENDING") // PENDING | GRADED
+  grade         Int? // 0-100
+  adminNote     String?
+  xpAwarded     Int?
+  createdAt     DateTime @default(now())
+}
+
+model DutaStage {
+  id             String    @id @default(cuid())
+  participantId  String    @unique
+  participant    Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  stage1Posttest Boolean   @default(false)
+  stage2Quiz     Boolean   @default(false)
+  stage3Peer     Boolean   @default(false)
+  stage4Video    Boolean   @default(false)
+  stage5Presentation String?
+  completedAt    DateTime?
+  dataJson       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+// ============================================================
+// Komunitas & Peer Educator (content moderation + likes + shares)
+// ============================================================
+model CommunityContent {
+  id              String        @id @default(cuid())
+  participantId   String
+  participant     Participant   @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  contentType     String        @default("peer_educator") // education | peer_educator
+  title           String
+  description     String? // caption / deskripsi
+  platform        String        @default("uploaded") // youtube | instagram | tiktok | uploaded | none
+  externalUrl     String? // URL YouTube/Instagram/TikTok
+  videoUrl        String? // file upload (/uploads/...) atau URL canonical
+  thumbnailUrl    String?
+  status          String        @default("PENDING") // PENDING | APPROVED | REJECTED
+  durationSec     Int?
+  rejectReason    String?
+  likesCount      Int           @default(0) // denormalisasi utk leaderboard/feed
+  xpAwarded       Int           @default(0)
+  xpGiven         Boolean       @default(false) // cegah XP ganda per konten
+  likeBonusXp     Int           @default(0) // total XP bonus like yg sudah diberikan
+  likeBonusMilestones Int       @default(0) // jumlah milestone 10-like yg sudah diaward
+  approvedAt      DateTime?
+  approvedBy      String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  likes ContentLike[]
+}
+
+model ContentLike {
+  id        String           @id @default(cuid())
+  contentId String
+  content   CommunityContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  userId    String // User.id — 1 akun = 1 like per konten (unique)
+  createdAt DateTime         @default(now())
+
+  @@unique([contentId, userId])
+}
+
+model MissionShare {
+  id            String      @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  contentId     String? // key materi edukasi yg dibagikan (mis. EDU_ANEMIA)
+  platform      String // instagram | tiktok | youtube | whatsapp | copy_link
+  shareCount    Int         @default(1)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([participantId, contentId, platform])
+}
+
+model AppSetting {
+  key   String @id
+  value String
+}
