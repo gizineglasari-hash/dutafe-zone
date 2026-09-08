@@ -7,8 +7,7 @@
     "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
-    "vercel-build": "prisma generate && prisma db push --accept-data-loss && node scripts/seed.production.js && next build",
-    "db:push": "prisma db push --schema prisma/schema.sqlite.prisma --accept-data-loss",
+    "vercel-build": "prisma generate && node scripts/seed.production.js && next build",    "db:push": "prisma db push --schema prisma/schema.sqlite.prisma --accept-data-loss",
     "db:generate": "prisma generate --schema prisma/schema.sqlite.prisma",
     "db:migrate": "prisma migrate dev --schema prisma/schema.sqlite.prisma",
     "db:reset": "prisma migrate reset --schema prisma/schema.sqlite.prisma"
