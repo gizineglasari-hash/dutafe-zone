@@ -1,0 +1,1104 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { useFez } from "@/lib/store";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/hooks/use-toast";
+import {
+  BarChart3, CheckCircle2, ClipboardList, Crown, Flame, GraduationCap, ImageUp, LayoutDashboard, Loader2,
+  LogOut, Pill, School, Search, Trash2, Trophy, UserCheck, Users, Video, XCircle,
+} from "lucide-react";
+import {
+  Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from "recharts";
+import { DUTA_WEIGHTS } from "@/lib/constants";
+import { PLATFORM_LABEL, PLATFORM_ICON } from "@/lib/video";
+import { SiteCredit } from "@/components/fezone/ui-bits";
+
+// ============================================================
+// Admin Login
+// ============================================================
+export function AdminLogin() {
+  const { setView, setUser } = useFez();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password, mode: "admin" }),
+    });
+    const data = await res.json();
+    setBusy(false);
+    if (!res.ok) {
+      toast({ title: "Akses ditolak", description: data.error, variant: "destructive" });
+      return;
+    }
+    setUser({ id: data.user.id, username: data.user.username, role: "ADMIN" });
+    setView("admin");
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#3d1526] px-4">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
+        <button onClick={() => setView("landing")} className="mb-3 text-sm font-bold text-white/40 hover:text-white/80">
+          ← Kembali ke Beranda
+        </button>
+        <div className="rounded-[2rem] border-2 border-amber-300/40 bg-white p-8 shadow-2xl">
+          <div className="mb-5 text-center">
+            <span className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#3d1526] text-2xl">🛡️</span>
+            <h1 className="font-display text-2xl font-extrabold text-fez-ink">Login Admin FE-ZONE</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Panel pengelolaan program duta</p>
+          </div>
+          <form onSubmit={submit} className="space-y-4">
+            <div>
+              <Label className="font-bold text-fez-ink">Email Admin</Label>
+              <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="admin@fezone.id" className="mt-1 h-12 rounded-xl border-2" required />
+            </div>
+            <div>
+              <Label className="font-bold text-fez-ink">Password</Label>
+              <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-1 h-12 rounded-xl border-2" required />
+            </div>
+            <Button disabled={busy} className="h-13 w-full rounded-2xl bg-[#3d1526] py-3 font-extrabold text-white hover:bg-[#5c2040]">
+              {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : "Masuk Panel Admin"}
+            </Button>
+            <p className="rounded-xl bg-amber-50 p-2.5 text-center text-[11px] font-semibold text-amber-700">
+              🔑 Demo: admin@fezone.id / admin123
+            </p>
+          </form>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ============================================================
+// Admin Dashboard
+// ============================================================
+interface Overview {
+  stats: { total: number; totalSmp: number; totalSma: number; missionsCompleted: number; totalCheckins: number; active: number; candidates: number; dutas: number; avgPre: number; avgPost: number; gain: number };
+  charts: {
+    smpVsSma: { name: string; value: number }[];
+    perSchool: { school: string; SMP: number; SMA: number }[];
+    perMission: { mission: string; completed: number }[];
+    ttdDaily: { date: string; count: number }[];
+    prePost: { name: string; value: number }[];
+  };
+  dutaCandidates: {
+    id: string; name: string; school: string; educationLevel: string; xp: number; level: string;
+    score: { knowledge: number; missions: number; ttd: number; peer: number; creativity: number; activity: number; total: number };
+    isDuta: boolean;
+  }[];
+}
+
+interface AdminRow {
+  id: string; name: string; age: number; school: string; educationLevel: string; username: string; joinedAt: string;
+  xp: number; level: number; levelName: string; levelIcon: string; badges: string[];
+  missionsCompleted: number; streakWeeks: number; preTestScore: number | null; postTestScore: number | null;
+  isDutaCandidate: boolean; isDuta: boolean; hasPendingVideo: boolean;
+}
+
+interface PendingVideo { id: string; participantId: string; missionKey: string; fileUrl: string; fileName: string; status: string; grade: number | null; participant?: { name: string; school: string } }
+
+interface ModContent {
+  id: string; contentType: string; title: string; description: string | null;
+  platform: string; externalUrl: string | null; videoUrl: string | null; thumbnailUrl: string | null;
+  durationSec: number | null; status: string; likesCount: number; xpAwarded: number;
+  rejectReason: string | null; createdAt: string;
+  participant: { id: string; name: string; school: string; educationLevel: string; avatar: string; profilePhotoUrl: string | null };
+}
+
+export function AdminDashboard() {
+  const { reset } = useFez();
+  const [tab, setTab] = useState<"overview" | "participants" | "duta" | "videos" | "moderation" | "settings">("overview");
+  const [overview, setOverview] = useState<Overview | null>(null);
+  const [rows, setRows] = useState<AdminRow[]>([]);
+  const [schools, setSchools] = useState<string[]>([]);
+  const [videos, setVideos] = useState<PendingVideo[]>([]);
+  const [filters, setFilters] = useState({ level: "", school: "", q: "", lvl: "", duta: "" });
+  const [grades, setGrades] = useState<Record<string, { grade: string; note: string }>>({});
+  const [winners, setWinners] = useState(1);
+  const [modContents, setModContents] = useState<ModContent[]>([]);
+  const [modStatus, setModStatus] = useState<"all" | "PENDING" | "APPROVED" | "REJECTED">("all");
+  const [modType, setModType] = useState<"all" | "education" | "peer_educator">("all");
+  const [rejectReason, setRejectReason] = useState<{ id: string; value: string } | null>(null);
+  const [preview, setPreview] = useState<ModContent | null>(null);
+  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
+  const [dinkesLogoUrl, setDinkesLogoUrl] = useState<string | null>(null);
+  const [approveXp, setApproveXp] = useState<{ id: string; peer: boolean; value: string } | null>(null);
+  const [heroBusy, setHeroBusy] = useState(false);
+
+  const loadOverview = useCallback(async () => {
+    const res = await fetch("/api/admin/overview");
+    if (res.ok) setOverview(await res.json());
+  }, []);
+
+  const loadParticipants = useCallback(async () => {
+    const params = new URLSearchParams();
+    if (filters.level) params.set("level", filters.level);
+    if (filters.school) params.set("school", filters.school);
+    if (filters.q) params.set("q", filters.q);
+    if (filters.lvl) params.set("lvl", filters.lvl);
+    if (filters.duta) params.set("duta", filters.duta);
+    const res = await fetch(`/api/admin/participants?${params}`);
+    if (res.ok) {
+      const d = await res.json();
+      setRows(d.participants ?? []);
+      setSchools(d.schools ?? []);
+    }
+  }, [filters]);
+
+  const loadVideos = useCallback(async () => {
+    const res = await fetch("/api/admin/videos");
+    if (res.ok) {
+      const d = await res.json();
+      setVideos(d.videos ?? []);
+    }
+  }, []);
+
+  const loadModeration = useCallback(async () => {
+    const params = new URLSearchParams();
+    if (modStatus !== "all") params.set("status", modStatus);
+    if (modType !== "all") params.set("type", modType);
+    const res = await fetch(`/api/admin/community?${params}`);
+    if (res.ok) {
+      const d = await res.json();
+      setModContents(d.contents ?? []);
+    }
+  }, [modStatus, modType]);
+
+  const loadHero = useCallback(async () => {
+    const res = await fetch("/api/public/hero");
+    if (res.ok) {
+      const d = await res.json();
+      setHeroImageUrl(d.heroImageUrl ?? null);
+      setDinkesLogoUrl(d.dinkesLogoUrl ?? null);
+    }
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadOverview();
+     
+    loadParticipants();
+     
+    loadVideos();
+    loadHero();
+  }, [loadOverview, loadParticipants, loadVideos, loadHero]);
+
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    reset();
+  }
+
+  async function gradeVideo(videoId: string) {
+    const g = grades[videoId];
+    if (!g?.grade) {
+      toast({ title: "Isi nilai dulu", variant: "destructive" });
+      return;
+    }
+    const res = await fetch("/api/admin/grade", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "grade", videoId, grade: parseInt(g.grade, 10), note: g.note }),
+    });
+    const d = await res.json();
+    if (!res.ok) {
+      toast({ title: "Gagal", description: d.error, variant: "destructive" });
+      return;
+    }
+    toast({ title: `✅ Dinilai ${g.grade}/100`, description: `XP diberikan: +${d.xpDelta}` });
+    loadVideos();
+    loadOverview();
+    loadParticipants();
+  }
+
+  async function setDuta(pid: string, isDuta: boolean) {
+    const res = await fetch("/api/admin/grade", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "setDuta", participantId: pid, isDuta }),
+    });
+    if (res.ok) {
+      toast({ title: isDuta ? "👑 Duta ditetapkan!" : "Status Duta dicabut" });
+      loadOverview();
+      loadParticipants();
+    }
+  }
+
+  async function moderate(action: "approve" | "reject" | "delete", contentId: string, reason?: string, xpAward?: number) {
+    const res = await fetch("/api/admin/community", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, contentId, reason, xpAward }),
+    });
+    const d = await res.json();
+    if (!res.ok) {
+      toast({ title: "Gagal", description: d.error, variant: "destructive" });
+      return false;
+    }
+    if (action === "approve") toast({ title: "✅ Konten disetujui", description: d.xpDelta > 0 ? `+${d.xpDelta} XP diberikan ke peserta (sekali per video)` : "Konten kini tampil publik (tanpa XP)" });
+    if (action === "reject") toast({ title: "❌ Konten ditolak", description: "Alasan dikirim ke peserta" });
+    if (action === "delete") toast({ title: "🗑️ Konten dihapus" });
+    loadModeration();
+    loadOverview();
+    return true;
+  }
+
+  async function uploadLogo(file: File) {
+    setHeroBusy(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/admin/logo", { method: "POST", body: fd });
+    const d = await res.json();
+    setHeroBusy(false);
+    if (!res.ok) {
+      toast({ title: "Gagal upload logo", description: d.error, variant: "destructive" });
+      return;
+    }
+    setDinkesLogoUrl(d.dinkesLogoUrl);
+    toast({ title: "🏥 Logo Dinas Kesehatan diperbarui!", description: "Logo tampil di footer & sertifikat." });
+  }
+
+  async function deleteLogo() {
+    setHeroBusy(true);
+    const res = await fetch("/api/admin/logo", { method: "DELETE" });
+    setHeroBusy(false);
+    if (!res.ok) {
+      toast({ title: "Gagal menghapus logo", variant: "destructive" });
+      return;
+    }
+    setDinkesLogoUrl(null);
+    toast({ title: "Logo dihapus" });
+  }
+
+  async function uploadHero(file: File) {
+    setHeroBusy(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/admin/hero", { method: "POST", body: fd });
+    const d = await res.json();
+    setHeroBusy(false);
+    if (!res.ok) {
+      toast({ title: "Gagal upload", description: d.error, variant: "destructive" });
+      return;
+    }
+    setHeroImageUrl(d.heroImageUrl);
+    toast({ title: "🖼️ Gambar beranda diperbarui!", description: "Landing page kini menampilkan gambar yang diunggah." });
+  }
+
+  async function deleteHero() {
+    setHeroBusy(true);
+    const res = await fetch("/api/admin/hero", { method: "DELETE" });
+    setHeroBusy(false);
+    if (!res.ok) {
+      toast({ title: "Gagal menghapus", variant: "destructive" });
+      return;
+    }
+    setHeroImageUrl(null);
+    toast({ title: "Gambar beranda dihapus", description: "Kembali ke ilustrasi default." });
+  }
+
+  useEffect(() => {
+    if (tab === "moderation") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      loadModeration();
+    }
+  }, [tab, loadModeration]);
+
+  const COLORS = ["#e11d48", "#0d9488", "#f59e0b", "#8b5cf6"];
+
+  return (
+    <div className="min-h-screen bg-[#faf5f0]">
+      {/* Header */}
+      <header className="sticky top-0 z-40 border-b border-[#3d1526]/10 bg-[#3d1526] text-white">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-300 text-lg">🛡️</span>
+            <div className="leading-none">
+              <p className="font-display font-extrabold">Admin FE-ZONE</p>
+              <p className="text-[10px] text-white/50">Panel Program Duta</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 overflow-x-auto">
+            {([
+              { k: "overview", label: "Ringkasan", icon: LayoutDashboard },
+              { k: "participants", label: "Data Peserta", icon: Users },
+              { k: "duta", label: "Kandidat Duta", icon: Crown },
+              { k: "moderation", label: "Content Moderation", icon: ClipboardList },
+              { k: "videos", label: "Penilaian Video", icon: Video },
+              { k: "settings", label: "Beranda", icon: ImageUp },
+            ] as const).map((t) => (
+              <button
+                key={t.k}
+                onClick={() => setTab(t.k)}
+                className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-3 py-2 text-xs font-bold transition ${
+                  tab === t.k ? "bg-amber-300 text-[#3d1526]" : "text-white/60 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <t.icon className="h-3.5 w-3.5" /> {t.label}
+              </button>
+            ))}
+            <button onClick={logout} className="ml-2 rounded-xl px-3 py-2 text-xs font-bold text-white/60 hover:text-white">
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-7xl px-4 py-6">
+        {/* ============ OVERVIEW ============ */}
+        {tab === "overview" && overview && (
+          <div className="space-y-6">
+            <h1 className="font-display text-2xl font-extrabold text-[#3d1526]">Ringkasan Program</h1>
+
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <StatCard icon={<Users className="h-5 w-5" />} label="Total Peserta" value={overview.stats.total} color="bg-rose-100 text-rose-600" />
+              <StatCard icon={<School className="h-5 w-5" />} label="Peserta SMP" value={overview.stats.totalSmp} color="bg-teal-100 text-teal-600" />
+              <StatCard icon={<GraduationCap className="h-5 w-5" />} label="Peserta SMA" value={overview.stats.totalSma} color="bg-violet-100 text-violet-600" />
+              <StatCard icon={<UserCheck className="h-5 w-5" />} label="Peserta Aktif (7 hari)" value={overview.stats.active} color="bg-amber-100 text-amber-600" />
+              <StatCard icon={<CheckCircle2 className="h-5 w-5" />} label="Misi Selesai (total)" value={overview.stats.missionsCompleted} color="bg-emerald-100 text-emerald-600" />
+              <StatCard icon={<Pill className="h-5 w-5" />} label="Check-in TTD" value={overview.stats.totalCheckins} color="bg-cyan-100 text-cyan-600" />
+              <StatCard icon={<Crown className="h-5 w-5" />} label="Kandidat Duta" value={overview.stats.candidates} color="bg-yellow-100 text-yellow-700" />
+              <StatCard icon={<Trophy className="h-5 w-5" />} label="Duta Terpilih" value={overview.stats.dutas} color="bg-orange-100 text-orange-600" />
+            </div>
+
+            {/* Grafik grid */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <ChartCard title="🩸 Peserta SMP vs SMA">
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={overview.charts.smpVsSma}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0e0d8" />
+                    <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 700, fill: "#4a1d33" }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#9b6b7d" }} />
+                    <Tooltip />
+                    <Bar dataKey="value" radius={[10, 10, 0, 0]}>
+                      <Cell fill="#0d9488" /><Cell fill="#e11d48" />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard title="🏫 Peserta per Sekolah">
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={overview.charts.perSchool} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0e0d8" />
+                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "#9b6b7d" }} />
+                    <YAxis type="category" dataKey="school" width={150} tick={{ fontSize: 9.5, fontWeight: 600, fill: "#4a1d33" }} />
+                    <Tooltip />
+                    <Bar dataKey="SMP" stackId="a" fill="#0d9488" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="SMA" stackId="a" fill="#e11d48" radius={[0, 8, 8, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard title="🎯 Penyelesaian per Misi">
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={overview.charts.perMission}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0e0d8" />
+                    <XAxis dataKey="mission" tick={{ fontSize: 11, fontWeight: 700, fill: "#4a1d33" }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#9b6b7d" }} />
+                    <Tooltip />
+                    <Bar dataKey="completed" fill="#f59e0b" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard title="💊 Aktivitas TTD Tracker (14 hari)">
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={overview.charts.ttdDaily}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0e0d8" />
+                    <XAxis dataKey="date" tick={{ fontSize: 9, fill: "#9b6b7d" }} interval={1} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#9b6b7d" }} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#0d9488" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard title="📈 Rata-rata Pre vs Post Test">
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={overview.charts.prePost}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0e0d8" />
+                    <XAxis dataKey="name" tick={{ fontSize: 12, fontWeight: 700, fill: "#4a1d33" }} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9b6b7d" }} />
+                    <Tooltip />
+                    <Bar dataKey="value" radius={[10, 10, 0, 0]}>
+                      <Cell fill="#94a3b8" /><Cell fill="#10b981" />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+                <p className="mt-1 rounded-xl bg-emerald-50 p-2.5 text-center text-xs font-extrabold text-emerald-700">
+                  📈 Peningkatan pengetahuan rata-rata: +{overview.stats.gain} poin
+                </p>
+              </ChartCard>
+
+              <ChartCard title="📊 Komposisi Peserta">
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: "SMP", value: overview.stats.totalSmp },
+                        { name: "SMA", value: overview.stats.totalSma },
+                        { name: "Kandidat Duta", value: overview.stats.candidates },
+                      ]}
+                      dataKey="value" cx="50%" cy="50%" innerRadius={45} outerRadius={80} paddingAngle={4}
+                    >
+                      <Cell fill="#0d9488" /><Cell fill="#e11d48" /><Cell fill="#f59e0b" />
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartCard>
+            </div>
+          </div>
+        )}
+
+        {/* ============ PARTICIPANTS ============ */}
+        {tab === "participants" && (
+          <div className="space-y-4">
+            <h1 className="font-display text-2xl font-extrabold text-[#3d1526]">Data Peserta ({rows.length})</h1>
+
+            {/* Filter */}
+            <div className="flex flex-wrap items-end gap-2 rounded-2xl border border-[#3d1526]/10 bg-white p-3">
+              <div>
+                <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Tingkat</Label>
+                <select
+                  value={filters.level} onChange={(e) => setFilters((f) => ({ ...f, level: e.target.value }))}
+                  className="mt-1 h-10 rounded-xl border-2 border-[#3d1526]/15 bg-white px-3 text-sm font-bold"
+                >
+                  <option value="">Semua</option>
+                  <option value="SMP">SMP</option>
+                  <option value="SMA">SMA</option>
+                </select>
+              </div>
+              <div>
+                <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Sekolah</Label>
+                <select
+                  value={filters.school} onChange={(e) => setFilters((f) => ({ ...f, school: e.target.value }))}
+                  className="mt-1 h-10 max-w-[200px] rounded-xl border-2 border-[#3d1526]/15 bg-white px-3 text-sm font-bold"
+                >
+                  <option value="">Semua</option>
+                  {schools.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Level</Label>
+                <select
+                  value={filters.lvl} onChange={(e) => setFilters((f) => ({ ...f, lvl: e.target.value }))}
+                  className="mt-1 h-10 rounded-xl border-2 border-[#3d1526]/15 bg-white px-3 text-sm font-bold"
+                >
+                  <option value="">Semua</option>
+                  {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>Level {n}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Status Duta</Label>
+                <select
+                  value={filters.duta} onChange={(e) => setFilters((f) => ({ ...f, duta: e.target.value }))}
+                  className="mt-1 h-10 rounded-xl border-2 border-[#3d1526]/15 bg-white px-3 text-sm font-bold"
+                >
+                  <option value="">Semua</option>
+                  <option value="candidate">Kandidat</option>
+                  <option value="winner">Duta Terpilih</option>
+                </select>
+              </div>
+              <div className="min-w-[180px] flex-1">
+                <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Cari Nama</Label>
+                <div className="relative mt-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#3d1526]/30" />
+                  <Input
+                    value={filters.q} onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
+                    placeholder="cth. Aulia" className="h-10 rounded-xl border-2 border-[#3d1526]/15 pl-9"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="thin-scroll overflow-x-auto rounded-2xl border border-[#3d1526]/10 bg-white">
+              <table className="w-full min-w-[900px] text-left text-xs">
+                <thead className="border-b-2 border-[#3d1526]/10 bg-[#faf0e8]">
+                  <tr className="[&>th]:px-3 [&>th]:py-2.5 [&>th]:font-extrabold [&>th]:uppercase [&>th]:text-[10px] [&>th]:text-[#3d1526]/50">
+                    <th>Nama</th><th>Usia</th><th>Sekolah</th><th>Tingkat</th><th>XP</th><th>Level</th>
+                    <th>Misi</th><th>Badge</th><th>Streak</th><th>Pre</th><th>Post</th><th>Status Duta</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#3d1526]/5">
+                  {rows.map((r) => (
+                    <tr key={r.id} className="hover:bg-rose-50/40">
+                      <td className="px-3 py-2.5 font-extrabold text-[#3d1526]">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">👧</span>
+                          <div>
+                            {r.name}
+                            <p className="text-[10px] font-semibold text-[#3d1526]/40">{r.username}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5">{r.age}</td>
+                      <td className="px-3 py-2.5">{r.school}</td>
+                      <td className="px-3 py-2.5">
+                        <span className={`rounded-full px-2 py-0.5 font-extrabold ${r.educationLevel === "SMP" ? "bg-teal-100 text-teal-700" : "bg-rose-100 text-rose-700"}`}>
+                          {r.educationLevel}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 font-display font-extrabold text-rose-600">{r.xp.toLocaleString("id-ID")}</td>
+                      <td className="px-3 py-2.5">{r.levelIcon} Lv{r.level}</td>
+                      <td className="px-3 py-2.5">{r.missionsCompleted}/9</td>
+                      <td className="px-3 py-2.5">{r.badges.length}</td>
+                      <td className="px-3 py-2.5">🔥{r.streakWeeks}</td>
+                      <td className="px-3 py-2.5">{r.preTestScore ?? "–"}</td>
+                      <td className="px-3 py-2.5">{r.postTestScore ?? "–"}</td>
+                      <td className="px-3 py-2.5">
+                        {r.isDuta ? (
+                          <span className="rounded-full bg-amber-200 px-2 py-0.5 font-extrabold text-[#3d1526]">👑 DUTA</span>
+                        ) : r.isDutaCandidate ? (
+                          <span className="rounded-full bg-violet-100 px-2 py-0.5 font-extrabold text-violet-700">Kandidat</span>
+                        ) : (
+                          <span className="text-[#3d1526]/30">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {rows.length === 0 && (
+                    <tr><td colSpan={12} className="px-3 py-8 text-center font-bold text-[#3d1526]/40">Tidak ada peserta yang cocok dengan filter</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ============ DUTA CANDIDATES ============ */}
+        {tab === "duta" && overview && (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h1 className="font-display text-2xl font-extrabold text-[#3d1526]">Kandidat Duta ({overview.dutaCandidates.length})</h1>
+              <div className="flex items-center gap-2">
+                <Label className="text-xs font-extrabold text-[#3d1526]/60">Jumlah pemenang per tingkat:</Label>
+                <Input
+                  type="number" min={1} max={10} value={winners}
+                  onChange={(e) => setWinners(parseInt(e.target.value, 10) || 1)}
+                  className="h-9 w-20 rounded-xl border-2"
+                />
+              </div>
+            </div>
+            <p className="rounded-2xl bg-amber-50 p-3 text-xs font-semibold text-amber-700">
+              📋 Sistem penilaian: {Object.values(DUTA_WEIGHTS).map((w) => `${w.label.split(" ")[0]} ${w.pct}%`).join(" · ")}. Ranking dihitung otomatis per tingkat (SMP/SMA terpisah). Tekan &quot;Tetapkan Duta&quot; untuk menetapkan pemenang.
+            </p>
+
+            {(["SMP", "SMA"] as const).map((lv) => {
+              const list = overview.dutaCandidates.filter((c) => c.educationLevel === lv);
+              return (
+                <div key={lv} className="rounded-3xl border border-[#3d1526]/10 bg-white p-4">
+                  <p className="mb-3 font-display text-lg font-extrabold text-[#3d1526]">
+                    {lv === "SMP" ? "🏫" : "🎓"} DUTA {lv}
+                  </p>
+                  {list.length === 0 ? (
+                    <p className="py-4 text-center text-sm font-bold text-[#3d1526]/40">Belum ada kandidat {lv}</p>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {list.map((c, i) => (
+                        <div key={c.id} className={`rounded-2xl border-2 p-3.5 ${c.isDuta ? "border-amber-400 bg-gradient-to-r from-amber-50 to-yellow-50" : "border-[#3d1526]/10"}`}>
+                          <div className="flex flex-wrap items-center gap-3">
+                            <span className="flex h-9 w-9 items-center justify-center rounded-xl border-2 border-[#3d1526] bg-amber-100 font-display text-sm font-extrabold">
+                              {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-extrabold text-[#3d1526]">
+                                {c.name} {c.isDuta && <Crown className="inline h-4 w-4 text-amber-500" />}
+                              </p>
+                              <p className="text-[11px] font-semibold text-[#3d1526]/50">{c.school} · {c.xp} XP · {c.level}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-display text-xl font-extrabold text-rose-600">{c.score.total}</p>
+                              <p className="text-[9px] font-extrabold uppercase text-[#3d1526]/40">Skor akhir</p>
+                            </div>
+                            <Button
+                              onClick={() => setDuta(c.id, !c.isDuta)}
+                              className={`h-9 rounded-xl border-2 px-3 text-xs font-extrabold ${
+                                c.isDuta ? "border-[#3d1526]/20 bg-white text-[#3d1526]/60" : "border-[#3d1526] bg-amber-400 text-[#3d1526] hover:bg-amber-300"
+                              }`}
+                            >
+                              {c.isDuta ? "Cabut" : "👑 Tetapkan Duta"}
+                            </Button>
+                          </div>
+                          {/* breakdown */}
+                          <div className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
+                            {[
+                              { k: "knowledge", v: c.score.knowledge },
+                              { k: "missions", v: c.score.missions },
+                              { k: "ttd", v: c.score.ttd },
+                              { k: "peer", v: c.score.peer },
+                              { k: "creativity", v: c.score.creativity },
+                              { k: "activity", v: c.score.activity },
+                            ].map((row) => {
+                              const w = DUTA_WEIGHTS[row.k as keyof typeof DUTA_WEIGHTS];
+                              return (
+                                <div key={row.k} className="flex items-center justify-between text-[10px] font-bold text-[#3d1526]/60">
+                                  <span>{w.label} <span className="text-[#3d1526]/35">({w.pct}%)</span></span>
+                                  <span className="text-[#3d1526]">{row.v}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ============ CONTENT MODERATION ============ */}
+        {tab === "moderation" && (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h1 className="font-display text-2xl font-extrabold text-[#3d1526]">📋 Content Moderation</h1>
+              <Button variant="outline" size="sm" onClick={loadModeration} className="rounded-xl border-2 font-bold">
+                <Loader2 className="mr-1.5 h-3.5 w-3.5" /> Muat ulang
+              </Button>
+            </div>
+
+            {/* Tab status + jenis */}
+            <div className="flex flex-wrap items-center gap-2">
+              {(["all", "PENDING", "APPROVED", "REJECTED"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setModStatus(s)}
+                  className={`rounded-full border-2 px-3.5 py-1.5 text-xs font-extrabold transition ${
+                    modStatus === s ? "border-[#3d1526] bg-[#3d1526] text-white" : "border-[#3d1526]/15 bg-white text-[#3d1526]/60"
+                  }`}
+                >
+                  {s === "all" ? "All" : s === "PENDING" ? `⏳ Pending` : s === "APPROVED" ? "✅ Approved" : "❌ Rejected"}
+                </button>
+              ))}
+              <span className="mx-1 h-5 w-0.5 bg-[#3d1526]/10" />
+              {(["all", "education", "peer_educator"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setModType(t)}
+                  className={`rounded-full border-2 px-3.5 py-1.5 text-xs font-extrabold transition ${
+                    modType === t ? "border-amber-500 bg-amber-300 text-[#3d1526]" : "border-[#3d1526]/15 bg-white text-[#3d1526]/60"
+                  }`}
+                >
+                  {t === "all" ? "Semua Jenis" : t === "education" ? "📚 Edukasi" : "🎥 Peer Educator"}
+                </button>
+              ))}
+            </div>
+
+            {modContents.length === 0 ? (
+              <p className="rounded-2xl border border-[#3d1526]/10 bg-white p-8 text-center text-sm font-bold text-[#3d1526]/40">
+                📭 Tidak ada konten untuk filter ini
+              </p>
+            ) : (
+              <div className="overflow-x-auto rounded-2xl border border-[#3d1526]/10 bg-white">
+                <table className="w-full min-w-[920px] text-left text-xs">
+                  <thead className="border-b border-[#3d1526]/10 bg-[#3d1526]/[0.03]">
+                    <tr className="text-[10px] uppercase text-[#3d1526]/50">
+                      <th className="px-3 py-2.5 font-extrabold">Peserta</th>
+                      <th className="px-3 py-2.5 font-extrabold">Sekolah</th>
+                      <th className="px-3 py-2.5 font-extrabold">Konten</th>
+                      <th className="px-3 py-2.5 font-extrabold">Platform</th>
+                      <th className="px-3 py-2.5 font-extrabold">Status</th>
+                      <th className="px-3 py-2.5 text-right font-extrabold">Like</th>
+                      <th className="px-3 py-2.5 text-right font-extrabold">XP</th>
+                      <th className="px-3 py-2.5 font-extrabold">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#3d1526]/5">
+                    {modContents.map((c) => (
+                      <tr key={c.id} className="align-top">
+                        <td className="px-3 py-3 font-extrabold text-[#3d1526]">{c.participant.name}<span className="ml-1 rounded bg-violet-100 px-1 text-[9px] font-bold text-violet-700">{c.participant.educationLevel}</span></td>
+                        <td className="px-3 py-3 text-[#3d1526]/70">{c.participant.school}</td>
+                        <td className="max-w-[240px] px-3 py-3">
+                          <p className="font-bold text-[#3d1526]">{c.contentType === "education" ? "📚" : "🎥"} {c.title}</p>
+                          {c.description && <p className="mt-0.5 line-clamp-2 text-[11px] text-[#3d1526]/50">{c.description}</p>}
+                          {c.status === "REJECTED" && c.rejectReason && (
+                            <p className="mt-1 rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-600">Alasan: {c.rejectReason}</p>
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-[#3d1526]/70">{PLATFORM_ICON[c.platform]} {PLATFORM_LABEL[c.platform] ?? c.platform}{c.durationSec ? <span className="ml-1 text-[10px]">· {c.durationSec}s</span> : null}</td>
+                        <td className="px-3 py-3">
+                          <ModStatusChip status={c.status} />
+                        </td>
+                        <td className="px-3 py-3 text-right font-bold">{c.likesCount}</td>
+                        <td className="px-3 py-3 text-right font-extrabold text-rose-600">{c.xpAwarded > 0 ? `+${c.xpAwarded}` : "–"}</td>
+                        <td className="px-3 py-3">
+                          <div className="flex flex-wrap gap-1.5">
+                            <button
+                              onClick={() => setPreview(c)}
+                              className="rounded-lg border-2 border-[#3d1526]/20 px-2 py-1 text-[10px] font-extrabold text-[#3d1526] hover:bg-[#3d1526]/5"
+                            >
+                              Preview
+                            </button>
+                            {c.status !== "APPROVED" && (
+                              <button
+                                onClick={() => setApproveXp({ id: c.id, peer: c.contentType === "peer_educator", value: "100" })}
+                                className="rounded-lg bg-emerald-500 px-2 py-1 text-[10px] font-extrabold text-white hover:bg-emerald-600"
+                              >
+                                Approve
+                              </button>
+                            )}
+                            {c.status !== "REJECTED" && (
+                              <button
+                                onClick={() => setRejectReason({ id: c.id, value: "" })}
+                                className="rounded-lg bg-rose-500 px-2 py-1 text-[10px] font-extrabold text-white hover:bg-rose-600"
+                              >
+                                Reject
+                              </button>
+                            )}
+                            <button
+                              onClick={() => { if (confirm("Hapus konten ini permanen?")) moderate("delete", c.id); }}
+                              className="rounded-lg border-2 border-rose-200 px-2 py-1 text-[10px] font-extrabold text-rose-500 hover:bg-rose-50"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <p className="rounded-2xl bg-cyan-50 p-3 text-xs font-semibold text-cyan-700">
+              💡 Video Peer Educator yang disetujui mendapat XP yang DITETAPKAN ADMIN (0–300) sekali per video — pending/rejected/dihapus = 0 XP.
+              Konten approved tampil di Fe-Zone Community &amp; halaman Peer Educator. Konten rejected tidak tampil publik.
+            </p>
+
+            {/* Modal XP approve — penilaian & pemberian XP oleh admin */}
+            {approveXp && (
+              <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#3d1526]/50 p-4 backdrop-blur-sm" onClick={() => setApproveXp(null)}>
+                <div className="w-full max-w-md rounded-3xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
+                  <p className="font-display text-lg font-extrabold text-[#3d1526]">✅ Approve &amp; Beri XP</p>
+                  <p className="mt-1 text-xs text-[#3d1526]/60">
+                    {approveXp.peer
+                      ? "Tetapkan jumlah XP untuk video ini (0–300). XP hanya diberikan SEKALI untuk video ini."
+                      : "Konten edukasi tidak menerima XP video. Lanjutkan approve tanpa XP."}
+                  </p>
+                  {approveXp.peer && (
+                    <div className="mt-3">
+                      <Label className="text-xs font-extrabold text-[#3d1526]">XP untuk video ini (maks 300)</Label>
+                      <Input
+                        type="number" min={0} max={300} value={approveXp.value}
+                        onChange={(e) => setApproveXp({ ...approveXp, value: e.target.value })}
+                        className="mt-1 rounded-xl border-2"
+                        placeholder="cth: 150"
+                      />
+                    </div>
+                  )}
+                  <div className="mt-3 flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setApproveXp(null)} className="rounded-xl border-2 font-bold">Batal</Button>
+                    <Button
+                      onClick={async () => {
+                        const xp = approveXp.peer ? Number(approveXp.value) : 0;
+                        if (approveXp.peer && (isNaN(xp) || xp < 0 || xp > 300)) {
+                          toast({ title: "XP harus angka 0–300", variant: "destructive" });
+                          return;
+                        }
+                        const ok = await moderate("approve", approveXp.id, undefined, xp);
+                        if (ok) setApproveXp(null);
+                      }}
+                      className="rounded-xl bg-emerald-500 font-extrabold text-white hover:bg-emerald-600"
+                    >
+                      ✅ Setujui{approveXp.peer ? " & Beri XP" : ""}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Modal alasan reject */}
+            {rejectReason && (
+              <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#3d1526]/50 p-4 backdrop-blur-sm" onClick={() => setRejectReason(null)}>
+                <div className="w-full max-w-md rounded-3xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
+                  <p className="font-display text-lg font-extrabold text-[#3d1526]">❌ Alasan Penolakan</p>
+                  <p className="mt-1 text-xs text-[#3d1526]/60">Alasan ini ditampilkan ke peserta di halaman Video Saya.</p>
+                  <Textarea
+                    value={rejectReason.value}
+                    onChange={(e) => setRejectReason({ ...rejectReason, value: e.target.value })}
+                    rows={3}
+                    maxLength={300}
+                    placeholder="cth: Durasi kurang dari 30 detik / konten tidak sesuai topik anemia & TTD"
+                    className="mt-3 rounded-xl border-2"
+                  />
+                  <div className="mt-3 flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setRejectReason(null)} className="rounded-xl border-2 font-bold">Batal</Button>
+                    <Button
+                      onClick={async () => {
+                        const ok = await moderate("reject", rejectReason.id, rejectReason.value);
+                        if (ok) setRejectReason(null);
+                      }}
+                      disabled={!rejectReason.value.trim()}
+                      className="rounded-xl bg-rose-500 font-extrabold text-white hover:bg-rose-600"
+                    >
+                      Tolak Konten
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Modal preview */}
+            {preview && (
+              <div className="fixed inset-0 z-[70] overflow-y-auto bg-[#3d1526]/50 p-4 backdrop-blur-sm" onClick={() => setPreview(null)}>
+                <div className="mx-auto mt-8 w-full max-w-lg rounded-3xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-display text-lg font-extrabold text-[#3d1526]">{preview.title}</p>
+                      <p className="text-xs font-bold text-[#3d1526]/60">{preview.participant.name} · {preview.participant.school} · {preview.participant.educationLevel}</p>
+                      <p className="text-[11px] text-[#3d1526]/40">
+                        {PLATFORM_LABEL[preview.platform]} · {preview.durationSec ? `${preview.durationSec}s · ` : ""}{new Date(preview.createdAt).toLocaleDateString("id-ID")}
+                      </p>
+                    </div>
+                    <button onClick={() => setPreview(null)} className="rounded-full bg-muted p-1.5" aria-label="Tutup"><XCircle className="h-4 w-4" /></button>
+                  </div>
+                  {preview.contentType === "peer_educator" && (
+                    <div className="mt-3">
+                      <ModerationPreviewMedia content={preview} />
+                    </div>
+                  )}
+                  {preview.description && <p className="mt-3 whitespace-pre-line rounded-2xl bg-cream/60 p-3 text-sm text-[#3d1526]/80">{preview.description}</p>}
+                  {preview.externalUrl && (
+                    <a href={preview.externalUrl} target="_blank" rel="noreferrer" className="mt-3 inline-block rounded-xl bg-[#3d1526] px-4 py-2 text-xs font-extrabold text-white">
+                      🔗 Buka URL asli
+                    </a>
+                  )}
+                  <div className="mt-4 flex justify-end gap-2">
+                    {preview.status !== "APPROVED" && (
+                      <Button onClick={() => { setApproveXp({ id: preview.id, peer: preview.contentType === "peer_educator", value: "100" }); setPreview(null); }} className="rounded-xl bg-emerald-500 font-extrabold text-white hover:bg-emerald-600">✅ Approve</Button>
+                    )}
+                    {preview.status !== "REJECTED" && (
+                      <Button onClick={() => { setRejectReason({ id: preview.id, value: "" }); setPreview(null); }} className="rounded-xl bg-rose-500 font-extrabold text-white hover:bg-rose-600">❌ Reject</Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ============ PENGATURAN BERANDA ============ */}
+        {tab === "settings" && (
+          <div className="max-w-2xl space-y-4">
+            <h1 className="font-display text-2xl font-extrabold text-[#3d1526]">🖼️ Gambar Halaman Beranda</h1>
+            <div className="rounded-2xl border border-[#3d1526]/10 bg-white p-5">
+              <p className="text-sm font-extrabold text-[#3d1526]">Gambar Hero Landing Page</p>
+              <p className="mt-1 text-xs text-[#3d1526]/60">
+                Gambar yang diunggah di sini akan menggantikan ilustrasi di halaman beranda (tampil ke semua pengunjung).
+                Format JPG/PNG/WebP, maksimal 4MB. Rasio disarankan 1:1 atau 4:5.
+              </p>
+              <div className="mt-4 flex flex-wrap items-center gap-4">
+                {heroImageUrl ? (
+                  <img src={heroImageUrl} alt="Gambar beranda" className="h-40 w-40 rounded-2xl border-2 border-[#3d1526]/15 object-cover" />
+                ) : (
+                  <div className="flex h-40 w-40 items-center justify-center rounded-2xl border-2 border-dashed border-[#3d1526]/20 bg-[#3d1526]/[0.03] text-center text-xs font-bold leading-relaxed text-[#3d1526]/40">
+                    Belum ada gambar<br />(ilustrasi default dipakai)
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  <label className="cursor-pointer rounded-xl bg-rose-500 px-4 py-2.5 text-xs font-extrabold text-white hover:bg-rose-600">
+                    {heroBusy ? "Memproses..." : heroImageUrl ? "🔄 Ganti Gambar" : "⬆️ Upload Gambar"}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      disabled={heroBusy}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadHero(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  {heroImageUrl && (
+                    <button onClick={deleteHero} className="rounded-xl border-2 border-rose-200 px-4 py-2.5 text-xs font-extrabold text-rose-500 hover:bg-rose-50">
+                      🗑️ Hapus (pakai ilustrasi default)
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+            <p className="rounded-2xl bg-amber-50 p-3 text-xs font-semibold text-amber-700">
+              ⚠️ Gambar beranda bersifat publik. Pastikan kamu memiliki hak untuk menggunakan gambar tersebut.
+            </p>
+
+            {/* Logo Dinas Kesehatan Kota Bandung */}
+            <h1 className="pt-4 font-display text-2xl font-extrabold text-[#3d1526]">🏥 Logo Dinas Kesehatan Kota Bandung</h1>
+            <div className="rounded-2xl border border-[#3d1526]/10 bg-white p-5">
+              <p className="text-sm font-extrabold text-[#3d1526]">Logo Resmi (upload logo asli — jangan dibuat dengan AI)</p>
+              <p className="mt-1 text-xs text-[#3d1526]/60">
+                Logo ini tampil di footer semua halaman dan pada sertifikat peserta. Format JPG/PNG/WebP/SVG, maksimal 4MB,
+                disarankan rasio 1:1 dengan latar transparan.
+              </p>
+              <div className="mt-4 flex flex-wrap items-center gap-4">
+                {dinkesLogoUrl ? (
+                  <img src={dinkesLogoUrl} alt="Logo Dinas Kesehatan Kota Bandung" className="h-28 w-28 rounded-2xl border-2 border-[#3d1526]/15 bg-white object-contain p-2" />
+                ) : (
+                  <div className="flex h-28 w-28 items-center justify-center rounded-2xl border-2 border-dashed border-[#3d1526]/20 bg-[#3d1526]/[0.03] text-center text-xs font-bold leading-relaxed text-[#3d1526]/40">
+                    Belum ada logo<br />(footer tampil tanpa gambar)
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  <label className="cursor-pointer rounded-xl bg-teal-600 px-4 py-2.5 text-xs font-extrabold text-white hover:bg-teal-700">
+                    {heroBusy ? "Memproses..." : dinkesLogoUrl ? "🔄 Ganti Logo" : "⬆️ Upload Logo"}
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                      className="hidden"
+                      disabled={heroBusy}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadLogo(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  {dinkesLogoUrl && (
+                    <button onClick={deleteLogo} className="rounded-xl border-2 border-rose-200 px-4 py-2.5 text-xs font-extrabold text-rose-500 hover:bg-rose-50">
+                      🗑️ Hapus Logo
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ============ VIDEO GRADING ============ */}
+        {tab === "videos" && (
+          <div className="space-y-4">
+            <h1 className="font-display text-2xl font-extrabold text-[#3d1526]">Penilaian Video Edukasi</h1>
+            {videos.length === 0 ? (
+              <p className="rounded-2xl border border-[#3d1526]/10 bg-white p-8 text-center text-sm font-bold text-[#3d1526]/40">
+                📭 Belum ada video yang menunggu penilaian
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {videos.map((v) => {
+                  const g = grades[v.id] ?? { grade: "", note: "" };
+                  return (
+                    <div key={v.id} className="rounded-2xl border-2 border-[#3d1526]/10 bg-white p-4">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-extrabold text-[#3d1526]">
+                            {v.participant?.name ?? "Peserta"} · Mission {v.missionKey === "M8" ? "8" : "Duta"}
+                          </p>
+                          <p className="text-[11px] font-semibold text-[#3d1526]/50">{v.participant?.school}</p>
+                          {v.fileUrl && (
+                            <a href={v.fileUrl} target="_blank" rel="noreferrer" className="mt-1 inline-block rounded-lg bg-[#3d1526] px-3 py-1.5 text-[11px] font-extrabold text-white">
+                              ▶ Tonton Video
+                            </a>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-end gap-2">
+                          <div>
+                            <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Nilai (0-100)</Label>
+                            <Input
+                              type="number" min={0} max={100} value={g.grade}
+                              onChange={(e) => setGrades((gr) => ({ ...gr, [v.id]: { ...g, grade: e.target.value } }))}
+                              className="h-10 w-24 rounded-xl border-2"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Catatan</Label>
+                            <Input
+                              value={g.note}
+                              onChange={(e) => setGrades((gr) => ({ ...gr, [v.id]: { ...g, note: e.target.value } }))}
+                              placeholder="Feedback untuk peserta" className="h-10 w-48 rounded-xl border-2"
+                            />
+                          </div>
+                          <Button onClick={() => gradeVideo(v.id)} className="h-10 rounded-xl border-2 border-[#3d1526] bg-rose-500 px-4 text-xs font-extrabold text-white hover:bg-rose-600">
+                            Nilai & Beri XP
+                          </Button>
+                        </div>
+                      </div>
+                      {v.status === "GRADED" && (
+                        <p className="mt-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-extrabold text-emerald-700">
+                          ✅ Sudah dinilai: {v.grade}/100 (XP {v.grade * 3})
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <p className="rounded-2xl bg-cyan-50 p-3 text-xs font-semibold text-cyan-700">
+              💡 Nilai 0-100 dikonversi ke XP maksimal +300 (nilai × 3). Nilai ≥ 60 otomatis menyelesaikan Mission 8 peserta &amp; menjadi komponen Kreativitas (10%) dalam skor Duta.
+            </p>
+          </div>
+        )}
+      </main>
+
+      <footer className="border-t border-[#3d1526]/10 py-4">
+        <SiteCredit />
+      </footer>
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number; color: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-[#3d1526]/10 bg-white p-4"
+    >
+      <div className={`mb-2 flex h-9 w-9 items-center justify-center rounded-xl ${color}`}>{icon}</div>
+      <p className="font-display text-2xl font-extrabold text-[#3d1526]">{value.toLocaleString("id-ID")}</p>
+      <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#3d1526]/45">{label}</p>
+    </motion.div>
+  );
+}
+
+function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-[#3d1526]/10 bg-white p-4">
+      <p className="mb-2 font-display text-sm font-extrabold text-[#3d1526]">{title}</p>
+      {children}
+    </div>
+  );
+}
+
+function ModStatusChip({ status }: { status: string }) {
+  if (status === "APPROVED") return <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold text-emerald-700">Approved</span>;
+  if (status === "PENDING") return <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold text-amber-700">Pending</span>;
+  if (status === "REJECTED") return <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-extrabold text-rose-700">Rejected</span>;
+  return <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-extrabold text-gray-600">{status}</span>;
+}
+
+// Preview media untuk moderasi — YouTube embed, TikTok embed, fallback link
+function ModerationPreviewMedia({ content }: { content: ModContent }) {
+  if (content.platform === "uploaded" && content.videoUrl) {
+    return <video src={content.videoUrl} controls className="max-h-72 w-full rounded-2xl border-2 border-[#3d1526]/10 bg-black" />;
+  }
+  if (content.platform === "youtube" && content.videoUrl) {
+    const id = content.videoUrl.match(/(?:v=|youtu\.be\/|\/shorts\/|\/embed\/|\/live\/)([\w-]{6,20})/)?.[1];
+    if (id) {
+      return (
+        <div className="aspect-video w-full overflow-hidden rounded-2xl border-2 border-[#3d1526]/10 bg-black">
+          <iframe src={`https://www.youtube.com/embed/${id}`} title={content.title} allowFullScreen className="h-full w-full" />
+        </div>
+      );
+    }
+  }
+  if (content.thumbnailUrl) {
+    return <img src={content.thumbnailUrl} alt={content.title} className="aspect-video w-full rounded-2xl border-2 border-[#3d1526]/10 object-cover" />;
+  }
+  return (
+    <a href={content.externalUrl ?? content.videoUrl ?? "#"} target="_blank" rel="noreferrer" className="flex h-24 items-center justify-center rounded-2xl border-2 border-dashed border-[#3d1526]/20 bg-[#3d1526]/[0.03] text-xs font-extrabold text-[#3d1526]/60">
+      ▶ Buka video di {PLATFORM_LABEL[content.platform] ?? content.platform}
+    </a>
+  );
+}
