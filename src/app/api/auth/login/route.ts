@@ -10,10 +10,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email/username dan password wajib diisi" }, { status: 400 });
     }
 
-    const user = await db.user.findUnique({
-      where: { username: String(username).trim().toLowerCase() },
+    const uname = String(username).trim().toLowerCase();
+    let user = await db.user.findUnique({
+      where: { username: uname },
       include: { participant: true },
     });
+    // Cadangan: data lama mungkin tersimpan dengan huruf besar/kecil campuran
+    // (mis. akun admin dari env ADMIN_USERNAME). Cari tanpa memedulikan huruf.
+    if (!user) {
+      user = await db.user.findFirst({
+        where: { username: { equals: uname, mode: "insensitive" } },
+        include: { participant: true },
+      });
+    }
     if (!user || !verifyPassword(String(password), user.passwordHash)) {
       return NextResponse.json({ error: "Email/username atau password salah" }, { status: 401 });
     }

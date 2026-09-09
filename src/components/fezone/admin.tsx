@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
-  BarChart3, CheckCircle2, ClipboardList, Crown, Flame, GraduationCap, ImageUp, LayoutDashboard, Loader2,
+  BarChart3, CheckCircle2, ClipboardList, Crown, Download, FileSpreadsheet, Flame, GraduationCap, ImageUp, LayoutDashboard, Loader2,
   LogOut, Pill, School, Search, Trash2, Trophy, UserCheck, Users, Video, XCircle,
 } from "lucide-react";
 import {
@@ -100,13 +100,93 @@ interface Overview {
 }
 
 interface AdminRow {
-  id: string; name: string; age: number; school: string; educationLevel: string; username: string; joinedAt: string;
+  id: string; name: string; age: number; school: string; schoolCity: string | null; schoolDistrict: string | null; schoolType: string | null;
+  educationLevel: string; username: string; joinedAt: string;
   xp: number; level: number; levelName: string; levelIcon: string; badges: string[];
   missionsCompleted: number; streakWeeks: number; preTestScore: number | null; postTestScore: number | null;
   isDutaCandidate: boolean; isDuta: boolean; hasPendingVideo: boolean;
 }
 
 interface PendingVideo { id: string; participantId: string; missionKey: string; fileUrl: string; fileName: string; status: string; grade: number | null; participant?: { name: string; school: string } }
+
+// ============================================================
+// Ekspor Data Peserta → PDF & Excel
+// ============================================================
+function fmtDateId(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+  } catch {
+    return iso;
+  }
+}
+
+const EXPORT_HEADERS = [
+  "No", "Nama", "Email", "Usia", "Sekolah", "Kota", "Kecamatan", "Status Sekolah", "Tingkat",
+  "XP", "Level", "Misi Selesai", "Jumlah Badge", "Streak (pekan)", "Nilai Pre-Test", "Nilai Post-Test",
+  "Status Duta", "Tanggal Gabung",
+];
+
+function toExportRows(rows: AdminRow[]): (string | number)[][] {
+  return rows.map((r, i) => [
+    i + 1,
+    r.name,
+    r.username,
+    r.age,
+    r.school,
+    r.schoolCity ?? "–",
+    r.schoolDistrict ?? "–",
+    r.schoolType ?? "–",
+    r.educationLevel,
+    r.xp,
+    `Lv${r.level}`,
+    `${r.missionsCompleted}/9`,
+    r.badges.length,
+    r.streakWeeks,
+    r.preTestScore ?? "–",
+    r.postTestScore ?? "–",
+    r.isDuta ? "Duta Terpilih" : r.isDutaCandidate ? "Kandidat Duta" : "Peserta",
+    fmtDateId(r.joinedAt),
+  ]);
+}
+
+async function exportExcel(rows: AdminRow[]): Promise<void> {
+  const XLSX = await import("xlsx");
+  const ws = XLSX.utils.aoa_to_sheet([EXPORT_HEADERS, ...toExportRows(rows)]);
+  ws["!cols"] = [
+    { wch: 4 }, { wch: 26 }, { wch: 28 }, { wch: 5 }, { wch: 40 }, { wch: 14 }, { wch: 17 }, { wch: 15 }, { wch: 9 },
+    { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 13 }, { wch: 14 }, { wch: 15 }, { wch: 16 }, { wch: 16 }, { wch: 16 },
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Data Peserta");
+  XLSX.writeFile(wb, `FE-ZONE-Data-Peserta-${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+async function exportPdf(rows: AdminRow[]): Promise<void> {
+  const { default: JsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
+  const doc = new JsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  doc.text("FE-ZONE — Data Peserta", 40, 38);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(110);
+  doc.text(
+    `Dicetak: ${new Date().toLocaleString("id-ID")}  ·  Jumlah: ${rows.length} peserta  ·  Dinkes Kota Bandung`,
+    40, 54
+  );
+  doc.setTextColor(0);
+  autoTable(doc, {
+    head: [EXPORT_HEADERS],
+    body: toExportRows(rows),
+    startY: 66,
+    styles: { fontSize: 6.3, cellPadding: 2.6, overflow: "linebreak" },
+    headStyles: { fillColor: [225, 29, 72], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [253, 242, 248] },
+    margin: { left: 30, right: 30 },
+  });
+  doc.save(`FE-ZONE-Data-Peserta-${new Date().toISOString().slice(0, 10)}.pdf`);
+}
 
 interface ModContent {
   id: string; contentType: string; title: string; description: string | null;
@@ -135,6 +215,24 @@ export function AdminDashboard() {
   const [dinkesLogoUrl, setDinkesLogoUrl] = useState<string | null>(null);
   const [approveXp, setApproveXp] = useState<{ id: string; peer: boolean; value: string } | null>(null);
   const [heroBusy, setHeroBusy] = useState(false);
+  const [exporting, setExporting] = useState<"pdf" | "excel" | null>(null);
+
+  async function handleExport(kind: "pdf" | "excel") {
+    if (rows.length === 0) {
+      toast({ title: "Belum ada data peserta", variant: "destructive" });
+      return;
+    }
+    setExporting(kind);
+    try {
+      if (kind === "pdf") await exportPdf(rows);
+      else await exportExcel(rows);
+      toast({ title: kind === "pdf" ? "PDF berhasil diunduh 📄" : "Excel berhasil diunduh 📊" });
+    } catch {
+      toast({ title: "Gagal mengekspor, coba lagi", variant: "destructive" });
+    } finally {
+      setExporting(null);
+    }
+  }
 
   const loadOverview = useCallback(async () => {
     const res = await fetch("/api/admin/overview");
@@ -466,7 +564,28 @@ export function AdminDashboard() {
         {/* ============ PARTICIPANTS ============ */}
         {tab === "participants" && (
           <div className="space-y-4">
-            <h1 className="font-display text-2xl font-extrabold text-[#3d1526]">Data Peserta ({rows.length})</h1>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h1 className="font-display text-2xl font-extrabold text-[#3d1526]">Data Peserta ({rows.length})</h1>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  disabled={exporting !== null || rows.length === 0}
+                  onClick={() => handleExport("pdf")}
+                  className="h-9 rounded-xl border-2 border-[#3d1526]/20 px-3 text-xs font-extrabold"
+                >
+                  {exporting === "pdf" ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
+                  PDF
+                </Button>
+                <Button
+                  disabled={exporting !== null || rows.length === 0}
+                  onClick={() => handleExport("excel")}
+                  className="h-9 rounded-xl border-2 border-[#3d1526] bg-emerald-600 px-3 text-xs font-extrabold text-white hover:bg-emerald-700"
+                >
+                  {exporting === "excel" ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5" />}
+                  Excel
+                </Button>
+              </div>
+            </div>
 
             {/* Filter */}
             <div className="flex flex-wrap items-end gap-2 rounded-2xl border border-[#3d1526]/10 bg-white p-3">
@@ -525,10 +644,10 @@ export function AdminDashboard() {
             </div>
 
             <div className="thin-scroll overflow-x-auto rounded-2xl border border-[#3d1526]/10 bg-white">
-              <table className="w-full min-w-[900px] text-left text-xs">
+              <table className="w-full min-w-[1150px] text-left text-xs">
                 <thead className="border-b-2 border-[#3d1526]/10 bg-[#faf0e8]">
                   <tr className="[&>th]:px-3 [&>th]:py-2.5 [&>th]:font-extrabold [&>th]:uppercase [&>th]:text-[10px] [&>th]:text-[#3d1526]/50">
-                    <th>Nama</th><th>Usia</th><th>Sekolah</th><th>Tingkat</th><th>XP</th><th>Level</th>
+                    <th>Nama</th><th>Usia</th><th>Sekolah</th><th>Kota</th><th>Kecamatan</th><th>Status Sekolah</th><th>Tingkat</th><th>XP</th><th>Level</th>
                     <th>Misi</th><th>Badge</th><th>Streak</th><th>Pre</th><th>Post</th><th>Status Duta</th>
                   </tr>
                 </thead>
@@ -546,6 +665,17 @@ export function AdminDashboard() {
                       </td>
                       <td className="px-3 py-2.5">{r.age}</td>
                       <td className="px-3 py-2.5">{r.school}</td>
+                      <td className="px-3 py-2.5">{r.schoolCity ?? "–"}</td>
+                      <td className="px-3 py-2.5">{r.schoolDistrict ?? "–"}</td>
+                      <td className="px-3 py-2.5">
+                        {r.schoolType ? (
+                          <span className={`rounded-full px-2 py-0.5 font-extrabold ${r.schoolType === "Negeri" ? "bg-amber-100 text-amber-700" : "bg-violet-100 text-violet-700"}`}>
+                            {r.schoolType}
+                          </span>
+                        ) : (
+                          <span className="text-[#3d1526]/30">–</span>
+                        )}
+                      </td>
                       <td className="px-3 py-2.5">
                         <span className={`rounded-full px-2 py-0.5 font-extrabold ${r.educationLevel === "SMP" ? "bg-teal-100 text-teal-700" : "bg-rose-100 text-rose-700"}`}>
                           {r.educationLevel}
@@ -570,7 +700,7 @@ export function AdminDashboard() {
                     </tr>
                   ))}
                   {rows.length === 0 && (
-                    <tr><td colSpan={12} className="px-3 py-8 text-center font-bold text-[#3d1526]/40">Tidak ada peserta yang cocok dengan filter</td></tr>
+                    <tr><td colSpan={15} className="px-3 py-8 text-center font-bold text-[#3d1526]/40">Tidak ada peserta yang cocok dengan filter</td></tr>
                   )}
                 </tbody>
               </table>

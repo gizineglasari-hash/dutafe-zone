@@ -6,7 +6,7 @@ import { getMissionProgress } from "@/lib/gamification";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, age, school, educationLevel, username, password } = body ?? {};
+    const { name, age, school, schoolCity, schoolDistrict, schoolType, educationLevel, username, password } = body ?? {};
 
     if (!name || !age || !school || !educationLevel || !username || !password) {
       return NextResponse.json({ error: "Semua field wajib diisi ya!" }, { status: 400 });
@@ -41,6 +41,9 @@ export async function POST(req: NextRequest) {
             name: String(name).trim(),
             age: ageNum,
             school: String(school).trim(),
+            schoolCity: schoolCity ? String(schoolCity).trim() : null,
+            schoolDistrict: schoolDistrict ? String(schoolDistrict).trim() : null,
+            schoolType: schoolType ? String(schoolType).trim() : null,
             educationLevel,
           },
         },

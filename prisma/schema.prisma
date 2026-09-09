@@ -34,6 +34,9 @@ model Participant {
   name            String
   age             Int
   school          String
+  schoolCity      String? // Kota sekolah (dari daftar sekolah)
+  schoolDistrict  String? // Kecamatan sekolah
+  schoolType      String? // Negeri | Swasta
   educationLevel  String // SMP | SMA
   avatar          String   @default("🌸")
   profilePhotoUrl String?  // foto profil (mis. /uploads/profile/xxx.jpg)

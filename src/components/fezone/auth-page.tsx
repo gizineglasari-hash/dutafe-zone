@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useFez } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -8,22 +8,83 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/hooks/use-toast";
-import { ArrowLeft, Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Loader2, Search, Sparkles, X } from "lucide-react";
 import { SiteCredit } from "@/components/fezone/ui-bits";
+
+// Data sekolah dari /data/schools.json — tuple: [nama, kota, kecamatan, status, jenjang]
+type SchoolRow = [string, string, string, string, string];
 
 export default function AuthPage() {
   const { authMode, setAuthMode, setView, setUser } = useFez();
   const isRegister = authMode === "register";
 
-  const [form, setForm] = useState({ name: "", age: "", school: "", educationLevel: "", username: "", password: "" });
+  const [form, setForm] = useState({ name: "", age: "", school: "", schoolCity: "", schoolDistrict: "", schoolType: "", educationLevel: "", username: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [welcome, setWelcome] = useState<string | null>(null);
+
+  // ----- Pencarian sekolah (Kota Bandung) -----
+  const [schools, setSchools] = useState<SchoolRow[]>([]);
+  const [query, setQuery] = useState("");
+  const [selectedSchool, setSelectedSchool] = useState<SchoolRow | null>(null);
+  const [schoolOpen, setSchoolOpen] = useState(false);
+  const schoolBoxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isRegister) return;
+    fetch("/data/schools.json")
+      .then((r) => r.json())
+      .then((d: SchoolRow[]) => setSchools(Array.isArray(d) ? d : []))
+      .catch(() => setSchools([]));
+  }, [isRegister]);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (schoolBoxRef.current && !schoolBoxRef.current.contains(e.target as Node)) setSchoolOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  const schoolMatches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    const starts: SchoolRow[] = [];
+    const incl: SchoolRow[] = [];
+    for (const s of schools) {
+      const n = s[0].toLowerCase();
+      if (n.startsWith(q)) starts.push(s);
+      else if (n.includes(q)) incl.push(s);
+    }
+    return [...starts, ...incl].slice(0, 60);
+  }, [query, schools]);
+
+  function pickSchool(s: SchoolRow) {
+    setSelectedSchool(s);
+    setQuery(s[0]);
+    setSchoolOpen(false);
+    setForm((f) => ({ ...f, school: s[0], schoolCity: s[1], schoolDistrict: s[2], schoolType: s[3], educationLevel: s[4] }));
+  }
+
+  function clearSchool() {
+    setSelectedSchool(null);
+    setQuery("");
+    setSchoolOpen(false);
+    setForm((f) => ({ ...f, school: "", schoolCity: "", schoolDistrict: "", schoolType: "" }));
+  }
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (isRegister && !form.school) {
+      toast({
+        title: "Pilih sekolah dulu ya 🏫",
+        description: "Ketik nama sekolah, lalu pilih dari daftar yang muncul.",
+        variant: "destructive",
+      });
+      return;
+    }
     setLoading(true);
     try {
       const url = isRegister ? "/api/auth/register" : "/api/auth/login";
@@ -179,11 +240,76 @@ export default function AuthPage() {
                     </RadioGroup>
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="school" className="text-sm font-bold text-fez-ink">Nama Sekolah *</Label>
-                  <Input
-                    id="school" required value={form.school} onChange={(e) => set("school", e.target.value)}
-                    placeholder="cth. SMPN 1 Harapan Bangsa" className="mt-1 h-12 rounded-xl border-2 bg-cream/50" />
+                <div ref={schoolBoxRef} className="relative">
+                  <Label htmlFor="school" className="text-sm font-bold text-fez-ink">
+                    Nama Sekolah * <span className="text-[10px] font-semibold text-fez-ink/40">(Kota Bandung — ketik untuk mencari)</span>
+                  </Label>
+                  <div className="relative mt-1">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fez-ink/30" />
+                    <Input
+                      id="school"
+                      value={query}
+                      onChange={(e) => {
+                        setQuery(e.target.value);
+                        setSelectedSchool(null);
+                        setSchoolOpen(true);
+                      }}
+                      onFocus={() => setSchoolOpen(true)}
+                      placeholder="cth. SMP Negeri 2 Bandung"
+                      className="h-12 rounded-xl border-2 bg-cream/50 pl-9"
+                      autoComplete="off"
+                    />
+                  </div>
+                  {schoolOpen && query.trim().length > 0 && !selectedSchool && (
+                    <div className="thin-scroll absolute z-30 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border-2 border-fez-ink bg-white shadow-[6px_6px_0_0_rgba(74,29,51,0.25)]">
+                      {schools.length === 0 && (
+                        <p className="px-3 py-4 text-center text-xs font-bold text-fez-ink/40">Memuat daftar sekolah…</p>
+                      )}
+                      {schools.length > 0 && schoolMatches.length === 0 && (
+                        <p className="px-3 py-4 text-center text-xs font-bold text-fez-ink/40">Sekolah tidak ditemukan. Coba kata kunci lain ya!</p>
+                      )}
+                      {schoolMatches.map((s, i) => (
+                        <button
+                          key={`${s[0]}-${s[2]}-${i}`}
+                          type="button"
+                          onClick={() => pickSchool(s)}
+                          className="flex w-full items-center justify-between gap-2 border-b border-fez-ink/5 px-3 py-2 text-left transition last:border-0 hover:bg-rose-50"
+                        >
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-extrabold text-fez-ink">{s[0]}</span>
+                            <span className="block text-[11px] font-semibold text-fez-ink/50">Kec. {s[2]} · {s[1]}</span>
+                          </span>
+                          <span className="flex shrink-0 items-center gap-1">
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${s[4] === "SMP" ? "bg-teal-100 text-teal-700" : "bg-rose-100 text-rose-700"}`}>{s[4]}</span>
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${s[3] === "Negeri" ? "bg-amber-100 text-amber-700" : "bg-violet-100 text-violet-700"}`}>{s[3]}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {selectedSchool && (
+                    <div className="mt-2 rounded-xl border-2 border-fez-ink bg-emerald-50 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-extrabold text-fez-ink">🏫 {selectedSchool[0]}</p>
+                          <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] font-bold text-fez-ink/70">
+                            <span className="rounded-full border border-fez-ink/10 bg-white px-2 py-0.5">🏙️ {selectedSchool[1]}</span>
+                            <span className="rounded-full border border-fez-ink/10 bg-white px-2 py-0.5">📍 Kec. {selectedSchool[2]}</span>
+                            <span className={`rounded-full border border-fez-ink/10 px-2 py-0.5 ${selectedSchool[3] === "Negeri" ? "bg-amber-100 text-amber-700" : "bg-violet-100 text-violet-700"}`}>🏛️ {selectedSchool[3]}</span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={clearSchool}
+                          className="shrink-0 rounded-lg p-1 text-fez-ink/40 transition hover:bg-white hover:text-fez-rose"
+                          aria-label="Ganti sekolah"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <p className="mt-1.5 text-[10px] font-semibold text-emerald-700">✓ Tingkat pendidikan otomatis terisi: {selectedSchool[4]}</p>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="username" className="text-sm font-bold text-fez-ink">Email / Username *</Label>

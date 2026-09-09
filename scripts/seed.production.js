@@ -22,7 +22,9 @@ function hashPassword(password) {
 }
 
 async function main() {
-  const username = (process.env.ADMIN_USERNAME || "admin@fezone.id").trim();
+  // WAJIB lowercase: route login mencari username dalam bentuk lowercase,
+  // jadi akun admin juga harus tersimpan lowercase agar login tidak gagal.
+  const username = (process.env.ADMIN_USERNAME || "admin@fezone.id").trim().toLowerCase();
   const password = process.env.ADMIN_INITIAL_PASSWORD || "admin123";
 
   await db.user.upsert({

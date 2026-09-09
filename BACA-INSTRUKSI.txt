@@ -1,0 +1,21 @@
+PAKET PEMBARUAN 1 — FE-ZONE (sekolah + ekspor admin + perbaiki login admin)
+=============================================================================
+Isi paket ini HARUS disalin ke folder clone repo:
+Downloads\Fe-zone\dutafe-zone
+
+Cara:
+1. Extract zip ini.
+2. Salin SEMUA folder/file di dalamnya ke folder clone (timpa yang lama).
+   - prisma/schema.prisma
+   - scripts/seed.production.js
+   - src/app/api/admin/participants/route.ts
+   - src/app/api/auth/login/route.ts
+   - src/app/api/auth/register/route.ts
+   - src/components/fezone/admin.tsx
+   - src/components/fezone/auth-page.tsx
+   - public/data/schools.json  (file baru)
+   - package.json
+   - bun.lock
+3. GitHub Desktop -> commit -> push.
+(SEBELUM push: jalankan dulu script SQL perbaikan database di Supabase
+ — lihat instruksi di chat.)
