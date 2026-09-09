@@ -1,63 +1,57 @@
-PAKET PEMBARUAN 2 — FE-ZONE
+PAKET PEMBARUAN 5 — FE-ZONE
 ================================================================
 Isi paket ini:
- A. Logo resmi Dinkes tertanam di footer semua halaman
-    + tulisan "Dinas Kesehatan Kota Bandung" di bawah logo
- B. Kredit paling bawah diganti menjadi:
-    "created by: Rahmadiani Putri Poltekkes Kemenkes Bandung"
- C. Keterangan "Demo: admin@fezone.id / admin123" di halaman
-    login admin DIHAPUS (kunci admin tidak ditampilkan lagi)
- D. Perbaikan login admin (akun yang dulu gagal karena huruf
-    besar/kecil kini otomatis diperbaiki saat build)
- E. Sekalian: fitur sekolah (ketik-cari-pilih) + Data Pengguna
-    lengkap + ekspor PDF & Excel (paket 1 ikut disertakan
-    supaya satu paket ini lengkap)
+ A. FITUR "LUPA PASSWORD" VIA EMAIL (alur lengkap):
+    - Halaman login peserta: tombol "Lupa password?" menuju
+      halaman baru /lupa-password
+    - Peserta memasukkan email -> sistem mengirim EMAIL berisi
+      tombol tautan reset (berlaku 1 jam, sekali pakai)
+    - Dari email, terbuka halaman /reset-password untuk membuat
+      password baru, lalu masuk seperti biasa
+ B. "LUPA PASSWORD ADMIN?" + PROSEDUR PEMULIHAN:
+    - Halaman login admin: tautan menuju /admin/pulihkan
+    - Cara A (mandiri): email admin + KODE PEMULIHAN + password
+      baru (kode diatur pengelola di Vercel — langkah berikutnya)
+    - Cara B (darurat): panduan hubungi pengembang program
+ C. Sekalian dalam paket ini (jika belum terpasang):
+    - Analisa statistik lengkap di admin (paket 4)
+    - Gambar landing baru tanpa garis pinggir (paket 3)
+
+CATATAN:
+- Tabel database untuk reset password dibuat OTOMATIS saat
+  deploy (tidak perlu menjalankan SQL manual apa pun).
+- Sementara email belum diaktifkan, halaman lupa password akan
+  menampilkan pesan "layanan email belum aktif" — ITU NORMAL.
+  Aktivasi email = 1 langkah terakhir yang saya kirim setelah
+  paket ini terpasang.
 
 ================================================================
 LANGKAH 1 — Salin file ke folder repo
 1. Klik kanan zip ini -> Extract All.
-2. Buka folder hasil extract, tekan Ctrl+A untuk memilih SEMUA
-   isi di dalamnya.
-3. Salin (Ctrl+C), lalu buka folder:
-   Downloads\Fe-zone\dutafe-zone
-   lalu tempel (Ctrl+V).
-   -> Jika muncul pertanyaan timpa/replace, pilih YES/Replace.
-   -> Pastikan folder "images" ikut tersalin di dalam
-      folder "public" di folder clone.
+2. Tekan Ctrl+A (pilih semua isi) -> Ctrl+C.
+3. Buka folder:  Downloads\Fe-zone\dutafe-zone
+   lalu Ctrl+V -> bila ditanya timpa, pilih YES/Replace.
+
+LANGKAH 1.5 — HAPUS FILE LAMA YANG SENSITIF (PENTING!)
+4. Masih di folder yang sama, cari file bernama:
+      PERBAIKI-LOGIN-ADMIN.sql
+   Jika ada -> klik kanan -> Delete (file itu berisi kunci
+   password, tidak boleh ikut ke GitHub).
 
 LANGKAH 2 — Commit & push
-4. Buka GitHub Desktop -> pastikan repository "dutafe-zone".
-5. Di kolom Summary tulis:
-   pembaruan 2: logo dinkes, kredit, hapus demo admin
-6. Klik "Commit to main" -> klik "Push origin".
-7. Tunggu 1-2 menit, buka Vercel sampai status "Ready".
+5. Buka GitHub Desktop -> repository "dutafe-zone".
+6. Summary tulis:  pembaruan 5: lupa password via email + pemulihan admin
+7. Klik "Commit to main" -> "Push origin".
+8. Tunggu 1-2 menit sampai Vercel status "Ready".
 
-LANGKAH 3 — Cek hasil di situs
-8. Buka https://dutafe-zone.vercel.app lalu gulir ke paling bawah:
-   - Ada logo Dinkes + tulisan "Dinas Kesehatan Kota Bandung"
-   - Paling bawah: created by: Rahmadiani Putri Poltekkes
-     Kemenkes Bandung
-9. Buka halaman Login Admin -> keterangan "Demo" sudah hilang.
+LANGKAH 3 — Cek hasil
+9. Buka https://dutafe-zone.vercel.app/lupa-password
+   -> harus muncul halaman "Lupa Password?" dengan kolom email.
+10. Buka https://dutafe-zone.vercel.app/admin/pulihkan
+   -> harus muncul "Lupa Password Admin?" dengan 2 cara pemulihan.
+11. Coba isi email bebas di /lupa-password -> akan muncul pesan
+    "layanan email belum aktif" (normal — tunggu langkah aktivasi).
 
-LANGKAH 4 — Login admin
-10. Isi:
-    - Email Admin : isi ADMIN_USERNAME yang tertera di Vercel
-      (Settings -> Environment Variables). Huruf besar/kecil
-      TIDAK masalah lagi — sudah diperbaiki otomatis.
-    - Password    : isi ADMIN_INITIAL_PASSWORD yang tertera
-      di Vercel.
-11. Bila berhasil, pesan "Akses ditolak" tidak muncul lagi dan
-    Anda masuk ke panel admin.
-
-================================================================
-MASIH GAGAL LOGIN? — RENCANA B (dijamin berhasil)
-12. Buka file PERBAIKI-LOGIN-ADMIN.sql (ada di paket ini)
-    dengan Notepad, salin SELURUH isinya.
-13. Buka supabase.com -> proyek Anda -> SQL Editor -> New query
-    -> tempel -> klik Run.
-14. Kembali ke situs, login dengan:
-    Email Admin : admin@fezone.id
-    Password    : Fezone#2026
-15. Setelah login berhasil, hapus file PERBAIKI-LOGIN-ADMIN.sql
-    dari folder clone lalu commit+push sekali lagi (agar kunci
-    tidak tersimpan di GitHub).
+SETELAH ITU: kirim hasil langkah ini ke saya, dan saya kirimkan
+LANGKAH TERAKHIR: mengaktifkan pengiriman email + kode pemulihan
+(pengaturan di Vercel, sekitar 5 menit).

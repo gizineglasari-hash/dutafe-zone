@@ -14,6 +14,10 @@ export default function Home() {
 
   // Cek sesi saat pertama kali load
   useEffect(() => {
+    // Dukungan deep-link dari halaman lupa/reset password:
+    // /?view=auth -> halaman masuk, /?view=admin -> login admin
+    const v = new URLSearchParams(window.location.search).get("view");
+    if (v === "auth" || v === "admin") useFez.getState().setView(v);
     (async () => {
       try {
         const res = await fetch("/api/auth/me");

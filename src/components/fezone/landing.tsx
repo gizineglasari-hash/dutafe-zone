@@ -10,97 +10,6 @@ import { ArrowRight, BookOpen, Crown, Flame, Rocket, Trophy, Users, Zap } from "
 import { CommunityFeed, PublicProfileModal } from "@/components/fezone/community";
 import { DinkesFooter, SiteCredit, UserAvatar } from "@/components/fezone/ui-bits";
 
-// ============================================================
-// Ilustrasi: Remaja putri Indonesia aktif & percaya diri
-// ============================================================
-function HeroIllustration() {
-  return (
-    <svg viewBox="0 0 420 400" className="h-auto w-full max-w-md drop-shadow-xl" role="img" aria-label="Ilustrasi remaja putri Indonesia yang aktif dan sehat">
-      {/* blobs */}
-      <ellipse cx="210" cy="355" rx="165" ry="26" fill="#f7d9c4" />
-      <circle cx="60" cy="70" r="42" fill="#fde68a" opacity="0.7" />
-      <circle cx="375" cy="120" r="30" fill="#99f6e4" opacity="0.8" />
-      <circle cx="350" cy="45" r="14" fill="#f9a8d4" />
-      <path d="M40 180 q10 -18 20 0 q10 18 20 0" stroke="#f9a8d4" strokeWidth="5" fill="none" strokeLinecap="round" />
-
-      {/* Gadis 1 — hijab, memegang HP, pose ceria */}
-      <g transform="translate(120,60)">
-        {/* tubuh */}
-        <path d="M75 120 Q60 190 68 235 L152 235 Q160 190 145 120 Q110 100 75 120Z" fill="#0d9488" />
-        <path d="M75 120 Q60 190 68 235 L90 235 Q84 180 95 128Z" fill="#0f766e" />
-        {/* kepala + hijab */}
-        <circle cx="110" cy="82" r="42" fill="#f8b4a0" />
-        <path d="M68 88 Q64 30 110 28 Q156 30 152 88 Q150 120 138 122 Q146 96 140 70 Q112 58 82 72 Q74 96 82 122 Q70 120 68 88Z" fill="#e11d48" />
-        <path d="M152 88 Q170 96 168 130 Q166 150 152 152 Q158 128 152 112Z" fill="#e11d48" />
-        {/* wajah */}
-        <circle cx="97" cy="84" r="4" fill="#4a1d33" />
-        <circle cx="123" cy="84" r="4" fill="#4a1d33" />
-        <path d="M100 100 Q110 110 120 100" stroke="#4a1d33" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-        <circle cx="88" cy="96" r="5" fill="#fb7185" opacity="0.5" />
-        <circle cx="132" cy="96" r="5" fill="#fb7185" opacity="0.5" />
-        {/* lengan memegang HP */}
-        <path d="M70 140 Q48 168 60 192 L74 186 Q66 168 84 150Z" fill="#0d9488" />
-        <circle cx="64" cy="192" r="10" fill="#f8b4a0" />
-        {/* HP */}
-        <rect x="40" y="178" width="30" height="52" rx="8" fill="#4a1d33" transform="rotate(-8 55 204)" />
-        <rect x="44" y="184" width="22" height="38" rx="4" fill="#f472b6" transform="rotate(-8 55 204)" />
-        <circle cx="55" cy="203" r="6" fill="#fff" opacity="0.85" transform="rotate(-8 55 204)" />
-      </g>
-
-      {/* Gadis 2 — kuncir dua, lompat kecil, menunjuk ke atas */}
-      <g transform="translate(255,84)">
-        <path d="M52 130 Q40 185 46 225 L124 225 Q130 185 118 130 Q85 112 52 130Z" fill="#f472b6" />
-        <path d="M52 130 Q40 185 46 225 L66 225 Q62 182 72 136Z" fill="#ec4899" />
-        <circle cx="85" cy="92" r="36" fill="#f8b4a0" />
-        {/* rambut kuncir */}
-        <path d="M49 92 Q47 52 85 50 Q123 52 121 92 Q121 78 112 70 Q85 60 58 70 Q49 78 49 92Z" fill="#4a1d33" />
-        <circle cx="47" cy="60" r="12" fill="#4a1d33" />
-        <circle cx="123" cy="60" r="12" fill="#4a1d33" />
-        <circle cx="45" cy="52" r="5" fill="#fbbf24" />
-        <circle cx="125" cy="52" r="5" fill="#fbbf24" />
-        <circle cx="73" cy="94" r="3.5" fill="#4a1d33" />
-        <circle cx="97" cy="94" r="3.5" fill="#4a1d33" />
-        <path d="M76 108 Q85 116 94 108" stroke="#4a1d33" strokeWidth="3" fill="none" strokeLinecap="round" />
-        <circle cx="66" cy="104" r="4.5" fill="#fb7185" opacity="0.5" />
-        <circle cx="104" cy="104" r="4.5" fill="#fb7185" opacity="0.5" />
-        {/* lengan menunjuk */}
-        <path d="M118 140 Q140 118 148 96 L136 88 Q126 110 108 128Z" fill="#f472b6" />
-        <circle cx="143" cy="91" r="9" fill="#f8b4a0" />
-        {/* kaki */}
-        <rect x="58" y="222" width="14" height="26" rx="7" fill="#f8b4a0" />
-        <rect x="100" y="222" width="14" height="26" rx="7" fill="#f8b4a0" />
-        <ellipse cx="62" cy="252" rx="13" ry="6" fill="#e11d48" />
-        <ellipse cx="106" cy="252" rx="13" ry="6" fill="#e11d48" />
-      </g>
-
-      {/* elemen floating */}
-      <g transform="translate(36,236)">
-        <rect x="0" y="0" width="74" height="52" rx="14" fill="#fff" stroke="#4a1d33" strokeWidth="3" />
-        <text x="37" y="24" textAnchor="middle" fontSize="15" fontWeight="800" fill="#e11d48">+100</text>
-        <text x="37" y="42" textAnchor="middle" fontSize="11" fontWeight="700" fill="#9d174d">XP</text>
-      </g>
-      <g transform="translate(330,250)">
-        <rect x="0" y="0" width="76" height="54" rx="14" fill="#fff" stroke="#4a1d33" strokeWidth="3" />
-        <text x="38" y="26" textAnchor="middle" fontSize="18">🔥</text>
-        <text x="38" y="45" textAnchor="middle" fontSize="11" fontWeight="800" fill="#9d174d">4 MINGGU</text>
-      </g>
-      <g transform="translate(190,18)">
-        <circle cx="0" cy="0" r="26" fill="#fff" stroke="#4a1d33" strokeWidth="3" />
-        <text x="0" y="8" textAnchor="middle" fontSize="22">🩸</text>
-      </g>
-      <g transform="translate(318,196)">
-        <circle cx="0" cy="0" r="22" fill="#fff" stroke="#4a1d33" strokeWidth="3" />
-        <text x="0" y="7" textAnchor="middle" fontSize="18">💊</text>
-      </g>
-      <g transform="translate(96,40)">
-        <text fontSize="20">✨</text>
-      </g>
-      <g transform="translate(240,320)">
-        <text fontSize="18">🥗</text>
-      </g>
-    </svg>
-  );
-}
 
 // ============================================================
 // Top 3 Duta Fe-Zone — leaderboard publik SMP & SMA (sebelum login).
@@ -380,15 +289,15 @@ export default function Landing() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mx-auto w-full max-w-md"
           >
-            {heroImageUrl ? (
-              <img
-                src={heroImageUrl}
-                alt="Ilustrasi program FE-ZONE — Duta Remaja Putri Bebas Anemia"
-                className="h-auto w-full max-w-md object-contain mix-blend-multiply"
-              />
-            ) : (
-              <HeroIllustration />
-            )}
+            {/* Gambar utama landing: bawaan tertanam (public/images/hero-fezone.png),
+                bila admin mengunggah gambar lewat panel admin maka unggahan yang dipakai.
+                Tanpa garis pinggir/bingkai — mix-blend-multiply membuat latar putih gambar
+                menyatu mulus dengan latar belakang halaman. */}
+            <img
+              src={heroImageUrl ?? "/images/hero-fezone.png"}
+              alt="Ilustrasi program FE-ZONE — Duta Remaja Putri Bebas Anemia"
+              className="h-auto w-full max-w-md object-contain mix-blend-multiply"
+            />
           </motion.div>
         </div>
       </section>

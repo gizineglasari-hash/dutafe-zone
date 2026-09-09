@@ -367,10 +367,20 @@ export default function AuthPage() {
               {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
               {isRegister ? "DAFTAR SEKARANG!" : "MASUK"}
             </Button>
+
+            {!isRegister && (
+              <a
+                href="/lupa-password"
+                className="mx-auto block text-center text-xs font-extrabold text-fez-rose/80 underline-offset-2 hover:text-fez-rose hover:underline"
+              >
+                Lupa password?
+              </a>
+            )}
           </form>
         </div>
       </motion.div>
       </div>
+
       <SiteCredit />
     </div>
   );

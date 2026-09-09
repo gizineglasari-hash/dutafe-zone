@@ -9,11 +9,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
-  BarChart3, CheckCircle2, ClipboardList, Crown, Download, FileSpreadsheet, Flame, GraduationCap, ImageUp, LayoutDashboard, Loader2,
+  BarChart3, CheckCircle2, ClipboardList, Crown, Download, FileSpreadsheet, Flame, GraduationCap, ImageUp, KeyRound, LayoutDashboard, Loader2,
   LogOut, Pill, School, Search, Trash2, Trophy, UserCheck, Users, Video, XCircle,
 } from "lucide-react";
 import {
-  Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { DUTA_WEIGHTS } from "@/lib/constants";
 import { PLATFORM_LABEL, PLATFORM_ICON } from "@/lib/video";
@@ -73,6 +73,12 @@ export function AdminLogin() {
             <p className="text-center text-[11px] font-semibold text-muted-foreground">
               Halaman khusus pengelola program FE-ZONE
             </p>
+            <a
+              href="/admin/pulihkan"
+              className="mx-auto block text-center text-[11px] font-extrabold text-[#3d1526]/50 underline-offset-2 hover:text-[#3d1526] hover:underline"
+            >
+              Lupa password admin?
+            </a>
           </form>
         </div>
       </motion.div>
@@ -84,14 +90,26 @@ export function AdminLogin() {
 // Admin Dashboard
 // ============================================================
 interface Overview {
-  stats: { total: number; totalSmp: number; totalSma: number; missionsCompleted: number; totalCheckins: number; active: number; candidates: number; dutas: number; avgPre: number; avgPost: number; gain: number };
+  stats: {
+    total: number; totalSmp: number; totalSma: number; missionsCompleted: number; totalCheckins: number; active: number;
+    candidates: number; dutas: number; avgPre: number; avgPost: number; gain: number;
+    avgXp: number; totalXp: number; improvementRate: number; bothTests: number;
+    ttdParticipants: number; ttdLast7: number; ttdTrendPct: number;
+    totalBadges: number; videosPending: number; videosApproved: number;
+    contentsPending: number; contentsApproved: number; totalLikes: number;
+  };
   charts: {
     smpVsSma: { name: string; value: number }[];
     perSchool: { school: string; SMP: number; SMA: number }[];
-    perMission: { mission: string; completed: number }[];
+    perMission: { mission: string; completed: number; rate: number }[];
     ttdDaily: { date: string; count: number }[];
     prePost: { name: string; value: number }[];
+    levelDistribution: { level: string; count: number }[];
+    badgeDistribution: { badge: string; count: number }[];
+    registrationsTrend: { week: string; count: number }[];
   };
+  schoolRanking: { school: string; participants: number; totalXp: number; avgXp: number; avgGain: number | null }[];
+  insights: { icon: string; text: string }[];
   dutaCandidates: {
     id: string; name: string; school: string; educationLevel: string; xp: number; level: string;
     score: { knowledge: number; missions: number; ttd: number; peer: number; creativity: number; activity: number; total: number };
@@ -216,6 +234,33 @@ export function AdminDashboard() {
   const [approveXp, setApproveXp] = useState<{ id: string; peer: boolean; value: string } | null>(null);
   const [heroBusy, setHeroBusy] = useState(false);
   const [exporting, setExporting] = useState<"pdf" | "excel" | null>(null);
+  const [resetTarget, setResetTarget] = useState<AdminRow | null>(null);
+  const [resetPass, setResetPass] = useState("");
+  const [resetting, setResetting] = useState(false);
+
+  async function doResetPassword() {
+    if (!resetTarget) return;
+    const np = resetPass.trim();
+    if (np.length < 6) {
+      toast({ title: "Password terlalu pendek", description: "Minimal 6 karakter.", variant: "destructive" });
+      return;
+    }
+    setResetting(true);
+    const res = await fetch("/api/admin/reset-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ participantId: resetTarget.id, newPassword: np }),
+    });
+    const data = await res.json();
+    setResetting(false);
+    if (!res.ok) {
+      toast({ title: "Gagal reset password", description: data.error, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Password berhasil direset", description: `Password baru untuk ${resetTarget.name}: ${np} — catat dan sampaikan ke peserta.` });
+    setResetTarget(null);
+    setResetPass("");
+  }
 
   async function handleExport(kind: "pdf" | "excel") {
     if (rows.length === 0) {
@@ -467,6 +512,29 @@ export function AdminDashboard() {
               <StatCard icon={<Pill className="h-5 w-5" />} label="Check-in TTD" value={overview.stats.totalCheckins} color="bg-cyan-100 text-cyan-600" />
               <StatCard icon={<Crown className="h-5 w-5" />} label="Kandidat Duta" value={overview.stats.candidates} color="bg-yellow-100 text-yellow-700" />
               <StatCard icon={<Trophy className="h-5 w-5" />} label="Duta Terpilih" value={overview.stats.dutas} color="bg-orange-100 text-orange-600" />
+              <StatCard icon={<Flame className="h-5 w-5" />} label="Rata-rata XP Peserta" value={overview.stats.avgXp} color="bg-rose-100 text-rose-600" />
+              <StatCard icon={<BarChart3 className="h-5 w-5" />} label="Peningkatan Nilai (%)" value={overview.stats.improvementRate} color="bg-emerald-100 text-emerald-700" />
+              <StatCard icon={<CheckCircle2 className="h-5 w-5" />} label="Badge Diterbitkan" value={overview.stats.totalBadges} color="bg-violet-100 text-violet-600" />
+              <StatCard icon={<Video className="h-5 w-5" />} label="Video Menunggu Nilai" value={overview.stats.videosPending} color="bg-cyan-100 text-cyan-700" />
+            </div>
+
+            {/* ANALISA OTOMATIS */}
+            <div className="rounded-3xl border-2 border-amber-300/60 bg-gradient-to-br from-amber-50 to-rose-50 p-5">
+              <div className="mb-3 flex items-center gap-2">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-300 text-lg">🧠</span>
+                <div>
+                  <p className="font-display text-lg font-extrabold text-[#3d1526]">Analisa Otomatis Program</p>
+                  <p className="text-[11px] font-semibold text-[#3d1526]/50">Temuan penting yang dihitung dari data peserta — diperbarui setiap halaman dibuka</p>
+                </div>
+              </div>
+              <div className="grid gap-2 md:grid-cols-2">
+                {overview.insights.map((ins, i) => (
+                  <div key={i} className="flex items-start gap-2.5 rounded-2xl border border-[#3d1526]/10 bg-white/80 p-3">
+                    <span className="text-lg leading-none">{ins.icon}</span>
+                    <p className="text-xs font-semibold leading-relaxed text-[#3d1526]/80">{ins.text}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Grafik grid */}
@@ -557,6 +625,78 @@ export function AdminDashboard() {
                   </PieChart>
                 </ResponsiveContainer>
               </ChartCard>
+
+              <ChartCard title="🧑‍🎓 Tren Pendaftaran (8 pekan)">
+                <ResponsiveContainer width="100%" height={220}>
+                  <AreaChart data={overview.charts.registrationsTrend}>
+                    <defs>
+                      <linearGradient id="gradReg" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#e11d48" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="#e11d48" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0e0d8" />
+                    <XAxis dataKey="week" tick={{ fontSize: 10, fontWeight: 600, fill: "#9b6b7d" }} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#9b6b7d" }} />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="count" stroke="#e11d48" strokeWidth={2.5} fill="url(#gradReg)" name="Pendaftar" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard title="👑 Sebaran Level Peserta">
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={overview.charts.levelDistribution} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0e0d8" />
+                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "#9b6b7d" }} />
+                    <YAxis type="category" dataKey="level" width={140} tick={{ fontSize: 9.5, fontWeight: 600, fill: "#4a1d33" }} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#8b5cf6" radius={[0, 8, 8, 0]} name="Peserta" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard title="🏅 Badge yang Paling Sering Diraih">
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={overview.charts.badgeDistribution} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0e0d8" />
+                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "#9b6b7d" }} />
+                    <YAxis type="category" dataKey="badge" width={150} tick={{ fontSize: 9.5, fontWeight: 600, fill: "#4a1d33" }} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="#f59e0b" radius={[0, 8, 8, 0]} name="Peserta" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+            </div>
+
+            {/* PERINGKAT SEKOLAH */}
+            <div className="rounded-3xl border border-[#3d1526]/10 bg-white p-5">
+              <p className="font-display text-lg font-extrabold text-[#3d1526]">🏫 Peringkat Sekolah (Top 10 — rata-rata XP)</p>
+              <p className="mb-3 text-[11px] font-semibold text-[#3d1526]/50">Perbandingan keterlibatan antar sekolah: jumlah peserta, total & rata-rata XP, serta rata-rata kenaikan nilai pre→post</p>
+              <div className="thin-scroll overflow-x-auto">
+                <table className="w-full min-w-[640px] text-left text-xs">
+                  <thead className="border-b-2 border-[#3d1526]/10 bg-[#faf0e8]">
+                    <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:font-extrabold [&>th]:uppercase [&>th]:text-[10px] [&>th]:text-[#3d1526]/50">
+                      <th>#</th><th>Sekolah</th><th>Peserta</th><th>Total XP</th><th>Rata-rata XP</th><th>Rata-rata Kenaikan Nilai</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#3d1526]/5">
+                    {overview.schoolRanking.map((s, i) => (
+                      <tr key={s.school} className="hover:bg-rose-50/40">
+                        <td className="px-3 py-2 font-extrabold text-[#3d1526]/50">{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}</td>
+                        <td className="px-3 py-2 font-extrabold text-[#3d1526]">{s.school}</td>
+                        <td className="px-3 py-2">{s.participants}</td>
+                        <td className="px-3 py-2 font-bold text-rose-600">{s.totalXp.toLocaleString("id-ID")}</td>
+                        <td className="px-3 py-2 font-bold">{s.avgXp.toLocaleString("id-ID")}</td>
+                        <td className="px-3 py-2">{s.avgGain === null ? <span className="text-[#3d1526]/30">–</span> : <span className={s.avgGain > 0 ? "font-extrabold text-emerald-600" : "font-bold"}>{s.avgGain > 0 ? `+${s.avgGain}` : s.avgGain}</span>}</td>
+                      </tr>
+                    ))}
+                    {overview.schoolRanking.length === 0 && (
+                      <tr><td colSpan={6} className="px-3 py-6 text-center font-bold text-[#3d1526]/40">Belum ada data sekolah</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -648,7 +788,7 @@ export function AdminDashboard() {
                 <thead className="border-b-2 border-[#3d1526]/10 bg-[#faf0e8]">
                   <tr className="[&>th]:px-3 [&>th]:py-2.5 [&>th]:font-extrabold [&>th]:uppercase [&>th]:text-[10px] [&>th]:text-[#3d1526]/50">
                     <th>Nama</th><th>Usia</th><th>Sekolah</th><th>Kota</th><th>Kecamatan</th><th>Status Sekolah</th><th>Tingkat</th><th>XP</th><th>Level</th>
-                    <th>Misi</th><th>Badge</th><th>Streak</th><th>Pre</th><th>Post</th><th>Status Duta</th>
+                    <th>Misi</th><th>Badge</th><th>Streak</th><th>Pre</th><th>Post</th><th>Status Duta</th><th>Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#3d1526]/5">
@@ -697,10 +837,19 @@ export function AdminDashboard() {
                           <span className="text-[#3d1526]/30">—</span>
                         )}
                       </td>
+                      <td className="px-3 py-2.5">
+                        <button
+                          onClick={() => { setResetTarget(r); setResetPass(""); }}
+                          title="Reset password peserta (untuk yang lupa password)"
+                          className="inline-flex items-center gap-1 rounded-lg border-2 border-[#3d1526]/15 bg-white px-2 py-1 text-[10px] font-extrabold text-[#3d1526]/70 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700"
+                        >
+                          <KeyRound className="h-3 w-3" /> Reset
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {rows.length === 0 && (
-                    <tr><td colSpan={15} className="px-3 py-8 text-center font-bold text-[#3d1526]/40">Tidak ada peserta yang cocok dengan filter</td></tr>
+                    <tr><td colSpan={16} className="px-3 py-8 text-center font-bold text-[#3d1526]/40">Tidak ada peserta yang cocok dengan filter</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1171,6 +1320,38 @@ export function AdminDashboard() {
           </div>
         )}
       </main>
+
+      {/* Modal reset password peserta */}
+      {resetTarget && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#3d1526]/50 p-4 backdrop-blur-sm" onClick={() => setResetTarget(null)}>
+          <div className="w-full max-w-md rounded-3xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center gap-2">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700"><KeyRound className="h-5 w-5" /></span>
+              <div>
+                <p className="font-display text-lg font-extrabold text-[#3d1526]">Reset Password Peserta</p>
+                <p className="text-xs font-bold text-[#3d1526]/50">{resetTarget.name} · {resetTarget.username}</p>
+              </div>
+            </div>
+            <p className="mb-3 rounded-xl bg-amber-50 p-2.5 text-[11px] font-semibold leading-relaxed text-amber-700">
+              Gunakan ini saat peserta lupa password. Buat password sementara, lalu sampaikan langsung kepada peserta
+              (lewat guru/petugas). Setelah login berhasil, peserta dapat meminta reset ulang kapan saja.
+            </p>
+            <Label className="text-xs font-extrabold text-[#3d1526]">Password Baru (minimal 6 karakter)</Label>
+            <Input
+              value={resetPass}
+              onChange={(e) => setResetPass(e.target.value)}
+              placeholder="cth. Fezone2026"
+              className="mt-1 h-11 rounded-xl border-2"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setResetTarget(null)} className="h-10 rounded-xl px-4 text-xs font-extrabold">Batal</Button>
+              <Button disabled={resetting} onClick={doResetPassword} className="h-10 rounded-xl bg-amber-500 px-4 text-xs font-extrabold text-white hover:bg-amber-600">
+                {resetting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Simpan Password Baru"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer className="border-t border-[#3d1526]/10 py-4">
         <SiteCredit />

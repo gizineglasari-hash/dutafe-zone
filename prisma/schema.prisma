@@ -16,6 +16,21 @@ model User {
   updatedAt    DateTime      @updatedAt
   sessions     Session[]
   participant  Participant?
+  resetTokens  PasswordResetToken[]
+}
+
+// Token reset password (alur "Lupa Password" via email).
+// Yang disimpan hanya HASH token (sha256) — token asli hanya ada di link email.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model Session {
