@@ -52,11 +52,11 @@ export interface BadgeDef {
 }
 
 export const BADGES: BadgeDef[] = [
-  { key: "ANEMIA_FIGHTER", name: "Anemia Fighter", icon: "🩸", color: "#E11D48", how: "Selesaikan Mission 1 — Kenali Musuhmu" },
-  { key: "TTD_CHAMPION", name: "TTD Champion", icon: "💊", color: "#8B5CF6", how: "Selesaikan Mission 2 — Kenali Senjatamu" },
-  { key: "IRON_FOOD_HUNTER", name: "Iron Food Hunter", icon: "🥗", color: "#10B981", how: "Selesaikan Mission 4 — Iron Food Hunt" },
-  { key: "PEER_EDUCATOR", name: "Peer Educator", icon: "📢", color: "#F59E0B", how: "Selesaikan Mission 7 — Spread the Fe-Zone" },
-  { key: "CONSISTENCY_QUEEN", name: "Consistency Queen", icon: "🔥", color: "#F43F5E", how: "Raih streak 4 minggu konsisten minum TTD" },
+  { key: "ANEMIA_FIGHTER", name: "Anemia Fighter", icon: "🩸", color: "#E11D48", how: "Lulus Mission 1 — Kenali Musuhmu (nilai ≥80)" },
+  { key: "TTD_CHAMPION", name: "TTD Champion", icon: "💊", color: "#8B5CF6", how: "Lulus Mission 3 — Kenali Senjata Melawan Anemia (nilai ≥80)" },
+  { key: "IRON_FOOD_HUNTER", name: "Iron Food Hunter", icon: "🥗", color: "#10B981", how: "Lulus Mission 4 — Iron Food Hunt" },
+  { key: "PEER_EDUCATOR", name: "Peer Educator", icon: "📢", color: "#F59E0B", how: "Lulus Mission 7 — Spread the Fe-Zone (share WA ke 5 teman)" },
+  { key: "CONSISTENCY_QUEEN", name: "Consistency Queen", icon: "🔥", color: "#F43F5E", how: "Raih streak 4 minggu konsisten minum TTD (bonus +20 XP)" },
   { key: "DUTA_BESI", name: "Duta Fe-Zone", icon: "👑", color: "#D97706", how: "Menang Final Duta Challenge & terpilih sebagai Duta" },
 ];
 
@@ -79,46 +79,57 @@ export interface MissionDef {
 export const MISSIONS: MissionDef[] = [
   {
     key: "M1", title: "Kenali Musuhmu", short: "Kenali Anemia", icon: "🩸", xp: 100, color: "#E11D48", type: "QUIZ",
-    desc: "Baca materi edukasi tentang anemia, lalu buktikan pemahamanmu lewat quiz. Lulus dan raih badge ANEMIA FIGHTER!",
+    desc: "Baca materi edukasi tentang anemia, lalu buktikan pemahamanmu lewat quiz. Nilai ≥80 = LULUS — XP sesuai skormu!",
   },
   {
-    key: "M2", title: "Kenali Senjata Melawan Anemia", short: "TTD Check", icon: "💊", xp: 100, color: "#8B5CF6", type: "QUIZ",
-    desc: "Pelajari segala hal tentang Tablet Tambah Darah (TTD): manfaat, cara konsumsi, sampai mitos & fakta. Lalu taklukkan quiz-nya!",
+    key: "M2", title: "TTD Tracker", short: "TTD Tracker", icon: "📅", xp: 10, color: "#0D9488", type: "TRACKER",
+    desc: "Terbuka sejak hari pertama! Check-in 1× per minggu setelah minum TTD: setiap check-in valid +10 XP. Konsisten ya!",
   },
   {
-    key: "M3", title: "TTD Tracker", short: "TTD Tracker", icon: "📅", xp: 50, color: "#0D9488", type: "TRACKER",
-    desc: "Catat konsumsi TTD-mu secara rutin di TTD Tracker. Setiap check-in memberi +10 XP. Selesaikan 2 check-in untuk menamatkan misi ini!",
+    key: "M3", title: "Kenali Senjata Melawan Anemia", short: "Kenali TTD", icon: "💊", xp: 100, color: "#8B5CF6", type: "QUIZ",
+    desc: "Terbuka setelah Mission 1 LULUS. Pelajari segala hal tentang Tablet Tambah Darah (TTD), lalu taklukkan quiz-nya (nilai ≥80)!",
   },
   {
     key: "M4", title: "Iron Food Hunt", short: "Iron Food Hunt", icon: "🥗", xp: 100, color: "#10B981", type: "GAME",
-    desc: "Mini game berburu makanan sumber zat besi! Pilih semua makanan yang kaya zat besi dari lautan pilihan.",
+    desc: "Terbuka setelah Mission 3 LULUS. Mini game berburu makanan sumber zat besi! Raih nilai ≥80 untuk membuka misi berikutnya.",
   },
   {
     key: "M5", title: "Menu Bebas Anemia", short: "Menu Sehatku", icon: "🍱", xp: 150, color: "#84CC16", type: "MENU",
-    desc: "Susun menu makan sehari pilihanmu! Dapatkan feedback edukatif tentang kombinasi menu bebas anemia.",
+    desc: "Terbuka setelah Mission 4 LULUS. Susun menu makan sehari pilihanmu! Nilai menu ≥80 = lulus & misi berikutnya terbuka.",
   },
   {
     key: "M6", title: "Mitos atau Fakta", short: "Mitos/Fakta", icon: "🧠", xp: 100, color: "#F59E0B", type: "MYTH",
-    desc: "Uji nalar logismu! Tebak 10 pernyataan seputar anemia dan TTD: mitos atau fakta?",
+    desc: "Terbuka setelah Mission 5 LULUS. Uji nalar logismu! Tebak 12 pernyataan seputar anemia dan TTD — nilai ≥80 untuk lulus.",
   },
   {
-    key: "M7", title: "Spread the Fe-Zone", short: "Edukasi 3 Teman", icon: "📢", xp: 200, color: "#F43F5E", type: "SHARE",
-    desc: "Bagikan materi edukasi ke minimal 3 teman lewat tombol SHARE EDUKASI (Instagram, TikTok, YouTube, WhatsApp, Copy Link). Setiap share tercatat otomatis!",
+    key: "M7", title: "Spread the Fe-Zone", short: "Share ke 5 Teman", icon: "📢", xp: 200, color: "#F43F5E", type: "SHARE",
+    desc: "Terbuka setelah Mission 6 LULUS. Bagikan materi edukasi ke 5 teman lewat WhatsApp. Progress 0/5 — setiap share tercatat otomatis!",
   },
   {
-    key: "M8", title: "Peer Educator Fe-Zone", short: "Video Edukasi", icon: "🎬", xp: 100, color: "#06B6D4", type: "VIDEO",
-    desc: "Buat video edukasi 30–60 detik dari YouTube, Instagram, atau TikTok — atau upload langsung. Setiap video yang disetujui admin = +100 XP. Bisa dikirim berkali-kali!",
+    key: "M8", title: "Peer Educator Fe-Zone", short: "Video Edukasi", icon: "🎬", xp: 300, color: "#06B6D4", type: "VIDEO",
+    desc: "Terbuka setelah Mission 7 LULUS. Buat video edukasi 30–60 detik (YouTube/Instagram/TikTok/upload). Bisa berkali-kali — setiap video yang DISAPPROVE admin diberi XP oleh admin (maks +300 XP/video).",
   },
   {
-    key: "M9", title: "Iron Streak", short: "Streak Konsisten", icon: "🔥", xp: 150, color: "#EF4444", type: "STREAK",
-    desc: "Jaga konsistensi! Capai streak check-in TTD 4 minggu berturut-turut dan raih badge CONSISTENCY QUEEN.",
+    key: "M9", title: "Iron Streak", short: "Streak Konsisten", icon: "🔥", xp: 20, color: "#EF4444", type: "STREAK",
+    desc: "Terbuka setelah Mission 8 LULUS. Capai 4 check-in TTD berturut-turut (1×/minggu) = BONUS +20 XP sekali per periode bulan + badge CONSISTENCY QUEEN.",
   },
 ];
 
 export const missionByKey = (key: string) => MISSIONS.find((m) => m.key === key);
 
-// Misi yang wajib selesai sebelum post-test dibuka (misi selain tracker/streak/video-admin)
-export const CORE_MISSIONS = ["M1", "M2", "M4", "M5", "M6", "M7"];
+// Urutan unlock: misi berikutnya hanya terbuka jika misi sebelumnya di rantai LULUS.
+// M1 & M2 terbuka sejak awal (M2 = TTD Tracker di luar rantai).
+export const UNLOCK_CHAIN = ["M1", "M3", "M4", "M5", "M6", "M7", "M8", "M9"] as const;
+export const ALWAYS_OPEN_MISSIONS = ["M1", "M2"];
+
+export function prevMissionInChain(missionKey: string): string | null {
+  const idx = UNLOCK_CHAIN.indexOf(missionKey as (typeof UNLOCK_CHAIN)[number]);
+  if (idx <= 0) return null;
+  return UNLOCK_CHAIN[idx - 1];
+}
+
+// Misi konten yang wajib selesai sebelum post-test dibuka
+export const CORE_MISSIONS = ["M1", "M3", "M4", "M5", "M6", "M7"];
 
 // ------------------------------------------------------------
 // Duta scoring (bobot penilaian Duta)
@@ -137,12 +148,14 @@ export const DUTA_WEIGHTS = {
 // ------------------------------------------------------------
 export const XP_RULES = {
   CHECKIN: 10,
-  M3_COMPLETE_BONUS: 50,
   PRETEST: 50,
   POSTTEST: 150,
   REGISTER: 0,
   FINAL_QUIZ: 100,
   DUTA_COMPLETE: 200,
+  STREAK_BONUS: 20, // M9 — 4 check-in berturut-turut dalam 1 bulan (sekali per periode)
 };
 
-export const PASS_SCORE = 70; // nilai minimal kelulusan quiz misi
+export const SPREAD_TARGET = 5; // M7 — share edukasi via WhatsApp ke 5 teman
+export const PEER_VIDEO_MAX_XP = 300; // M8 — maks XP per video yang ditetapkan admin
+export const PASS_SCORE = 80; // nilai minimal kelulusan quiz/misi (>= 80 = LULUS)
