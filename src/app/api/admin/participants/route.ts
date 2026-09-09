@@ -66,3 +66,42 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ participants: rows, schools });
 }
+
+// Hapus peserta beserta SELURUH datanya (misi, XP, badge, check-in,
+// video, konten komunitas, sesi login, dst). Dilindungi dialog
+// konfirmasi di sisi UI; di sini divalidasi ulang:
+// - hanya akun PARTICIPANT yang boleh dihapus (admin tidak bisa)
+// - ContentLike dihapus manual (tidak ter-relasi ke User di schema)
+export async function DELETE(req: NextRequest) {
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  try {
+    const body = await req.json().catch(() => null);
+    const participantId = String(body?.participantId ?? "");
+    if (!participantId) {
+      return NextResponse.json({ error: "participantId wajib diisi" }, { status: 400 });
+    }
+
+    const participant = await db.participant.findUnique({
+      where: { id: participantId },
+      include: { user: true },
+    });
+    if (!participant) {
+      return NextResponse.json({ error: "Peserta tidak ditemukan" }, { status: 404 });
+    }
+    if (participant.user.role !== "PARTICIPANT") {
+      return NextResponse.json({ error: "Akun admin tidak dapat dihapus lewat daftar peserta" }, { status: 403 });
+    }
+
+    await db.$transaction([
+      db.contentLike.deleteMany({ where: { userId: participant.userId } }),
+      db.user.delete({ where: { id: participant.userId } }),
+    ]);
+
+    return NextResponse.json({ ok: true, name: participant.name, username: participant.user.username });
+  } catch (e) {
+    console.error("DELETE_PARTICIPANT_ERR", e);
+    return NextResponse.json({ error: "Gagal menghapus peserta" }, { status: 500 });
+  }
+}

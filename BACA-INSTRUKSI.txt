@@ -1,29 +1,35 @@
-PAKET PEMBARUAN 5 — FE-ZONE
+PAKET PEMBARUAN 7 — FE-ZONE
 ================================================================
 Isi paket ini:
- A. FITUR "LUPA PASSWORD" VIA EMAIL (alur lengkap):
-    - Halaman login peserta: tombol "Lupa password?" menuju
-      halaman baru /lupa-password
-    - Peserta memasukkan email -> sistem mengirim EMAIL berisi
-      tombol tautan reset (berlaku 1 jam, sekali pakai)
-    - Dari email, terbuka halaman /reset-password untuk membuat
-      password baru, lalu masuk seperti biasa
- B. "LUPA PASSWORD ADMIN?" + PROSEDUR PEMULIHAN:
-    - Halaman login admin: tautan menuju /admin/pulihkan
-    - Cara A (mandiri): email admin + KODE PEMULIHAN + password
-      baru (kode diatur pengelola di Vercel — langkah berikutnya)
-    - Cara B (darurat): panduan hubungi pengembang program
+ A. ANALISA KUNJUNGAN WEB "ALA VERCEL" (tab baru di admin:
+    "Kunjungan Web"):
+    - 🟢 Sedang Online (pengunjung yang sedang buka web,
+      dihitung 5 menit terakhir)
+    - 👥 Pengunjung Unik  ·  👁️ Total Kunjungan Halaman
+      ·  Rata-rata halaman per pengunjung
+    - 📄 Halaman yang paling sering dibuka (bar list)
+    - 📱 Perangkat (Desktop/Mobile/Tablet) & 🌐 Browser
+    - Grafik tren kunjungan harian
+    - Filter waktu: HARI INI / 7 HARI / 1 BULAN / KUSTOM
+      (pilih rentang tanggal sendiri)
+    - Tombol UNDUH LAPORAN: PDF atau EXCEL sesuai periode
+      yang dipilih
+ B. TOMBOL HAPUS PENGGUNA di tab "Data Peserta":
+    - Setiap baris peserta kini punya tombol "Hapus" (merah)
+    - SEBELUM menghapus, muncul pertanyaan konfirmasi yang
+      menjelaskan bahwa seluruh data akan hilang permanen
+      (XP, misi, badge, TTD, video, dll.) — tidak bisa dibatalkan
  C. Sekalian dalam paket ini (jika belum terpasang):
-    - Analisa statistik lengkap di admin (paket 4)
-    - Gambar landing baru tanpa garis pinggir (paket 3)
+    - Paket 5: lupa password via email + pemulihan admin
+    - Paket 4: analisa statistik program; Paket 3: gambar landing
 
-CATATAN:
-- Tabel database untuk reset password dibuat OTOMATIS saat
-  deploy (tidak perlu menjalankan SQL manual apa pun).
-- Sementara email belum diaktifkan, halaman lupa password akan
-  menampilkan pesan "layanan email belum aktif" — ITU NORMAL.
-  Aktivasi email = 1 langkah terakhir yang saya kirim setelah
-  paket ini terpasang.
+CATATAN PENTING:
+- Pencatatan kunjungan MULAI BERJALAN setelah paket ini dipasang.
+  Data muncul otomatis setiap ada pengunjung membuka website
+  (anonim — tidak menyimpan nama/email; ibarat kamera penghitung
+  di pintu, bukan buku tamu).
+- Tabel database PageView dibuat OTOMATIS saat deploy
+  (tidak perlu SQL manual).
 
 ================================================================
 LANGKAH 1 — Salin file ke folder repo
@@ -32,26 +38,21 @@ LANGKAH 1 — Salin file ke folder repo
 3. Buka folder:  Downloads\Fe-zone\dutafe-zone
    lalu Ctrl+V -> bila ditanya timpa, pilih YES/Replace.
 
-LANGKAH 1.5 — HAPUS FILE LAMA YANG SENSITIF (PENTING!)
-4. Masih di folder yang sama, cari file bernama:
-      PERBAIKI-LOGIN-ADMIN.sql
-   Jika ada -> klik kanan -> Delete (file itu berisi kunci
-   password, tidak boleh ikut ke GitHub).
-
 LANGKAH 2 — Commit & push
-5. Buka GitHub Desktop -> repository "dutafe-zone".
-6. Summary tulis:  pembaruan 5: lupa password via email + pemulihan admin
-7. Klik "Commit to main" -> "Push origin".
-8. Tunggu 1-2 menit sampai Vercel status "Ready".
+4. Buka GitHub Desktop -> repository "dutafe-zone".
+5. Summary tulis:  pembaruan 7: analisa kunjungan web + hapus peserta
+6. Klik "Commit to main" -> "Push origin".
+7. Tunggu 1-2 menit sampai Vercel status "Ready".
 
 LANGKAH 3 — Cek hasil
-9. Buka https://dutafe-zone.vercel.app/lupa-password
-   -> harus muncul halaman "Lupa Password?" dengan kolom email.
-10. Buka https://dutafe-zone.vercel.app/admin/pulihkan
-   -> harus muncul "Lupa Password Admin?" dengan 2 cara pemulihan.
-11. Coba isi email bebas di /lupa-password -> akan muncul pesan
-    "layanan email belum aktif" (normal — tunggu langkah aktivasi).
-
-SETELAH ITU: kirim hasil langkah ini ke saya, dan saya kirimkan
-LANGKAH TERAKHIR: mengaktifkan pengiriman email + kode pemulihan
-(pengaturan di Vercel, sekitar 5 menit).
+8. Masuk admin -> tab "Kunjungan Web":
+   - Kartu Sedang Online, Pengunjung Unik, Total Kunjungan
+   - Coba ganti filter Hari Ini / 7 Hari / 1 Bulan / Kustom
+   - Coba tombol PDF dan Excel -> laporan terunduh
+9. Buka website di HP/HP teman (beberapa halaman), lalu kembali
+   ke tab "Kunjungan Web" -> klik tombol muat ulang (panah putar)
+   -> kunjungan Anda tercatat.
+10. Tab "Data Peserta" -> tombol "Hapus" di kolom Aksi:
+    - Klik -> muncul konfirmasi "Hapus Pengguna Ini?"
+    - Klik "Batal" untuk membatalkan (jangan sampai klik
+      "Ya, Hapus Permanen" untuk peserta yang masih aktif!)

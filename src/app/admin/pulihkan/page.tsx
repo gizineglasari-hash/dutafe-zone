@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, KeyRound, Loader2, ShieldCheck } from "lucide-react";
 import { SiteCredit } from "@/components/fezone/ui-bits";
+import { trackPage } from "@/lib/track";
 
 // ------------------------------------------------------------
 // Halaman "Lupa Password Admin?" — Prosedur Pemulihan
@@ -30,6 +31,7 @@ export default function AdminPulihkanPage() {
 
   useEffect(() => {
     document.title = "Pemulihan Password Admin — FE-ZONE";
+    trackPage("/admin/pulihkan");
   }, []);
 
   async function submit(e: React.FormEvent) {

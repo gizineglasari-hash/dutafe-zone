@@ -20,6 +20,7 @@ import ProfileView from "@/components/fezone/profile";
 import TestView from "@/components/fezone/test-view";
 import { CommunityTab } from "@/components/fezone/community";
 import { CommunitySubmitModal } from "@/components/fezone/peer-educator";
+import { trackPage } from "@/lib/track";
 
 export interface DashData {
   profile: {
@@ -92,6 +93,11 @@ export default function AppShell() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
   }, [refresh]);
+
+  // Pelacak kunjungan per-tab (analisa admin "ala Vercel")
+  useEffect(() => {
+    trackPage(`/app/${tab}`);
+  }, [tab]);
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });

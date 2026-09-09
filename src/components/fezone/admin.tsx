@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
-  BarChart3, CheckCircle2, ClipboardList, Crown, Download, FileSpreadsheet, Flame, GraduationCap, ImageUp, KeyRound, LayoutDashboard, Loader2,
-  LogOut, Pill, School, Search, Trash2, Trophy, UserCheck, Users, Video, XCircle,
+  Activity, BarChart3, CheckCircle2, ClipboardList, Crown, Download, Eye, FileSpreadsheet, Flame, GraduationCap, ImageUp, KeyRound, LayoutDashboard, Loader2,
+  LogOut, Pill, RefreshCw, School, Search, Trash2, Trophy, UserCheck, Users, Video, XCircle,
 } from "lucide-react";
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -206,6 +206,171 @@ async function exportPdf(rows: AdminRow[]): Promise<void> {
   doc.save(`FE-ZONE-Data-Peserta-${new Date().toISOString().slice(0, 10)}.pdf`);
 }
 
+// ============================================================
+// Analisa Kunjungan Web (ala Vercel Analytics)
+// ============================================================
+interface TrafficData {
+  range: { from: string; to: string };
+  totals: { visitors: number; pageviews: number; liveNow: number; avgPages: number };
+  topPages: { path: string; views: number; visitors: number }[];
+  devices: { device: string; visitors: number }[];
+  browsers: { browser: string; visitors: number }[];
+  daily: { date: string; views: number; visitors: number }[];
+}
+
+type TrafficPreset = "today" | "7d" | "30d" | "custom";
+
+const DEVICE_ICON: Record<string, string> = { Desktop: "💻", Mobile: "📱", Tablet: "📲" };
+
+const PAGE_LABEL: Record<string, string> = {
+  "/": "Beranda",
+  "/masuk": "Halaman Masuk/Daftar",
+  "/admin": "Panel Admin",
+  "/lupa-password": "Lupa Password",
+  "/reset-password": "Reset Password",
+  "/admin/pulihkan": "Pemulihan Admin",
+};
+
+const APP_TAB_LABEL: Record<string, string> = {
+  dashboard: "App · Dashboard",
+  edukasi: "App · Edukasi",
+  missions: "App · Mission",
+  ttd: "App · TTD Tracker",
+  leaderboard: "App · Leaderboard",
+  community: "App · Community",
+  badges: "App · Badge",
+  duta: "App · Duta Challenge",
+  profile: "App · Profil",
+};
+
+function pageLabel(path: string): string {
+  if (PAGE_LABEL[path]) return PAGE_LABEL[path];
+  if (path.startsWith("/app/")) return APP_TAB_LABEL[path.slice(5)] ?? `App · ${path.slice(5)}`;
+  return path;
+}
+
+// Tanggal dalam zona WIB (program berbasis Bandung)
+function wibTodayStr(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
+}
+function wibDaysAgoStr(n: number): string {
+  return new Date(Date.now() - n * 86400000).toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
+}
+function fmtDateShort(s: string): string {
+  try {
+    return new Date(`${s}T00:00:00+07:00`).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+  } catch {
+    return s;
+  }
+}
+function fmtDateTick(s: string): string {
+  try {
+    return new Date(`${s}T00:00:00+07:00`).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+  } catch {
+    return s;
+  }
+}
+
+async function exportTrafficExcel(t: TrafficData): Promise<void> {
+  const XLSX = await import("xlsx");
+  const wb = XLSX.utils.book_new();
+  const periode = `${fmtDateShort(t.range.from)} s.d. ${fmtDateShort(t.range.to)}`;
+  const ringkasan = XLSX.utils.aoa_to_sheet([
+    ["LAPORAN STATISTIK KUNJUNGAN WEB FE-ZONE"],
+    ["Periode", periode],
+    ["Dicetak", new Date().toLocaleString("id-ID")],
+    [],
+    ["Indikator", "Nilai"],
+    ["Sedang Online (5 menit terakhir)", t.totals.liveNow],
+    ["Pengunjung Unik", t.totals.visitors],
+    ["Total Kunjungan Halaman", t.totals.pageviews],
+    ["Rata-rata Halaman per Pengunjung", t.totals.avgPages],
+  ]);
+  ringkasan["!cols"] = [{ wch: 38 }, { wch: 30 }];
+  XLSX.utils.book_append_sheet(wb, ringkasan, "Ringkasan");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+    ["Peringkat", "Halaman", "Kunjungan", "Pengunjung Unik"],
+    ...t.topPages.map((p, i) => [i + 1, pageLabel(p.path), p.views, p.visitors]),
+  ]), "Halaman Terpopuler");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+    ["Perangkat", "Pengunjung Unik"],
+    ...t.devices.map((d) => [d.device, d.visitors]),
+  ]), "Perangkat");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+    ["Browser", "Pengunjung Unik"],
+    ...t.browsers.map((b) => [b.browser, b.visitors]),
+  ]), "Browser");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
+    ["Tanggal", "Kunjungan", "Pengunjung Unik"],
+    ...t.daily.map((d) => [fmtDateShort(d.date), d.views, d.visitors]),
+  ]), "Tren Harian");
+  XLSX.writeFile(wb, `FE-ZONE-Kunjungan-${t.range.from}_${t.range.to}.xlsx`);
+}
+
+async function exportTrafficPdf(t: TrafficData): Promise<void> {
+  const { default: JsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
+  const doc = new JsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+  const lastY = () => (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 0;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  doc.text("FE-ZONE — Laporan Statistik Kunjungan Web", 40, 40);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(110);
+  doc.text(
+    `Periode: ${fmtDateShort(t.range.from)} s.d. ${fmtDateShort(t.range.to)}  ·  Dicetak: ${new Date().toLocaleString("id-ID")}  ·  Dinkes Kota Bandung`,
+    40, 56
+  );
+  doc.setTextColor(0);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Ringkasan", 40, 86);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  const sum: [string, string][] = [
+    ["Sedang online (5 menit terakhir)", String(t.totals.liveNow)],
+    ["Pengunjung unik", String(t.totals.visitors)],
+    ["Total kunjungan halaman", String(t.totals.pageviews)],
+    ["Rata-rata halaman per pengunjung", String(t.totals.avgPages)],
+  ];
+  sum.forEach(([k, v], i) => doc.text(`${k} : ${v}`, 48, 104 + i * 14));
+
+  autoTable(doc, {
+    head: [["No", "Halaman", "Kunjungan", "Pengunjung Unik"]],
+    body: t.topPages.map((p, i) => [i + 1, pageLabel(p.path), p.views, p.visitors]),
+    startY: 170,
+    styles: { fontSize: 8, cellPadding: 3, overflow: "linebreak" },
+    headStyles: { fillColor: [225, 29, 72], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [253, 242, 248] },
+    margin: { left: 40, right: 40 },
+  });
+  autoTable(doc, {
+    head: [["Jenis", "Kategori", "Pengunjung Unik"]],
+    body: [
+      ...t.devices.map((d) => ["Perangkat", d.device, d.visitors] as (string | number)[]),
+      ...t.browsers.map((b) => ["Browser", b.browser, b.visitors] as (string | number)[]),
+    ],
+    startY: lastY() + 24,
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [13, 148, 136], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [240, 253, 250] },
+    margin: { left: 40, right: 40 },
+  });
+  autoTable(doc, {
+    head: [["Tanggal", "Kunjungan", "Pengunjung Unik"]],
+    body: t.daily.map((d) => [fmtDateShort(d.date), d.views, d.visitors]),
+    startY: lastY() + 24,
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [61, 21, 38], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [250, 240, 232] },
+    margin: { left: 40, right: 40 },
+  });
+  doc.save(`FE-ZONE-Kunjungan-${t.range.from}_${t.range.to}.pdf`);
+}
+
 interface ModContent {
   id: string; contentType: string; title: string; description: string | null;
   platform: string; externalUrl: string | null; videoUrl: string | null; thumbnailUrl: string | null;
@@ -216,7 +381,7 @@ interface ModContent {
 
 export function AdminDashboard() {
   const { reset } = useFez();
-  const [tab, setTab] = useState<"overview" | "participants" | "duta" | "videos" | "moderation" | "settings">("overview");
+  const [tab, setTab] = useState<"overview" | "traffic" | "participants" | "duta" | "videos" | "moderation" | "settings">("overview");
   const [overview, setOverview] = useState<Overview | null>(null);
   const [rows, setRows] = useState<AdminRow[]>([]);
   const [schools, setSchools] = useState<string[]>([]);
@@ -237,6 +402,17 @@ export function AdminDashboard() {
   const [resetTarget, setResetTarget] = useState<AdminRow | null>(null);
   const [resetPass, setResetPass] = useState("");
   const [resetting, setResetting] = useState(false);
+  // Analisa kunjungan web
+  const [traffic, setTraffic] = useState<TrafficData | null>(null);
+  const [trafficPreset, setTrafficPreset] = useState<TrafficPreset>("7d");
+  const [trafficRange, setTrafficRange] = useState({ from: wibDaysAgoStr(6), to: wibTodayStr() });
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [trafficLoading, setTrafficLoading] = useState(false);
+  const [trafficExporting, setTrafficExporting] = useState<"pdf" | "excel" | null>(null);
+  // Hapus peserta
+  const [deleteTarget, setDeleteTarget] = useState<AdminRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   async function doResetPassword() {
     if (!resetTarget) return;
@@ -260,6 +436,81 @@ export function AdminDashboard() {
     toast({ title: "Password berhasil direset", description: `Password baru untuk ${resetTarget.name}: ${np} — catat dan sampaikan ke peserta.` });
     setResetTarget(null);
     setResetPass("");
+  }
+
+  const loadTraffic = useCallback(async () => {
+    setTrafficLoading(true);
+    try {
+      const res = await fetch(`/api/admin/analytics?from=${trafficRange.from}&to=${trafficRange.to}`);
+      if (res.ok) setTraffic(await res.json());
+    } finally {
+      setTrafficLoading(false);
+    }
+  }, [trafficRange]);
+
+  useEffect(() => {
+    if (tab === "traffic") loadTraffic();
+  }, [tab, loadTraffic]);
+
+  function applyTrafficPreset(p: TrafficPreset) {
+    setTrafficPreset(p);
+    const today = wibTodayStr();
+    if (p === "today") setTrafficRange({ from: today, to: today });
+    else if (p === "7d") setTrafficRange({ from: wibDaysAgoStr(6), to: today });
+    else if (p === "30d") setTrafficRange({ from: wibDaysAgoStr(29), to: today });
+    else {
+      // Kustom: isi input tanggal dengan periode yang sedang aktif
+      setCustomFrom(trafficRange.from);
+      setCustomTo(trafficRange.to);
+    }
+  }
+
+  function applyCustomRange() {
+    if (!customFrom || !customTo) {
+      toast({ title: "Isi kedua tanggal dulu ya", variant: "destructive" });
+      return;
+    }
+    let a = customFrom;
+    let b = customTo;
+    if (a > b) [a, b] = [b, a];
+    setTrafficRange({ from: a, to: b });
+  }
+
+  async function doDeleteParticipant() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const res = await fetch("/api/admin/participants", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ participantId: deleteTarget.id }),
+    });
+    const d = await res.json();
+    setDeleting(false);
+    if (!res.ok) {
+      toast({ title: "Gagal menghapus", description: d.error, variant: "destructive" });
+      return;
+    }
+    toast({ title: `🗑️ ${d.name} dihapus`, description: "Seluruh data peserta telah dihapus permanen." });
+    setDeleteTarget(null);
+    loadParticipants();
+    loadOverview();
+  }
+
+  async function handleTrafficExport(kind: "pdf" | "excel") {
+    if (!traffic) {
+      toast({ title: "Data kunjungan belum termuat", variant: "destructive" });
+      return;
+    }
+    setTrafficExporting(kind);
+    try {
+      if (kind === "pdf") await exportTrafficPdf(traffic);
+      else await exportTrafficExcel(traffic);
+      toast({ title: kind === "pdf" ? "PDF laporan berhasil diunduh 📄" : "Excel laporan berhasil diunduh 📊" });
+    } catch {
+      toast({ title: "Gagal mengekspor laporan, coba lagi", variant: "destructive" });
+    } finally {
+      setTrafficExporting(null);
+    }
   }
 
   async function handleExport(kind: "pdf" | "excel") {
@@ -474,6 +725,7 @@ export function AdminDashboard() {
           <div className="flex items-center gap-1 overflow-x-auto">
             {([
               { k: "overview", label: "Ringkasan", icon: LayoutDashboard },
+              { k: "traffic", label: "Kunjungan Web", icon: Activity },
               { k: "participants", label: "Data Peserta", icon: Users },
               { k: "duta", label: "Kandidat Duta", icon: Crown },
               { k: "moderation", label: "Content Moderation", icon: ClipboardList },
@@ -701,6 +953,193 @@ export function AdminDashboard() {
           </div>
         )}
 
+        {/* ============ KUNJUNGAN WEB (ALA VERCEL ANALYTICS) ============ */}
+        {tab === "traffic" && (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h1 className="font-display text-2xl font-extrabold text-[#3d1526]">Kunjungan Web</h1>
+                <p className="text-xs font-semibold text-[#3d1526]/50">
+                  Analisa pengunjung situs — ibarat kamera penghitung di pintu masuk: anonim, hanya menghitung
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  disabled={trafficExporting !== null || !traffic}
+                  onClick={() => handleTrafficExport("pdf")}
+                  className="h-9 rounded-xl border-2 border-[#3d1526]/20 px-3 text-xs font-extrabold"
+                >
+                  {trafficExporting === "pdf" ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
+                  PDF
+                </Button>
+                <Button
+                  disabled={trafficExporting !== null || !traffic}
+                  onClick={() => handleTrafficExport("excel")}
+                  className="h-9 rounded-xl border-2 border-[#3d1526] bg-emerald-600 px-3 text-xs font-extrabold text-white hover:bg-emerald-700"
+                >
+                  {trafficExporting === "excel" ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <FileSpreadsheet className="mr-1.5 h-3.5 w-3.5" />}
+                  Excel
+                </Button>
+              </div>
+            </div>
+
+            {/* Filter waktu */}
+            <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-[#3d1526]/10 bg-white p-3">
+              {([
+                { k: "today", label: "Hari Ini" },
+                { k: "7d", label: "7 Hari" },
+                { k: "30d", label: "1 Bulan" },
+                { k: "custom", label: "Kustom" },
+              ] as const).map((p) => (
+                <button
+                  key={p.k}
+                  onClick={() => applyTrafficPreset(p.k)}
+                  className={`rounded-xl px-3 py-2 text-xs font-extrabold transition ${
+                    trafficPreset === p.k ? "bg-[#3d1526] text-white" : "bg-[#faf5f0] text-[#3d1526]/60 hover:bg-rose-50 hover:text-[#3d1526]"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+              {trafficPreset === "custom" && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Input
+                    type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)}
+                    className="h-9 w-[140px] rounded-xl border-2 border-[#3d1526]/15 text-xs font-bold"
+                  />
+                  <span className="text-xs font-bold text-[#3d1526]/40">s.d.</span>
+                  <Input
+                    type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)}
+                    className="h-9 w-[140px] rounded-xl border-2 border-[#3d1526]/15 text-xs font-bold"
+                  />
+                  <Button onClick={applyCustomRange} className="h-9 rounded-xl bg-amber-400 px-3 text-xs font-extrabold text-[#3d1526] hover:bg-amber-500">
+                    Terapkan
+                  </Button>
+                </div>
+              )}
+              <span className="ml-auto text-[11px] font-extrabold text-[#3d1526]/40">
+                📅 {fmtDateShort(trafficRange.from)} – {fmtDateShort(trafficRange.to)}
+              </span>
+              <button
+                onClick={loadTraffic}
+                title="Muat ulang data"
+                className="rounded-xl bg-[#faf5f0] p-2 text-[#3d1526]/50 transition hover:bg-rose-50 hover:text-[#3d1526]"
+              >
+                {trafficLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              </button>
+            </div>
+
+            {/* Kartu statistik */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-[#3d1526]/10 bg-white p-4">
+                <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100">
+                  <span className="relative flex h-3 w-3">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
+                  </span>
+                </div>
+                <p className="font-display text-2xl font-extrabold text-[#3d1526]">{(traffic?.totals.liveNow ?? 0).toLocaleString("id-ID")}</p>
+                <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#3d1526]/45">Sedang Online (5 mnt)</p>
+              </motion.div>
+              <StatCard icon={<Users className="h-5 w-5" />} label="Pengunjung Unik" value={traffic?.totals.visitors ?? 0} color="bg-rose-100 text-rose-600" />
+              <StatCard icon={<Eye className="h-5 w-5" />} label="Total Kunjungan" value={traffic?.totals.pageviews ?? 0} color="bg-amber-100 text-amber-600" />
+              <StatCard icon={<BarChart3 className="h-5 w-5" />} label="Halaman / Pengunjung" value={traffic?.totals.avgPages ?? 0} color="bg-violet-100 text-violet-600" />
+            </div>
+
+            {/* Tren harian */}
+            <ChartCard title="Tren Kunjungan Harian">
+              <ResponsiveContainer width="100%" height={240}>
+                <AreaChart data={traffic?.daily ?? []} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gTrafficViews" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#e11d48" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#e11d48" stopOpacity={0.02} />
+                    </linearGradient>
+                    <linearGradient id="gTrafficVisitors" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#0d9488" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#0d9488" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,21,38,0.08)" />
+                  <XAxis dataKey="date" tickFormatter={fmtDateTick} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} minTickGap={18} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: 12, border: "2px solid rgba(61,21,38,0.1)", fontSize: 12 }}
+                    labelFormatter={(label) => fmtDateShort(String(label))}
+                    formatter={(value, name) => [Number(value).toLocaleString("id-ID"), String(name)]}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Area type="monotone" dataKey="views" name="Kunjungan halaman" stroke="#e11d48" strokeWidth={2} fill="url(#gTrafficViews)" />
+                  <Area type="monotone" dataKey="visitors" name="Pengunjung unik" stroke="#0d9488" strokeWidth={2} fill="url(#gTrafficVisitors)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            {/* Halaman terpopuler + perangkat + browser */}
+            <div className="grid gap-4 lg:grid-cols-2">
+              <ChartCard title="📄 Halaman yang Paling Sering Dibuka">
+                {traffic && traffic.topPages.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {traffic.topPages.map((p, i) => (
+                      <TrafficRow
+                        key={p.path}
+                        rank={i + 1}
+                        label={pageLabel(p.path)}
+                        sub={`${p.visitors} pengunjung`}
+                        value={p.views}
+                        max={traffic.topPages[0]?.views ?? 1}
+                      />
+                    ))}
+                    <p className="pt-1 text-[10px] font-semibold text-[#3d1526]/40">
+                      Angka kanan = jumlah kunjungan halaman pada periode terpilih.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="py-8 text-center text-xs font-bold text-[#3d1526]/40">Belum ada data kunjungan untuk periode ini</p>
+                )}
+              </ChartCard>
+
+              <div className="space-y-4">
+                <ChartCard title="📱 Perangkat Pengunjung">
+                  {traffic && traffic.devices.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {traffic.devices.map((d) => (
+                        <TrafficRow
+                          key={d.device}
+                          label={`${DEVICE_ICON[d.device] ?? "🖥️"} ${d.device}`}
+                          sub={`${traffic.totals.visitors > 0 ? Math.round((d.visitors / traffic.totals.visitors) * 100) : 0}% dari pengunjung`}
+                          value={d.visitors}
+                          max={traffic.devices[0]?.visitors ?? 1}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="py-6 text-center text-xs font-bold text-[#3d1526]/40">Belum ada data</p>
+                  )}
+                </ChartCard>
+                <ChartCard title="🌐 Browser Pengunjung">
+                  {traffic && traffic.browsers.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {traffic.browsers.map((b) => (
+                        <TrafficRow
+                          key={b.browser}
+                          label={b.browser}
+                          sub={`${traffic.totals.visitors > 0 ? Math.round((b.visitors / traffic.totals.visitors) * 100) : 0}% dari pengunjung`}
+                          value={b.visitors}
+                          max={traffic.browsers[0]?.visitors ?? 1}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="py-6 text-center text-xs font-bold text-[#3d1526]/40">Belum ada data</p>
+                  )}
+                </ChartCard>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ============ PARTICIPANTS ============ */}
         {tab === "participants" && (
           <div className="space-y-4">
@@ -838,13 +1277,22 @@ export function AdminDashboard() {
                         )}
                       </td>
                       <td className="px-3 py-2.5">
-                        <button
-                          onClick={() => { setResetTarget(r); setResetPass(""); }}
-                          title="Reset password peserta (untuk yang lupa password)"
-                          className="inline-flex items-center gap-1 rounded-lg border-2 border-[#3d1526]/15 bg-white px-2 py-1 text-[10px] font-extrabold text-[#3d1526]/70 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700"
-                        >
-                          <KeyRound className="h-3 w-3" /> Reset
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => { setResetTarget(r); setResetPass(""); }}
+                            title="Reset password peserta (untuk yang lupa password)"
+                            className="inline-flex items-center gap-1 rounded-lg border-2 border-[#3d1526]/15 bg-white px-2 py-1 text-[10px] font-extrabold text-[#3d1526]/70 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700"
+                          >
+                            <KeyRound className="h-3 w-3" /> Reset
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget(r)}
+                            title="Hapus peserta beserta seluruh datanya (permanen)"
+                            className="inline-flex items-center gap-1 rounded-lg border-2 border-[#3d1526]/15 bg-white px-2 py-1 text-[10px] font-extrabold text-[#3d1526]/70 hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                          >
+                            <Trash2 className="h-3 w-3" /> Hapus
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1353,6 +1801,39 @@ export function AdminDashboard() {
         </div>
       )}
 
+      {/* Modal konfirmasi hapus peserta */}
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-[#3d1526]/50 p-4 backdrop-blur-sm"
+          onClick={() => { if (!deleting) setDeleteTarget(null); }}
+        >
+          <div className="w-full max-w-md rounded-3xl bg-white p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center gap-2">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 text-red-600"><Trash2 className="h-5 w-5" /></span>
+              <div>
+                <p className="font-display text-lg font-extrabold text-[#3d1526]">Hapus Pengguna Ini?</p>
+                <p className="text-xs font-bold text-[#3d1526]/50">{deleteTarget.name} · {deleteTarget.username}</p>
+              </div>
+            </div>
+            <p className="mb-2 rounded-xl bg-red-50 p-2.5 text-[11px] font-semibold leading-relaxed text-red-700">
+              ⚠️ Seluruh data peserta akan dihapus PERMANEN: akun login, XP &amp; level, progres misi, badge,
+              check-in TTD, nilai pre/post-test, video, konten komunitas, dan like. Tindakan ini
+              <b> tidak bisa dibatalkan</b>.
+            </p>
+            <p className="mb-1 text-xs font-semibold leading-relaxed text-[#3d1526]/60">
+              Ibarat menghapus halaman buku tulis dengan tinta permanen — tidak bisa ditulis ulang.
+            </p>
+            <p className="mb-3 text-xs font-extrabold text-[#3d1526]">Yakin ingin menghapus {deleteTarget.name}?</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" disabled={deleting} onClick={() => setDeleteTarget(null)} className="h-10 rounded-xl px-4 text-xs font-extrabold">Batal</Button>
+              <Button disabled={deleting} onClick={doDeleteParticipant} className="h-10 rounded-xl bg-red-600 px-4 text-xs font-extrabold text-white hover:bg-red-700">
+                {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Ya, Hapus Permanen"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <footer className="border-t border-[#3d1526]/10 py-4">
         <SiteCredit />
       </footer>
@@ -1378,6 +1859,23 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
     <div className="rounded-2xl border border-[#3d1526]/10 bg-white p-4">
       <p className="mb-2 font-display text-sm font-extrabold text-[#3d1526]">{title}</p>
       {children}
+    </div>
+  );
+}
+
+// Baris bar-list gaya Vercel Analytics: label + bar latar + angka
+function TrafficRow({ rank, label, sub, value, max }: { rank?: number; label: string; sub: string; value: number; max: number }) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-[#3d1526]/5 bg-[#faf5f0]/60 px-3 py-2">
+      <div className="absolute inset-y-0 left-0 bg-rose-100/80 transition-all" style={{ width: `${Math.max(pct, 4)}%` }} />
+      <div className="relative flex items-center justify-between gap-2">
+        <p className="truncate text-xs font-extrabold text-[#3d1526]">
+          {rank != null && <span className="mr-1.5 inline-flex h-4.5 w-4.5 items-center justify-center rounded-md bg-[#3d1526]/80 px-1 text-[9px] font-extrabold text-white">{rank}</span>}
+          {label} <span className="font-semibold text-[#3d1526]/40">· {sub}</span>
+        </p>
+        <p className="shrink-0 text-xs font-extrabold text-rose-600">{value.toLocaleString("id-ID")}</p>
+      </div>
     </div>
   );
 }

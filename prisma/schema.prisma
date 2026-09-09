@@ -222,3 +222,22 @@ model AppSetting {
   key   String @id
   value String
 }
+
+// ============================================================
+// Analisa kunjungan web (ala Vercel Analytics)
+// Satu baris = satu kunjungan halaman (pageview) anonim.
+// visitorId acak tersimpan di browser pengunjung (localStorage).
+// ============================================================
+model PageView {
+  id        String   @id @default(cuid())
+  visitorId String
+  path      String // contoh: "/", "/masuk", "/app/missions", "/lupa-password"
+  referrer  String?
+  device    String   @default("Desktop") // Desktop | Mobile | Tablet
+  browser   String   @default("Lainnya")
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([path])
+  @@index([visitorId, createdAt])
+}

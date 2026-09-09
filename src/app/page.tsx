@@ -7,6 +7,7 @@ import AuthPage from "@/components/fezone/auth-page";
 import AppShell from "@/components/fezone/app-shell";
 import { AdminDashboard, AdminLogin } from "@/components/fezone/admin";
 import { CelebrationModal } from "@/components/fezone/ui-bits";
+import { trackPage } from "@/lib/track";
 
 export default function Home() {
   const { view, setView, user } = useFez();
@@ -54,6 +55,14 @@ export default function Home() {
     // scroll ke atas saat pindah view
     window.scrollTo({ top: 0 });
   }, [view]);
+
+  // Pelacak kunjungan (analisa admin). View "app" dilacak per-tab oleh AppShell.
+  useEffect(() => {
+    if (!ready) return;
+    if (view === "landing") trackPage("/");
+    else if (view === "auth") trackPage("/masuk");
+    else if (view === "admin") trackPage("/admin");
+  }, [view, ready]);
 
   if (!ready) {
     return (

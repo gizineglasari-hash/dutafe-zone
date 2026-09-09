@@ -54,6 +54,32 @@ async function main() {
     END $$;
   `).catch((e) => console.warn("[seed] relasi PasswordResetToken:", e?.message || e));
 
+  // ------------------------------------------------------------
+  // PEMULIHAN SKEMA OTOMATIS: tabel PageView untuk analisa
+  // kunjungan web admin (ala Vercel Analytics). Aman diulang.
+  // ------------------------------------------------------------
+  await db.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "PageView" (
+      "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+      "visitorId" TEXT NOT NULL,
+      "path" TEXT NOT NULL,
+      "referrer" TEXT,
+      "device" TEXT NOT NULL DEFAULT 'Desktop',
+      "browser" TEXT NOT NULL DEFAULT 'Lainnya',
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `).catch((e) => console.warn("[seed] buat tabel PageView:", e?.message || e));
+
+  await db.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "PageView_createdAt_idx" ON "PageView"("createdAt");`
+  ).catch((e) => console.warn("[seed] index PageView(createdAt):", e?.message || e));
+  await db.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "PageView_path_idx" ON "PageView"("path");`
+  ).catch((e) => console.warn("[seed] index PageView(path):", e?.message || e));
+  await db.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "PageView_visitorId_createdAt_idx" ON "PageView"("visitorId", "createdAt");`
+  ).catch((e) => console.warn("[seed] index PageView(visitorId):", e?.message || e));
+
   // WAJIB lowercase: route login mencari username dalam bentuk lowercase,
   // jadi akun admin juga harus tersimpan lowercase agar login tidak gagal.
   const username = (process.env.ADMIN_USERNAME || "admin@fezone.id").trim().toLowerCase();

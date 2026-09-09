@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Loader2, ShieldCheck, XCircle } from "lucide-react";
 import { SiteCredit } from "@/components/fezone/ui-bits";
+import { trackPage } from "@/lib/track";
 
 // ------------------------------------------------------------
 // Halaman "Reset Password" (dibuka dari tautan di email)
@@ -27,6 +28,7 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     document.title = "Reset Password — FE-ZONE";
+    trackPage("/reset-password");
     const t = new URLSearchParams(window.location.search).get("token");
     setToken(t);
     setChecked(true);

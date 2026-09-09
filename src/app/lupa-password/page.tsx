@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Eye, Loader2, MailCheck, Sparkles } from "lucide-react";
 import { SiteCredit } from "@/components/fezone/ui-bits";
+import { trackPage } from "@/lib/track";
 
 // ------------------------------------------------------------
 // Halaman "Lupa Password" (peserta)
@@ -27,6 +28,7 @@ export default function LupaPasswordPage() {
 
   useEffect(() => {
     document.title = "Lupa Password — FE-ZONE";
+    trackPage("/lupa-password");
   }, []);
 
   async function submit(e: React.FormEvent) {
