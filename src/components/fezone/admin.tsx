@@ -70,8 +70,8 @@ export function AdminLogin() {
             <Button disabled={busy} className="h-13 w-full rounded-2xl bg-[#3d1526] py-3 font-extrabold text-white hover:bg-[#5c2040]">
               {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : "Masuk Panel Admin"}
             </Button>
-            <p className="rounded-xl bg-amber-50 p-2.5 text-center text-[11px] font-semibold text-amber-700">
-              🔑 Demo: admin@fezone.id / admin123
+            <p className="text-center text-[11px] font-semibold text-muted-foreground">
+              Halaman khusus pengelola program FE-ZONE
             </p>
           </form>
         </div>

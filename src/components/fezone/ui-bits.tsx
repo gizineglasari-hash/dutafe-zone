@@ -257,8 +257,10 @@ export function BadgeVisual({ def, earned }: { def: BadgeDef; earned: boolean })
 }
 
 // ------------------------------------------------------------
-// Identitas Dinas Kesehatan Kota Bandung — hanya logo resmi hasil
-// unggahan admin (teks identitas sudah tertulis di dalam logo itu sendiri)
+// Identitas Dinas Kesehatan Kota Bandung — logo resmi bawaan sudah
+// tertanam di situs (public/images/logo-dinkes-bandung.png); bila
+// admin mengunggah logo lain lewat panel admin, logo unggahan yang
+// dipakai. Di bawah logo selalu tertulis nama dinas.
 // + credit pembuat — dipakai di footer semua halaman
 // ------------------------------------------------------------
 export function DinkesFooter({ compact = false }: { compact?: boolean }) {
@@ -278,17 +280,14 @@ export function DinkesFooter({ compact = false }: { compact?: boolean }) {
 
   return (
     <div className="flex flex-col items-center">
-      {logo ? (
-        <img
-          src={logo}
-          alt="Logo Dinas Kesehatan Kota Bandung"
-          className={compact ? "h-12 w-auto rounded-lg object-contain" : "h-20 w-auto rounded-xl border-2 border-fez-ink/15 bg-white object-contain p-1.5"}
-        />
-      ) : (
-        <span className={`flex items-center justify-center rounded-lg border-2 border-dashed border-fez-ink/20 bg-white/60 ${compact ? "h-9 w-9 text-sm" : "h-14 w-14 text-2xl"}`} aria-hidden>
-          🏥
-        </span>
-      )}
+      <img
+        src={logo ?? "/images/logo-dinkes-bandung.png"}
+        alt="Logo Dinas Kesehatan Kota Bandung"
+        className={compact ? "h-12 w-auto object-contain" : "h-20 w-auto object-contain"}
+      />
+      <p className={`mt-1.5 font-display font-extrabold text-fez-ink ${compact ? "text-[10px]" : "text-sm"}`}>
+        Dinas Kesehatan Kota Bandung
+      </p>
     </div>
   );
 }
@@ -296,7 +295,7 @@ export function DinkesFooter({ compact = false }: { compact?: boolean }) {
 export function SiteCredit() {
   return (
     <p className="select-none text-center text-[10px] font-semibold tracking-wide text-fez-ink/35">
-      created by: rahmadianiputri
+      created by: Rahmadiani Putri Poltekkes Kemenkes Bandung
     </p>
   );
 }

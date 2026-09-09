@@ -27,6 +27,18 @@ async function main() {
   const username = (process.env.ADMIN_USERNAME || "admin@fezone.id").trim().toLowerCase();
   const password = process.env.ADMIN_INITIAL_PASSWORD || "admin123";
 
+  // PEMULIHAN OTOMATIS: akun admin lama mungkin tersimpan dengan huruf
+  // besar/kecil campuran (mis. "Admin@Fezone.id" dari env versi lama).
+  // Tanpa langkah ini akun itu tidak pernah ketemu oleh route login dan
+  // login admin selalu gagal. Normalisasi menjadi huruf kecil.
+  const caseMatch = await db.user.findFirst({
+    where: { username: { equals: username, mode: "insensitive" } },
+  });
+  if (caseMatch && caseMatch.role === "ADMIN" && caseMatch.username !== username) {
+    await db.user.update({ where: { id: caseMatch.id }, data: { username } });
+    console.log(`[seed] username admin dinormalkan: "${caseMatch.username}" -> "${username}"`);
+  }
+
   await db.user.upsert({
     where: { username },
     create: { username, passwordHash: hashPassword(password), role: "ADMIN" },
