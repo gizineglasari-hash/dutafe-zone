@@ -7,6 +7,8 @@ import { QUIZ_BANK_KEYS, parseBankData, sanitizeBankData, type QuizBankData } fr
 // ------------------------------------------------------------
 // API ADMIN: Editor Soal / Bank Kuis (PAKET C)
 // GET    → semua bank (bawaan + editan menyatu) + daftar yang sudah diedit
+//          Bentuk mentah sesuai yang diharapkan editor admin:
+//          list → array soal · level → {SMP,SMA} · myths → array pernyataan
 // PUT    → simpan hasil editan satu bank ke database
 // DELETE → hapus editan satu bank (kembali ke soal bawaan)
 //
@@ -25,20 +27,27 @@ const DEFAULTS: Record<string, QuizBankData> = {
   MITOS: { v: 1, kind: "myths", myths: MYTHS },
 };
 
+// Buka bungkus data bank → bentuk mentah (array soal / {SMP,SMA} / array mitos)
+function unwrap(d: QuizBankData): unknown {
+  if (d.kind === "list") return d.questions;
+  if (d.kind === "level") return d.levels;
+  return d.myths;
+}
+
 export async function GET() {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const banks: Record<string, QuizBankData> = {};
+  const banks: Record<string, unknown> = {};
   const editedKeys: string[] = [];
-  for (const k of QUIZ_BANK_KEYS) banks[k] = DEFAULTS[k];
+  for (const k of QUIZ_BANK_KEYS) banks[k] = unwrap(DEFAULTS[k]);
 
   try {
     const rows = await db.quizContent.findMany();
     for (const r of rows) {
       const parsed = parseBankData(r.dataJson);
       if (parsed) {
-        banks[r.key] = parsed;
+        banks[r.key] = unwrap(parsed);
         editedKeys.push(r.key);
       }
     }

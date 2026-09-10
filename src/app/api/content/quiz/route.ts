@@ -18,7 +18,12 @@ export async function GET() {
     const banks: Record<string, unknown> = {};
     for (const r of rows) {
       const parsed = parseBankData(r.dataJson);
-      if (parsed) banks[r.key] = parsed;
+      if (!parsed) continue;
+      // kirim bentuk mentah sesuai tipe QuizBanks di sisi aplikasi peserta:
+      // list/myths → array, level → {SMP, SMA}
+      if (parsed.kind === "list") banks[r.key] = parsed.questions;
+      else if (parsed.kind === "level") banks[r.key] = parsed.levels;
+      else banks[r.key] = parsed.myths;
     }
     return NextResponse.json({ banks: banks as QuizBanks });
   } catch {

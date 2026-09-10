@@ -61,6 +61,12 @@ export default function AdminQuizEditor() {
     }
   }, []);
 
+  // Muat data saat editor pertama kali dibuka
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load();
+  }, [load]);
+
   // Muat ulang draft saat bank/level yang dipilih berubah
   useEffect(() => {
     if (!banks) return;

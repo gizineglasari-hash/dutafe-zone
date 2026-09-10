@@ -1,46 +1,54 @@
-PEMBARUAN 13 — PERBAIKAN EDITOR SOAL (FE-ZONE)
-=====================================================
+PEMBARUAN 14 — PERBAIKAN "MEMUAT SOAL..." TERUS-MENERUS (FE-ZONE)
+=====================================================================
 
 APA MASALAHNYA?
 ---------------
-Setelah admin menyimpan editan soal di menu "Editor Soal", saat
-editor dibuka lagi yang tampil justru SOAL LAMA (bawaan), dan tanda
-"✓ sudah diedit" tidak muncul — padahal editan sebenarnya SUDAH
-TERSIMPAN dan SUDAH DIPAKAI PESERTA.
+Di halaman admin, menu "Editor Soal" hanya menampilkan tulisan
+"Memuat soal..." terus-menerus, soal tidak pernah muncul.
 
-Penyebabnya: ada 1 baris kode yang lupa dipanggil di file penghubung.
-Ibaratnya: petugas gudang lupa membawa kunci lemari arsip — setiap
-kali editor bertanya "tunjukkan soal terbaru", petugas tidak bisa
-membuka lemari, lalu diam-diam menunjukkan daftar lama. Isi lemari
-(soal editan kamu) aman, tidak hilang.
+Penyebabnya ada 2 hal kecil yang saling terkait:
+1. Editor lupa "diperintahkan" untuk mengambil soal saat pertama
+   kali dibuka — ibarat mesin yang sudah siap tapi tombol ON-nya
+   tidak pernah ditekan, jadi berputar kosong selamanya.
+2. Bentuk data yang dikirim server tidak sama dengan bentuk yang
+   diminta editor — ibarat kiriman paket dikemas bungkus ganda,
+   editor menyangka paketnya hilang.
 
-YANG PERLU DILAKUKAN (hanya 1 file yang berubah):
+Sekaligus kami rapikan bentuk data untuk sisi peserta, supaya
+setelah admin menyimpan editan, soal versi baru langsung tampil
+benar di aplikasi peserta juga.
+
+YANG PERLU DILAKUKAN (3 file berubah):
 ------------------------------------------------
 1. Buka folder project di komputer kamu:
    Downloads\Fe-zone\dutafe-zone
 
-2. Salin file di dalam paket ini ke folder project, TIMPA file lama
-   (ikuti struktur foldernya yang sama):
-   src\app\api\admin\quiz\route.ts
+2. Salin 3 file di dalam paket ini ke folder project, TIMPA file
+   lama (ikutkan struktur foldernya yang sama):
+   a) src\app\api\admin\quiz\route.ts
+   b) src\app\api\content\quiz\route.ts
+   c) src\components\fezone\admin-quiz-editor.tsx
 
 3. Buka GitHub Desktop:
-   - Pastikan 1 file berubah (route.ts)
-   - Commit message: pembaruan 13: perbaikan editor soal
+   - Pastikan 3 file berubah
+   - Commit message: pembaruan 14: perbaikan editor soal termuat otomatis
    - Klik "Commit to main" lalu "Push origin"
    - Tunggu 2-3 menit, Vercel otomatis memasang perbaikan.
 
 CARA MENGECEK SETELAH TERPASANG:
 --------------------------------
 1. Buka website -> login admin -> menu "Editor Soal"
-2. Ubah salah satu soal -> klik "Simpan Perubahan"
-3. Pindah menu dulu (misal ke Beranda), lalu buka lagi "Editor Soal"
-4. Sekarang yang tampil adalah soal versi BARU (bukan soal lama),
-   dan bank yang sudah diedit ada tandanya ✓
+2. Sekarang soal LANGSUNG tampil (tidak lagi "Memuat soal..."
+   terus-menerus) — soal Pre-Test muncul otomatis.
+3. Coba ubah satu soal -> "Simpan Perubahan" -> pindah menu
+   (misal Ringkasan) -> buka lagi "Editor Soal"
+   -> hasil editanmu masih ada, dan ada tanda ✓ pada bank yang
+   sudah diedit.
 
 CATATAN PENTING:
 ----------------
-- Editan yang sudah pernah kamu simpan sebelumnya TIDAK HILANG.
-  Semua tetap tersimpan di database dan sudah dipakai peserta.
-  Setelah perbaikan terpasang, editor akan menampilkannya kembali.
-- Peserta tidak terpengaruh sama sekali selama proses ini —
-  nilai dan XP tetap aman dihitung oleh server.
+- Editan yang pernah kamu simpan sebelumnya TIDAK HILANG — tetap
+  tersimpan di database. Setelah pembaruan ini terpasang, hasil
+  editan itu langsung terlihat kembali di editor.
+- Peserta tidak terpengaruh selama proses pemasangan; nilai dan
+  XP tetap aman dihitung oleh server.
