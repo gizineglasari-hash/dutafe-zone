@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useFez } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { EDUKASI } from "@/lib/content-edukasi";
+import { useEdu } from "@/lib/edu-client";
 import { BADGES, LEVELS, MISSIONS } from "@/lib/constants";
 import { ArrowRight, BookOpen, Crown, Flame, Rocket, Trophy, Users, Zap } from "lucide-react";
 import { CommunityFeed, PublicProfileModal } from "@/components/fezone/community";
@@ -132,6 +132,7 @@ function TopDutaPreview({ onOpenProfile }: { onOpenProfile: (id: string) => void
 // ============================================================
 export default function Landing() {
   const { setView, setAuthMode } = useFez();
+  const EDU = useEdu(); // konten editan admin (fallback: konten bawaan)
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
 
@@ -435,7 +436,7 @@ export default function Landing() {
           <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">7 kategori pengetahuan yang bikin kamu makin paham anemia & TTD.</p>
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {EDUKASI.map((cat) => (
+          {EDU.map((cat) => (
             <div key={cat.key} className="card-pop rounded-3xl border-2 border-fez-ink bg-white p-4">
               <p className="text-3xl">{cat.icon}</p>
               <p className="mt-1.5 font-display text-sm font-extrabold text-fez-ink">{cat.title}</p>

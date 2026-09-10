@@ -1,51 +1,81 @@
-================================================================
-FE-ZONE — PEMBARUAN 10
-Perbaikan Post-Test + Teks Notifikasi Test
-================================================================
+====================================================
+FE-ZONE — PEMBARUAN 11: EDITOR KONTEN EDUKASI (PAKET C)
+====================================================
 
-ISI PEMBARUAN INI (2 perbaikan):
-1. PERBAIKAN POST-TEST (bug "Koneksi bermasalah"):
-   Post-Test tidak bisa menyimpan jawaban — penyebabnya SATU
-   query database yang salah tulis (memakai filter "tidak null"
-   pada kolom yang memang tidak pernah null, sehingga server
-   crash). Sudah diperbaiki. Sekarang jawaban tersimpan, nilai
-   post-test muncul, dan XP diberikan.
-   Pesan error juga diperjelas: kalau suatu saat server bermasalah,
-   muncul pesan jelas — bukan lagi "Koneksi bermasalah" yang
-   terkesan seolah internetmu yang bermasalah.
-2. TEKS NOTIFIKASI TEST diubah menjadi:
-   "💊 Saatnya Ingat TTD!"
-   "Minggu ini kamu belum minum TTD, yuk minum sekarang!"
-   (persis seperti pengingat asli, supaya peserta melihat
-   bentuk notifikasi yang sebenarnya)
+APA YANG BARU DI PEMBARUAN INI?
+1. MENU BARU DI PANEL ADMIN: "Editor Edukasi" 📚
+   - Buka admin FE-ZONE → lihat menu baru "Editor Edukasi"
+     di antara "Penilaian Video" dan "Beranda".
+   - Sekarang Anda bisa mengubah isi Pojok Edukasi SENDIRI
+     tanpa coding dan tanpa hubungi programmer: judul kategori,
+     ikon emoji, subjudul, kartu materi, poin-poin, dan tips.
+   - Ada tombol "Reset ke Bawaan" untuk mengembalikan teks
+     asli kapan saja kalau hasil edit kurang cocok.
+2. Perubahan langsung tampil di 3 tempat:
+   - Pojok Edukasi di aplikasi peserta
+   - Halaman depan (landing page) bagian "Materi Edukasi Seru"
+   - Misi 7 (Share the Fe-Zone) saat peserta memilih materi
+     yang mau dibagikan ke WhatsApp
+3. AMAN DARI SALAH EDIT:
+   - Kalau database kosong/terjadi gangguan, website otomatis
+     memakai teks asli bawaan — Pojok Edukasi tidak akan pernah
+     kosong.
+   - Soal quiz & misi masih dikelola programmer supaya skor dan
+     XP peserta tetap aman (bisa jadi paket berikutnya).
 
-CARA PASANG (3 langkah):
-1. Ekstrak fezone-pembaruan-10.zip
-2. Buka folder hasil ekstrak -> blok SEMUA file & folder di
-   dalamnya -> SALIN (Ctrl+C)
-3. Buka folder proyek: Downloads\Fe-zone\dutafe-zone
-   -> TEMPEL (Ctrl+V) -> "Replace/ Timpa" bila ditanya.
-4. GitHub Desktop: repository "dutafe-zone" -> centang semua
-   file berubah -> Summary tulis:
-   pembaruan 10: perbaikan post test + teks notifikasi test
-   -> "Commit to main" -> "Push origin"
-5. Tunggu Vercel selesai (status Ready, 1-2 menit).
-   TIDAK perlu menambah env var apa pun — kunci pembaruan 9
-   tetap dipakai.
+CATATAN PENTING: TIDAK ADA YANG PERLU DIAWASI DI VERCEL.
+Tabel database baru dibuat OTOMATIS saat Vercel selesai build
+(berkat sistem seed otomatis yang sudah ada). Tidak perlu buka
+Supabase, tidak perlu SQL, tidak perlu menambah Environment
+Variables.
 
-CARA MENCOBA SETELAH TERPASANG:
-- Post-Test: login peserta -> buka tab Post-Test -> jawab 10
-  soal -> "Kirim Jawaban!" -> nilai muncul, tidak ada lagi
-  "Koneksi bermasalah". Nilai terbaik tercatat di profil &
-  dashboard.
-- Notifikasi test: Admin > Ringkasan > kartu Pengingat TTD ->
-  "Kirim Notifikasi Test" -> di HP peserta muncul persis:
-  "💊 Saatnya Ingat TTD! Minggu ini kamu belum minum TTD, yuk
-  minum sekarang!"
+====================================================
+LANGKAH 1 — Salin file hasil unduhan ke folder proyek
+====================================================
+1. Buka file ZIP "fezone-pembaruan-11.zip" yang saya kirim.
+2. Salin (extract) SELURUH isinya ke folder proyek:
+   Downloads\Fe-zone\dutafe-zone
+   - Timpa (replace) semua file lama yang ditanyakan Windows.
+   - Struktur foldernya sama persis, jadi tinggal timpa.
+3. File yang ikut dalam paket ini (10 file):
+   - prisma/schema.prisma                          (timpa)
+   - scripts/seed.production.js                    (timpa)
+   - src/lib/edu-client.ts                         (baru)
+   - src/app/api/content/edukasi/route.ts          (baru)
+   - src/app/api/admin/edukasi/route.ts            (baru)
+   - src/components/fezone/admin-edu-editor.tsx    (baru)
+   - src/components/fezone/admin.tsx               (timpa)
+   - src/components/fezone/edukasi.tsx             (timpa)
+   - src/components/fezone/landing.tsx             (timpa)
+   - src/components/fezone/mission-games.tsx       (timpa)
 
-Catatan teknis (tidak perlu dilakukan apa pun):
-- Perbaikan hanya menghapus filter query yang salah + memperkuat
-  pesan error. Tidak ada fitur lama yang diubah/dihapus.
-- Jika sebelumnya kamu sudah mencoba post-test dan gagal, data
-  jawaban lama memang tidak tersimpan (server crash sebelum
-  menyimpan) — silakan kerjakan ulang post-testnya.
+====================================================
+LANGKAH 2 — Kirim ke GitHub (commit & push)
+====================================================
+1. Buka aplikasi GitHub Desktop.
+2. Pastikan di bagian kiri atas repo yang dipilih adalah
+   "dutafe-zone".
+3. Akan terlihat banyak file berubah (sekitar 10 file).
+   Di kolom "Summary" isi pesan commit:
+   pembaruan 11: editor konten edukasi untuk admin
+4. Tekan tombol "Commit to main".
+5. Tekan tombol "Push origin".
+6. Tunggu 2-3 menit — Vercel akan otomatis membangun ulang
+   website (boleh dilihat di dasbor Vercel, status "Building"
+   lalu "Ready").
+
+====================================================
+LANGKAH 3 — Cek hasilnya di website
+====================================================
+1. Buka https://dutafe-zone.vercel.app/ di browser (mode
+   penyamaran/incognito agar tidak memakai login lama).
+2. Masuk (login) sebagai ADMIN.
+3. Lihat menu baru "Editor Edukasi" di baris menu atas.
+4. Coba ubah sesuatu yang kecil dulu (mis. tips di kategori
+   "Kenali Anemia"), tekan "Simpan Perubahan".
+5. Buka menu Edukasi di akun peserta (atau halaman depan
+   sebelum login) → perubahan harus langsung terlihat.
+6. Kalau mau kembali ke teks asli: tekan "Reset ke Bawaan".
+
+SELESAI! Kalau ada kendala, kirim pesan error/screenshot-nya
+ke saya.

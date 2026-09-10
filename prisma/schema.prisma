@@ -113,6 +113,20 @@ model TtdReminderLog {
   @@index([sentAt])
 }
 
+// ============================================================
+// Editor Konten Edukasi (PAKET C)
+// Satu baris = satu kategori edukasi (mis. "anemia", "ttd")
+// yang pernah DIEDIT oleh admin. Isinya JSON lengkap kategori.
+// Kalau barisnya dihapus / belum ada → aplikasi otomatis
+// memakai konten bawaan dari src/lib/content-edukasi.ts,
+// jadi website tidak pernah bisa kosong karena salah edit.
+// ============================================================
+model EduContent {
+  key       String   @id // "anemia" | "ttd" | "food" | "vitc" | "pola" | "myth" | "tips"
+  dataJson  String // JSON kategori: icon, title, subtitle, tip, cards[]
+  updatedAt DateTime @updatedAt
+}
+
 model MissionProgress {
   id           String    @id @default(cuid())
   participantId String

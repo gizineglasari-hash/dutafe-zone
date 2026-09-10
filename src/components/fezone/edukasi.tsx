@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { EDUKASI } from "@/lib/content-edukasi";
+import { useEdu } from "@/lib/edu-client";
 import { SectionTitle } from "@/components/fezone/ui-bits";
 import { useFez } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -19,8 +19,9 @@ const TONES: Record<string, { bg: string; border: string; chip: string }> = {
 
 export default function EdukasiView() {
   const { setTab } = useFez();
+  const EDU = useEdu(); // konten editan admin (fallback: konten bawaan)
   const [active, setActive] = useState<string | null>(null);
-  const cat = EDUKASI.find((c) => c.key === active);
+  const cat = EDU.find((c) => c.key === active);
 
   if (cat) {
     const tone = TONES[cat.cards[0].tone ?? "rose"] ?? TONES.rose;
@@ -93,7 +94,7 @@ export default function EdukasiView() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {EDUKASI.map((c, i) => (
+        {EDU.map((c, i) => (
           <motion.button
             key={c.key}
             initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}

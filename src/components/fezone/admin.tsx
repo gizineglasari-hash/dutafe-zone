@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
-  Activity, BarChart3, CheckCircle2, ClipboardList, Crown, Download, Eye, FileSpreadsheet, Flame, GraduationCap, ImageUp, KeyRound, LayoutDashboard, Loader2,
+  Activity, BarChart3, BookOpen, CheckCircle2, ClipboardList, Crown, Download, Eye, FileSpreadsheet, Flame, GraduationCap, ImageUp, KeyRound, LayoutDashboard, Loader2,
   LogOut, Pill, RefreshCw, School, Search, Trash2, Trophy, UserCheck, Users, Video, XCircle,
 } from "lucide-react";
 import {
@@ -19,6 +19,7 @@ import { DUTA_WEIGHTS } from "@/lib/constants";
 import { PLATFORM_LABEL, PLATFORM_ICON } from "@/lib/video";
 import { SiteCredit } from "@/components/fezone/ui-bits";
 import AdminPushCard from "@/components/fezone/admin-push-card";
+import AdminEduEditor from "@/components/fezone/admin-edu-editor";
 
 // ============================================================
 // Admin Login
@@ -383,7 +384,7 @@ interface ModContent {
 
 export function AdminDashboard() {
   const { reset } = useFez();
-  const [tab, setTab] = useState<"overview" | "traffic" | "participants" | "duta" | "videos" | "moderation" | "settings">("overview");
+  const [tab, setTab] = useState<"overview" | "traffic" | "participants" | "duta" | "videos" | "moderation" | "konten" | "settings">("overview");
   const [overview, setOverview] = useState<Overview | null>(null);
   const [rows, setRows] = useState<AdminRow[]>([]);
   const [schools, setSchools] = useState<string[]>([]);
@@ -732,6 +733,7 @@ export function AdminDashboard() {
               { k: "duta", label: "Kandidat Duta", icon: Crown },
               { k: "moderation", label: "Content Moderation", icon: ClipboardList },
               { k: "videos", label: "Penilaian Video", icon: Video },
+              { k: "konten", label: "Editor Edukasi", icon: BookOpen },
               { k: "settings", label: "Beranda", icon: ImageUp },
             ] as const).map((t) => (
               <button
@@ -1623,7 +1625,11 @@ export function AdminDashboard() {
           </div>
         )}
 
-        {/* ============ PENGATURAN BERANDA ============ */}
+        {/* ============ EDITOR EDUKASI (PAKET C) ============ */}
+        {tab === "konten" && (
+          <AdminEduEditor />
+        )}
+
         {tab === "settings" && (
           <div className="max-w-2xl space-y-4">
             <h1 className="font-display text-2xl font-extrabold text-[#3d1526]">🖼️ Gambar Halaman Beranda</h1>

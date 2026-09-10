@@ -156,6 +156,18 @@ async function main() {
     END $$;
   `).catch((e) => console.warn("[seed] relasi TtdReminderLog:", e?.message || e));
 
+  // --- EduContent (Editor Konten Edukasi — PAKET C) ---
+  // Tabel ini BOLEH kosong: kalau kosong, aplikasi memakai konten
+  // bawaan. Baris baru hanya muncul saat admin menyimpan hasil editan.
+  await db.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "EduContent" (
+      "key" TEXT NOT NULL,
+      "dataJson" TEXT NOT NULL,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "EduContent_pkey" PRIMARY KEY ("key")
+    );
+  `).catch((e) => console.warn("[seed] buat tabel EduContent:", e?.message || e));
+
   // WAJIB lowercase: route login mencari username dalam bentuk lowercase,
   // jadi akun admin juga harus tersimpan lowercase agar login tidak gagal.
   const username = (process.env.ADMIN_USERNAME || "admin@fezone.id").trim().toLowerCase();

@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProgressBar } from "@/components/fezone/ui-bits";
 import { MYTHS, FOODS, MENU_SLOTS, QUIZ_M1, QUIZ_M2 } from "@/lib/content-quizzes";
-import { MATERI_M1, MATERI_M2, EDUKASI } from "@/lib/content-edukasi";
+import { MATERI_M1, MATERI_M2 } from "@/lib/content-edukasi";
+import { useEdu } from "@/lib/edu-client";
 import type { QuizQuestion } from "@/lib/content-quizzes";
 import { ChevronLeft, Loader2, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { useRef } from "react";
@@ -754,8 +755,9 @@ export function MythGame({ onComplete, onBack }: { onComplete: () => void; onBac
 // Mission 7 — Spread the Fe-Zone (share edukasi via WHATSAPP, target 5 teman)
 // ============================================================
 export function SpreadFeZone({ onBack, onComplete }: { onBack: () => void; onComplete: () => void }) {
+  const EDU = useEdu(); // konten editan admin (fallback: konten bawaan)
   const [progress, setProgress] = useState<{ total: number; target: number; completed: boolean } | null>(null);
-  const [topic, setTopic] = useState(EDUKASI[0].key);
+  const [topic, setTopic] = useState(EDU[0]?.key ?? "anemia");
   const [justCompleted, setJustCompleted] = useState(false);
 
   useEffect(() => {
@@ -765,7 +767,7 @@ export function SpreadFeZone({ onBack, onComplete }: { onBack: () => void; onCom
       .catch(() => {});
   }, []);
 
-  const cat = EDUKASI.find((c) => c.key === topic) ?? EDUKASI[0];
+  const cat = EDU.find((c) => c.key === topic) ?? EDU[0];
   const shareTitle = `🩸 ${cat.title} — Kenali Anemia, Rutin Minum TTD!`;
   const shareBody = `${cat.subtitle} ${cat.cards[0]?.title ? "\n• " + cat.cards[0].title : ""}\n\nCek materi lengkapnya di FE-ZONE — program Duta Remaja Putri Bebas Anemia! ✨ #FEZONE #RemajaPutriBebasAnemia`;
   const fullText = `${shareTitle}\n${shareBody}`;
@@ -844,7 +846,7 @@ export function SpreadFeZone({ onBack, onComplete }: { onBack: () => void; onCom
       <div className="rounded-3xl border-2 border-fez-ink bg-white p-5">
         <p className="font-display text-lg font-extrabold text-fez-ink">1️⃣ Pilih materi edukasi yang mau dibagikan</p>
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {EDUKASI.map((c) => (
+          {EDU.map((c) => (
             <button
               key={c.key}
               onClick={() => setTopic(c.key)}
