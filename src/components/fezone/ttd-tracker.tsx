@@ -6,6 +6,7 @@ import type { DashData } from "@/components/fezone/app-shell";
 import { useFez } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { ProgressBar, SectionTitle } from "@/components/fezone/ui-bits";
+import PushReminderCard from "@/components/fezone/push-reminder";
 import { Loader2 } from "lucide-react";
 
 const DAY_LABELS = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
@@ -150,6 +151,9 @@ export default function TTDTrackerView({ data, refresh }: { data: DashData; refr
           </p>
         )}
       </motion.div>
+
+      {/* Pengingat otomatis (push notification) */}
+      <PushReminderCard />
 
       {/* Statistik */}
       <div className="grid grid-cols-3 gap-3">

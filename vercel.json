@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/ttd-reminder",
+      "schedule": "0 2 * * *"
+    }
+  ]
+}

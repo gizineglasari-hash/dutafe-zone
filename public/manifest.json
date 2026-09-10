@@ -1,0 +1,32 @@
+{
+  "name": "FE-ZONE — Duta Remaja Putri Bebas Anemia",
+  "short_name": "FE-ZONE",
+  "description": "Kenali Anemia, Rutin Minum TTD, Jadi Inspirasi! Program gamifikasi edukasi gizi untuk remaja putri bebas anemia.",
+  "lang": "id",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fdf3ec",
+  "theme_color": "#e11d48",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

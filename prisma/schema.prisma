@@ -75,6 +75,42 @@ model Participant {
   dutaStage        DutaStage?
   communityContent CommunityContent[]
   missionShares    MissionShare[]
+  pushSubscriptions PushSubscription[]
+  reminderLogs     TtdReminderLog[]
+}
+
+// ============================================================
+// Pengingat TTD (Web Push)
+// Satu baris = satu perangkat (browser/HP) yang mengizinkan
+// notifikasi. Endpoint unik per perangkat dari browser.
+// ============================================================
+model PushSubscription {
+  id            String   @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  endpoint      String   @unique // URL unik per perangkat dari push service
+  p256dh        String // kunci enkripsi publik perangkat
+  auth          String // kunci enkripsi auth perangkat
+  userAgent     String? // info browser/HP (opsional, utk admin)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([participantId])
+}
+
+// Log pengiriman pengingat TTD — dipakai agar pengingat tidak
+// pernah dobel (idempoten): maks 1x per 7 hari per peserta.
+model TtdReminderLog {
+  id            String   @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  sentAt        DateTime @default(now())
+  success       Boolean  @default(true)
+  error         String? // pesan error jika gagal kirim
+  kind          String   @default("weekly") // weekly | test
+
+  @@index([participantId, sentAt])
+  @@index([sentAt])
 }
 
 model MissionProgress {

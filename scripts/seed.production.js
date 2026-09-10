@@ -88,6 +88,74 @@ async function main() {
     `CREATE INDEX IF NOT EXISTS "PageView_visitorId_createdAt_idx" ON "PageView"("visitorId", "createdAt");`
   ).catch((e) => console.warn("[seed] index PageView(visitorId):", e?.message || e));
 
+  // ------------------------------------------------------------
+  // PEMULIHAN SKEMA OTOMATIS: tabel PushSubscription untuk
+  // pengingat TTD (Web Push) — satu baris per perangkat yang
+  // mengizinkan notifikasi. Aman diulang.
+  // ------------------------------------------------------------
+  await db.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "PushSubscription" (
+      "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+      "participantId" TEXT NOT NULL,
+      "endpoint" TEXT NOT NULL UNIQUE,
+      "p256dh" TEXT NOT NULL,
+      "auth" TEXT NOT NULL,
+      "userAgent" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `).catch((e) => console.warn("[seed] buat tabel PushSubscription:", e?.message || e));
+
+  await db.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "PushSubscription_participantId_idx" ON "PushSubscription"("participantId");`
+  ).catch((e) => console.warn("[seed] index PushSubscription(participantId):", e?.message || e));
+
+  await db.$executeRawUnsafe(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'PushSubscription_participantId_fkey') THEN
+        ALTER TABLE "PushSubscription"
+          ADD CONSTRAINT "PushSubscription_participantId_fkey"
+          FOREIGN KEY ("participantId") REFERENCES "Participant"("id")
+          ON DELETE CASCADE ON UPDATE CASCADE;
+      END IF;
+    END $$;
+  `).catch((e) => console.warn("[seed] relasi PushSubscription:", e?.message || e));
+
+  // ------------------------------------------------------------
+  // PEMULIHAN SKEMA OTOMATIS: tabel TtdReminderLog — log pengiriman
+  // pengingat agar tidak pernah dobel (maks 1x per 7 hari). Aman diulang.
+  // ------------------------------------------------------------
+  await db.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "TtdReminderLog" (
+      "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+      "participantId" TEXT NOT NULL,
+      "sentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "success" BOOLEAN NOT NULL DEFAULT true,
+      "error" TEXT,
+      "kind" TEXT NOT NULL DEFAULT 'weekly'
+    );
+  `).catch((e) => console.warn("[seed] buat tabel TtdReminderLog:", e?.message || e));
+
+  await db.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "TtdReminderLog_participantId_sentAt_idx" ON "TtdReminderLog"("participantId", "sentAt");`
+  ).catch((e) => console.warn("[seed] index TtdReminderLog(participantId):", e?.message || e));
+  await db.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "TtdReminderLog_sentAt_idx" ON "TtdReminderLog"("sentAt");`
+  ).catch((e) => console.warn("[seed] index TtdReminderLog(sentAt):", e?.message || e));
+
+  await db.$executeRawUnsafe(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'TtdReminderLog_participantId_fkey') THEN
+        ALTER TABLE "TtdReminderLog"
+          ADD CONSTRAINT "TtdReminderLog_participantId_fkey"
+          FOREIGN KEY ("participantId") REFERENCES "Participant"("id")
+          ON DELETE CASCADE ON UPDATE CASCADE;
+      END IF;
+    END $$;
+  `).catch((e) => console.warn("[seed] relasi TtdReminderLog:", e?.message || e));
+
   // WAJIB lowercase: route login mencari username dalam bentuk lowercase,
   // jadi akun admin juga harus tersimpan lowercase agar login tidak gagal.
   const username = (process.env.ADMIN_USERNAME || "admin@fezone.id").trim().toLowerCase();

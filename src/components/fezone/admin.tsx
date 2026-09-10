@@ -18,6 +18,7 @@ import {
 import { DUTA_WEIGHTS } from "@/lib/constants";
 import { PLATFORM_LABEL, PLATFORM_ICON } from "@/lib/video";
 import { SiteCredit } from "@/components/fezone/ui-bits";
+import AdminPushCard from "@/components/fezone/admin-push-card";
 
 // ============================================================
 // Admin Login
@@ -789,6 +790,9 @@ export function AdminDashboard() {
                 ))}
               </div>
             </div>
+
+            {/* SISTEM PENGINGAT TTD (PUSH) */}
+            <AdminPushCard />
 
             {/* Grafik grid */}
             <div className="grid gap-4 md:grid-cols-2">
