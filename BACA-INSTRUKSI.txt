@@ -1,83 +1,46 @@
-====================================================
-FE-ZONE — PEMBARUAN 12: EDITOR SOAL (PRE/POST-TEST & KUIS)
-====================================================
+PEMBARUAN 13 — PERBAIKAN EDITOR SOAL (FE-ZONE)
+=====================================================
 
-APA YANG BARU DI PEMBARUAN INI?
-1. MENU BARU DI PANEL ADMIN: "Editor Soal" 📝
-   - Buka admin FE-ZONE → menu baru "Editor Soal" di antara
-     "Editor Edukasi" dan "Beranda".
-   - Yang bisa diubah SENDIRI tanpa coding:
-     • Pre-Test (soal pengukuran awal)
-     • Post-Test (soal peningkatan pengetahuan)
-     • Kuis Mission 1 (Anemia) — versi SMP & SMA
-     • Kuis Mission TTD — versi SMP & SMA
-     • Mitos atau Fakta (pernyataan MITOS/FAKTA, Mission 6)
-     • Final Quiz Duta (Tahap 2 Duta Challenge)
-   - Per soal bisa: ubah pertanyaan, ubah pilihan jawaban,
-     tambah/hapus pilihan (2-6), tandai jawaban benar (klik
-     huruf A/B/C/D sampai hijau), tulis pembahasan, tambah
-     soal baru (maks 30), dan hapus soal.
-   - Tombol "Reset ke Bawaan" mengembalikan soal asli kapan saja.
-2. AMAN:
-   - Penilaian TETAP dihitung server (tidak bisa diakali peserta).
-   - Nilai minimal lulus tetap >=80 dan XP tetap mengikuti
-     aturan program — tidak berubah.
-   - Peserta yang SUDAH mengerjakan tetap menyimpan nilai
-     lamanya (mengubah soal tidak mengubah nilai lama).
-   - Kalau database bermasalah, otomatis pakai soal bawaan —
-     kuis tidak pernah kosong/rusak.
+APA MASALAHNYA?
+---------------
+Setelah admin menyimpan editan soal di menu "Editor Soal", saat
+editor dibuka lagi yang tampil justru SOAL LAMA (bawaan), dan tanda
+"✓ sudah diedit" tidak muncul — padahal editan sebenarnya SUDAH
+TERSIMPAN dan SUDAH DIPAKAI PESERTA.
 
-CATATAN PENTING: TIDAK ADA YANG PERLU DIAWASI DI VERCEL.
-Tabel database baru dibuat OTOMATIS saat Vercel selesai build.
-Tidak perlu buka Supabase, tidak perlu SQL, tidak perlu env var.
+Penyebabnya: ada 1 baris kode yang lupa dipanggil di file penghubung.
+Ibaratnya: petugas gudang lupa membawa kunci lemari arsip — setiap
+kali editor bertanya "tunjukkan soal terbaru", petugas tidak bisa
+membuka lemari, lalu diam-diam menunjukkan daftar lama. Isi lemari
+(soal editan kamu) aman, tidak hilang.
 
-====================================================
-LANGKAH 1 — Salin file hasil unduhan ke folder proyek
-====================================================
-1. Buka file ZIP "fezone-pembaruan-12.zip" yang saya kirim.
-2. Salin (extract) SELURUH isinya ke folder proyek:
+YANG PERLU DILAKUKAN (hanya 1 file yang berubah):
+------------------------------------------------
+1. Buka folder project di komputer kamu:
    Downloads\Fe-zone\dutafe-zone
-   - Timpa (replace) semua file lama yang ditanyakan Windows.
-3. File yang ikut dalam paket ini (16 file):
-   - BACA-INSTRUKSI.txt                            (timpa)
-   - prisma/schema.prisma                          (timpa)
-   - scripts/seed.production.js                    (timpa)
-   - src/lib/quiz-content.ts                       (baru)
-   - src/lib/quiz-client.ts                        (baru)
-   - src/app/api/content/quiz/route.ts             (baru)
-   - src/app/api/admin/quiz/route.ts               (baru)
-   - src/app/api/participant/quiz/route.ts         (timpa)
-   - src/app/api/participant/myth/route.ts         (timpa)
-   - src/components/fezone/admin-quiz-editor.tsx   (baru)
-   - src/components/fezone/admin-edu-editor.tsx    (timpa)
-   - src/components/fezone/admin.tsx               (timpa)
-   - src/components/fezone/test-view.tsx           (timpa)
-   - src/components/fezone/missions.tsx            (timpa)
-   - src/components/fezone/mission-games.tsx       (timpa)
-   - src/components/fezone/duta-challenge.tsx      (timpa)
 
-====================================================
-LANGKAH 2 — Kirim ke GitHub (commit & push)
-====================================================
-1. Buka aplikasi GitHub Desktop.
-2. Pastikan repo yang dipilih "dutafe-zone".
-3. Di kolom "Summary" isi pesan commit:
-   pembaruan 12: editor soal pre/post test dan kuis untuk admin
-4. Tekan "Commit to main" lalu "Push origin".
-5. Tunggu 2-3 menit sampai Vercel selesai build ("Ready").
+2. Salin file di dalam paket ini ke folder project, TIMPA file lama
+   (ikuti struktur foldernya yang sama):
+   src\app\api\admin\quiz\route.ts
 
-====================================================
-LANGKAH 3 — Cek hasilnya di website
-====================================================
-1. Buka https://dutafe-zone.vercel.app/ (mode incognito).
-2. Login sebagai ADMIN → menu "Editor Soal".
-3. Coba uji kecil dulu: pilih "Post-Test" → ubah teks salah
-   satu soal → "Simpan Perubahan".
-4. Buka akun peserta → menu Post-Test → soal versi baru harus
-   tampil dan bisa dikerjakan sampai muncul nilai.
-5. Coba juga tab "Mitos atau Fakta" → ubah status MITOS/FAKTA
-   pada satu pernyataan → mainkan Mission 6 di akun peserta.
-6. Kalau mau kembali ke soal asli: "Reset ke Bawaan".
+3. Buka GitHub Desktop:
+   - Pastikan 1 file berubah (route.ts)
+   - Commit message: pembaruan 13: perbaikan editor soal
+   - Klik "Commit to main" lalu "Push origin"
+   - Tunggu 2-3 menit, Vercel otomatis memasang perbaikan.
 
-SELESAI! Kalau ada kendala, kirim pesan error/screenshot-nya
-ke saya.
+CARA MENGECEK SETELAH TERPASANG:
+--------------------------------
+1. Buka website -> login admin -> menu "Editor Soal"
+2. Ubah salah satu soal -> klik "Simpan Perubahan"
+3. Pindah menu dulu (misal ke Beranda), lalu buka lagi "Editor Soal"
+4. Sekarang yang tampil adalah soal versi BARU (bukan soal lama),
+   dan bank yang sudah diedit ada tandanya ✓
+
+CATATAN PENTING:
+----------------
+- Editan yang sudah pernah kamu simpan sebelumnya TIDAK HILANG.
+  Semua tetap tersimpan di database dan sudah dipakai peserta.
+  Setelah perbaikan terpasang, editor akan menampilkannya kembali.
+- Peserta tidak terpengaruh sama sekali selama proses ini —
+  nilai dan XP tetap aman dihitung oleh server.

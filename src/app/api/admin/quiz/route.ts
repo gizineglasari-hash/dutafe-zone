@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { MYTHS, QUIZ_FINAL, QUIZ_M1, QUIZ_M2, QUIZ_POSTTEST, QUIZ_PRETEST } from "@/lib/content-quizzes";
-import { QUIZ_BANK_KEYS, sanitizeBankData, type QuizBankData } from "@/lib/quiz-content";
+import { QUIZ_BANK_KEYS, parseBankData, sanitizeBankData, type QuizBankData } from "@/lib/quiz-content";
 
 // ------------------------------------------------------------
 // API ADMIN: Editor Soal / Bank Kuis (PAKET C)
