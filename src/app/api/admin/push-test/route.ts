@@ -38,8 +38,8 @@ export async function POST() {
   let failed = 0;
   for (const s of subs) {
     const r = await sendPushToParticipant(s.participantId, {
-      title: "🔔 Test Pengingat FE-ZONE",
-      body: "Ini notifikasi TEST dari admin. Jika kamu melihat ini, pengingat mingguan TTD siap bekerja! 🎉",
+      title: "💊 Saatnya Ingat TTD!",
+      body: "Minggu ini kamu belum minum TTD, yuk minum sekarang!",
       url: "/?view=app&tab=ttd",
       tag: "fezone-push-test",
     });

@@ -54,16 +54,37 @@ export function QuizEngine({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ quizKey, level, answers: answers.map((a) => a ?? -1) }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        toast({ title: "Gagal", description: data.error, variant: "destructive" });
+      // Parse jawaban server secara aman: kalau server crash (500 tanpa
+      // JSON), jangan sampai ikut tertangkap catch bawah dan salah
+      // dilaporkan sebagai "Koneksi bermasalah".
+      let data: {
+        error?: string; score?: number; correct?: number | null; total?: number; passScore?: number;
+        detail: { q: string; userAns: number; answer?: number; ok: boolean; explain?: string; options?: string[] }[] | null;
+        xpEarned?: number; badge?: string | null; passed?: boolean; showAnswerKey?: boolean;
+        missionCompleted?: boolean; alreadyRewarded?: boolean; messages?: string[];
+      } | null = null;
+      try {
+        data = await res.json();
+      } catch {
+        data = null;
+      }
+      if (!res.ok || !data || typeof data.score !== "number" || typeof data.passed !== "boolean") {
+        toast({
+          title: "Gagal",
+          description: data?.error || "Server sedang bermasalah. Tunggu sebentar lalu kirim lagi ya — jawabanmu belum hilang.",
+          variant: "destructive",
+        });
         setSubmitting(false);
         return;
       }
-      setResult(data);
-      onResult({ score: data.score, xpEarned: data.xpEarned, badge: data.badge, passed: data.passed });
+      setResult(data as {
+        score: number; correct: number | null; total: number; passScore?: number;
+        detail: { q: string; userAns: number; answer?: number; ok: boolean; explain?: string; options?: string[] }[] | null;
+        xpEarned: number; badge: string | null; passed: boolean; showAnswerKey?: boolean;
+      });
+      onResult({ score: data.score, xpEarned: data.xpEarned ?? 0, badge: data.badge ?? null, passed: data.passed });
     } catch {
-      toast({ title: "Koneksi bermasalah", variant: "destructive" });
+      toast({ title: "Koneksi bermasalah", description: "Periksa sambungan internetmu lalu coba kirim lagi ya.", variant: "destructive" });
     }
     setSubmitting(false);
   }

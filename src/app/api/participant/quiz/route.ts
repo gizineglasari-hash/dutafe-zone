@@ -136,8 +136,10 @@ export async function POST(req: NextRequest) {
     }
   } else if (quizKey === "POSTTEST") {
     // Nilai terbaik yang dipakai untuk skor pengetahuan; XP hanya sekali pada lulus pertama
+    // (kolom score TIDAK pernah null di database — filter "not: null" justru
+    //  membuat Prisma menolak query & server crash, tampil sebagai "Koneksi bermasalah")
     const prevBest = await db.quizResult.findFirst({
-      where: { participantId: pid, quizKey: "POSTTEST", score: { not: null } },
+      where: { participantId: pid, quizKey: "POSTTEST" },
       orderBy: [{ score: "desc" }, { createdAt: "desc" }],
     });
     const best = Math.max(score, prevBest?.score ?? 0);

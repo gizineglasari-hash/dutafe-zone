@@ -1,84 +1,51 @@
 ================================================================
-FE-ZONE — PEMBARUAN 9
-Pengingat TTD Otomatis ke HP (Push Notification) + PWA
+FE-ZONE — PEMBARUAN 10
+Perbaikan Post-Test + Teks Notifikasi Test
 ================================================================
 
-ISI PEMBARUAN INI:
-1. TTD Tracker punya kartu baru "Pengingat Otomatis": peserta
-   menekan tombol -> browser menanyakan izin notifikasi -> HP
-   terdaftar di server.
-2. Server (Vercel) MEMERIKSA SETIAP PAGI (09.00 WIB) lewat cron:
-   peserta yang >= 7 hari tidak check-in TTD dikirimi notifikasi
-   "Saatnya Ingat TTD!" — klik notifikasi langsung membuka
-   TTD Tracker. Maksimal 1x per 7 hari (tidak pernah dobel),
-   dan begitu check-in lagi, hitungan mulai dari awal.
-3. Admin > Ringkasan: kartu baru "Pengingat TTD (Push)" berisi
-   jumlah perangkat terdaftar, peserta yang perlu diingatkan,
-   jumlah pengingat terkirim + log 15 kiriman terakhir, dan
-   tombol "Kirim Notifikasi Test".
-4. Website kini bisa di-install ke Home Screen HP (jadi seperti
-   aplikasi) — ini syarat notifikasi di iPhone (iOS 16.4+).
-   Di Android notifikasi langsung jalan tanpa install.
+ISI PEMBARUAN INI (2 perbaikan):
+1. PERBAIKAN POST-TEST (bug "Koneksi bermasalah"):
+   Post-Test tidak bisa menyimpan jawaban — penyebabnya SATU
+   query database yang salah tulis (memakai filter "tidak null"
+   pada kolom yang memang tidak pernah null, sehingga server
+   crash). Sudah diperbaiki. Sekarang jawaban tersimpan, nilai
+   post-test muncul, dan XP diberikan.
+   Pesan error juga diperjelas: kalau suatu saat server bermasalah,
+   muncul pesan jelas — bukan lagi "Koneksi bermasalah" yang
+   terkesan seolah internetmu yang bermasalah.
+2. TEKS NOTIFIKASI TEST diubah menjadi:
+   "💊 Saatnya Ingat TTD!"
+   "Minggu ini kamu belum minum TTD, yuk minum sekarang!"
+   (persis seperti pengingat asli, supaya peserta melihat
+   bentuk notifikasi yang sebenarnya)
 
-YANG PERLU KAMU LAKUKAN (5 langkah):
+CARA PASANG (3 langkah):
+1. Ekstrak fezone-pembaruan-10.zip
+2. Buka folder hasil ekstrak -> blok SEMUA file & folder di
+   dalamnya -> SALIN (Ctrl+C)
+3. Buka folder proyek: Downloads\Fe-zone\dutafe-zone
+   -> TEMPEL (Ctrl+V) -> "Replace/ Timpa" bila ditanya.
+4. GitHub Desktop: repository "dutafe-zone" -> centang semua
+   file berubah -> Summary tulis:
+   pembaruan 10: perbaikan post test + teks notifikasi test
+   -> "Commit to main" -> "Push origin"
+5. Tunggu Vercel selesai (status Ready, 1-2 menit).
+   TIDAK perlu menambah env var apa pun — kunci pembaruan 9
+   tetap dipakai.
 
-LANGKAH 1 — Salin file:
-1. Ekstrak fezone-pembaruan-9.zip
-2. Buka folder hasil ekstrak -> blok/selected SEMUA file & folder
-   di dalamnya -> SALIN (Ctrl+C)
-3. Buka folder proyek di komputermu:
-   Downloads\Fe-zone\dutafe-zone
-   -> TEMPEL (Ctrl+V) -> pilih "Replace/ Timpa" bila ditanya.
+CARA MENCOBA SETELAH TERPASANG:
+- Post-Test: login peserta -> buka tab Post-Test -> jawab 10
+  soal -> "Kirim Jawaban!" -> nilai muncul, tidak ada lagi
+  "Koneksi bermasalah". Nilai terbaik tercatat di profil &
+  dashboard.
+- Notifikasi test: Admin > Ringkasan > kartu Pengingat TTD ->
+  "Kirim Notifikasi Test" -> di HP peserta muncul persis:
+  "💊 Saatnya Ingat TTD! Minggu ini kamu belum minum TTD, yuk
+  minum sekarang!"
 
-LANGKAH 2 — Commit & push:
-1. Buka GitHub Desktop -> pilih repository "dutafe-zone"
-2. Centang semua file yang berubah (biasanya otomatis)
-3. Kolom Summary tulis:
-   pembaruan 9: pengingat ttd push notification
-4. Klik "Commit to main" lalu "Push origin"
-
-LANGKAH 3 — Pasang 3 kunci di Vercel (PENTING!):
-Kunci-nya JANGAN ditulis di file mana pun (file ikut ter-upload
-ke GitHub). Kunci ada di PESAN CHAT asisten judul:
-"KUNCI PENGINGAT TTD — PEMBARUAN 9". Salin ke Vercel:
-1. Buka vercel.com -> proyek dutafe-zone -> Settings ->
-   Environment Variables
-2. Tambahkan variabel berikut (untuk semua Environment):
-   Nama: VAPID_PUBLIC_KEY      Nilai: [salin dari pesan chat]
-   Nama: VAPID_PRIVATE_KEY     Nilai: [salin dari pesan chat]
-   Nama: CRON_SECRET           Nilai: [salin dari pesan chat]
-3. Setelah semua 3 tersimpan, buka tab Deployments -> klik
-   deploy terakhir (menu titik tiga) -> "Redeploy" -> Confirm.
-   (Tunggu sampai status Ready.)
-
-LANGKAH 4 — Coba notifikasi TEST (HP Android):
-1. Di HP: buka website FE-ZONE -> login sebagai peserta
-2. Buka tab "TTD Tracker" -> kartu "Pengingat Otomatis" ->
-   tekan "Aktifkan Pengingat di HP Ini" -> tekan Izinkan
-   (Allow) saat browser bertanya
-3. Status berubah "PENGINGAT AKTIF di perangkat ini"
-4. Di komputer: login Admin > Ringkasan > kartu "Pengingat TTD"
-   -> tekan "Kirim Notifikasi Test"
-5. Dalam beberapa detik notifikasi muncul di HP. Klik
-   notifikasinya -> harus membuka TTD Tracker.
-
-LANGKAH 5 — Cek statistik:
-Admin > Ringkasan > kartu "Pengingat TTD (Push)":
-- "Perangkat Terdaftar" bertambah setiap ada peserta aktifkan
-- "Perlu Diingatkan" = peserta >= 7 hari tidak check-in
-- Setiap pagi 09.00 WIB server mengirim otomatis (log tampil
-  di tabel 15 pengiriman terakhir)
-
-CATATAN PENTING:
-- IPHONE (iOS): notifikasi hanya bisa jika FE-ZONE sudah
-  di-install ke Home Screen (Safari > tombol Bagikan > Tambahkan
-  ke Layar Utama), lalu buka dari ikon tersebut. Ini aturan
-  Apple untuk SEMUA website, bukan bug FE-ZONE. Kartu pengingat
-  otomatis menampilkan panduannya ke peserta iPhone.
-- Peserta yang BELUM PERNAH check-in TTD sama sekali memang
-  tidak diingatkan (dianggap belum mulai program) — supaya
-  pengguna baru tidak diganggu.
-- Kalau VAPID belum dipasang: website TETAP normal, kartu
-  pengingat hanya menampilkan info "belum tersedia".
-- Tidak ada fitur lama yang diubah/dihapus. Tidak ada SQL
-  manual — 2 tabel baru dibuat OTOMATIS saat build.
+Catatan teknis (tidak perlu dilakukan apa pun):
+- Perbaikan hanya menghapus filter query yang salah + memperkuat
+  pesan error. Tidak ada fitur lama yang diubah/dihapus.
+- Jika sebelumnya kamu sudah mencoba post-test dan gagal, data
+  jawaban lama memang tidak tersimpan (server crash sebelum
+  menyimpan) — silakan kerjakan ulang post-testnya.
