@@ -55,6 +55,14 @@ async function main() {
   `).catch((e) => console.warn("[seed] relasi PasswordResetToken:", e?.message || e));
 
   // ------------------------------------------------------------
+  // PEMULIHAN SKEMA OTOMATIS: kolom phone pada Participant
+  // (nomor telepon/WhatsApp untuk pendaftar baru). Aman diulang.
+  // ------------------------------------------------------------
+  await db.$executeRawUnsafe(
+    `ALTER TABLE "Participant" ADD COLUMN IF NOT EXISTS "phone" TEXT;`
+  ).catch((e) => console.warn("[seed] kolom Participant.phone:", e?.message || e));
+
+  // ------------------------------------------------------------
   // PEMULIHAN SKEMA OTOMATIS: tabel PageView untuk analisa
   // kunjungan web admin (ala Vercel Analytics). Aman diulang.
   // ------------------------------------------------------------

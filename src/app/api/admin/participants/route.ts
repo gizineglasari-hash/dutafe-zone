@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
     schoolDistrict: p.schoolDistrict,
     schoolType: p.schoolType,
     educationLevel: p.educationLevel,
+    phone: p.phone,
     username: p.user.username,
     joinedAt: p.user.createdAt,
     xp: p.xp,

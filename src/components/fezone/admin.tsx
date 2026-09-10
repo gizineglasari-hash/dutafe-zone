@@ -119,7 +119,7 @@ interface Overview {
 
 interface AdminRow {
   id: string; name: string; age: number; school: string; schoolCity: string | null; schoolDistrict: string | null; schoolType: string | null;
-  educationLevel: string; username: string; joinedAt: string;
+  educationLevel: string; phone: string | null; username: string; joinedAt: string;
   xp: number; level: number; levelName: string; levelIcon: string; badges: string[];
   missionsCompleted: number; streakWeeks: number; preTestScore: number | null; postTestScore: number | null;
   isDutaCandidate: boolean; isDuta: boolean; hasPendingVideo: boolean;
@@ -139,7 +139,7 @@ function fmtDateId(iso: string): string {
 }
 
 const EXPORT_HEADERS = [
-  "No", "Nama", "Email", "Usia", "Sekolah", "Kota", "Kecamatan", "Status Sekolah", "Tingkat",
+  "No", "Nama", "Email", "Usia", "Sekolah", "Kota", "Kecamatan", "Status Sekolah", "Tingkat", "Telepon",
   "XP", "Level", "Misi Selesai", "Jumlah Badge", "Streak (pekan)", "Nilai Pre-Test", "Nilai Post-Test",
   "Status Duta", "Tanggal Gabung",
 ];
@@ -155,6 +155,7 @@ function toExportRows(rows: AdminRow[]): (string | number)[][] {
     r.schoolDistrict ?? "–",
     r.schoolType ?? "–",
     r.educationLevel,
+    r.phone ?? "–",
     r.xp,
     `Lv${r.level}`,
     `${r.missionsCompleted}/9`,
@@ -171,7 +172,7 @@ async function exportExcel(rows: AdminRow[]): Promise<void> {
   const XLSX = await import("xlsx");
   const ws = XLSX.utils.aoa_to_sheet([EXPORT_HEADERS, ...toExportRows(rows)]);
   ws["!cols"] = [
-    { wch: 4 }, { wch: 26 }, { wch: 28 }, { wch: 5 }, { wch: 40 }, { wch: 14 }, { wch: 17 }, { wch: 15 }, { wch: 9 },
+    { wch: 4 }, { wch: 26 }, { wch: 28 }, { wch: 5 }, { wch: 40 }, { wch: 14 }, { wch: 17 }, { wch: 15 }, { wch: 9 }, { wch: 16 },
     { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 13 }, { wch: 14 }, { wch: 15 }, { wch: 16 }, { wch: 16 }, { wch: 16 },
   ];
   const wb = XLSX.utils.book_new();
@@ -1226,7 +1227,7 @@ export function AdminDashboard() {
               <table className="w-full min-w-[1150px] text-left text-xs">
                 <thead className="border-b-2 border-[#3d1526]/10 bg-[#faf0e8]">
                   <tr className="[&>th]:px-3 [&>th]:py-2.5 [&>th]:font-extrabold [&>th]:uppercase [&>th]:text-[10px] [&>th]:text-[#3d1526]/50">
-                    <th>Nama</th><th>Usia</th><th>Sekolah</th><th>Kota</th><th>Kecamatan</th><th>Status Sekolah</th><th>Tingkat</th><th>XP</th><th>Level</th>
+                    <th>Nama</th><th>Usia</th><th>Sekolah</th><th>Kota</th><th>Kecamatan</th><th>Status Sekolah</th><th>Tingkat</th><th>Telepon</th><th>XP</th><th>Level</th>
                     <th>Misi</th><th>Badge</th><th>Streak</th><th>Pre</th><th>Post</th><th>Status Duta</th><th>Aksi</th>
                   </tr>
                 </thead>
@@ -1260,6 +1261,7 @@ export function AdminDashboard() {
                           {r.educationLevel}
                         </span>
                       </td>
+                      <td className="px-3 py-2.5 font-semibold text-[#3d1526]/70">{r.phone ?? "–"}</td>
                       <td className="px-3 py-2.5 font-display font-extrabold text-rose-600">{r.xp.toLocaleString("id-ID")}</td>
                       <td className="px-3 py-2.5">{r.levelIcon} Lv{r.level}</td>
                       <td className="px-3 py-2.5">{r.missionsCompleted}/9</td>
@@ -1297,7 +1299,7 @@ export function AdminDashboard() {
                     </tr>
                   ))}
                   {rows.length === 0 && (
-                    <tr><td colSpan={16} className="px-3 py-8 text-center font-bold text-[#3d1526]/40">Tidak ada peserta yang cocok dengan filter</td></tr>
+                    <tr><td colSpan={17} className="px-3 py-8 text-center font-bold text-[#3d1526]/40">Tidak ada peserta yang cocok dengan filter</td></tr>
                   )}
                 </tbody>
               </table>

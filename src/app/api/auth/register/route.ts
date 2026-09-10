@@ -6,10 +6,26 @@ import { getMissionProgress } from "@/lib/gamification";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, age, school, schoolCity, schoolDistrict, schoolType, educationLevel, username, password } = body ?? {};
+    const { name, age, school, schoolCity, schoolDistrict, schoolType, educationLevel, username, password, phone } = body ?? {};
 
     if (!name || !age || !school || !educationLevel || !username || !password) {
       return NextResponse.json({ error: "Semua field wajib diisi ya!" }, { status: 400 });
+    }
+
+    // ===== Validasi nomor telepon/WhatsApp (wajib utk pendaftar baru) =====
+    // Terima 08xx / +628xx / 628xx, dengan atau tanpa spasi & strip.
+    const phoneRaw = String(phone ?? "").replace(/[\s\-().]/g, "");
+    if (!phoneRaw) {
+      return NextResponse.json({ error: "Nomor telepon/WhatsApp wajib diisi ya!" }, { status: 400 });
+    }
+    let phoneNorm = phoneRaw;
+    if (phoneNorm.startsWith("+62")) phoneNorm = "0" + phoneNorm.slice(3);
+    else if (phoneNorm.startsWith("62")) phoneNorm = "0" + phoneNorm.slice(2);
+    if (!/^08[0-9]{7,12}$/.test(phoneNorm)) {
+      return NextResponse.json(
+        { error: "Format nomor telepon tidak valid. Gunakan format 08xxxxxxxxxx (9-13 digit setelah 08)" },
+        { status: 400 }
+      );
     }
     if (educationLevel !== "SMP" && educationLevel !== "SMA") {
       return NextResponse.json({ error: "Pilih tingkat pendidikan: SMP atau SMA" }, { status: 400 });
@@ -45,6 +61,7 @@ export async function POST(req: NextRequest) {
             schoolDistrict: schoolDistrict ? String(schoolDistrict).trim() : null,
             schoolType: schoolType ? String(schoolType).trim() : null,
             educationLevel,
+            phone: phoneNorm,
           },
         },
       },

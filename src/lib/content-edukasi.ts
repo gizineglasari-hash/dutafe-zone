@@ -84,7 +84,7 @@ export const EDUKASI: EduCategory[] = [
         icon: "📅", title: "Jadwal Konsumsi", tone: "teal",
         points: [
           "Pencegahan (program sekolah/WIFAS): 1 tablet SEMINGGU",
-          "Terapi (jika sudah terdiagnosis anemia): 1 tablet/hari selama 90 hari",
+          "Terapi (jika sudah terdiagnosis anemia): konsultasikan dengan tenaga kesehatan terkait dosis terapi anemia",
           "Lupa minum? Lanjutkan minggu depan — JANGAN digandakan!",
           "Catat di TTD Tracker biar tidak lupa 😉",
         ],
@@ -315,7 +315,7 @@ export const MATERI_M1 = [
 export const MATERI_M2 = [
   { icon: "💊", title: "Apa Itu TTD?", text: "TTD = Tablet Tambah Darah. Isinya 60 mg zat besi + 400 mcg asam folat. Ini 'suplemen sahabat' remaja putri untuk mencegah anemia." },
   { icon: "🌟", title: "Manfaat TTD", text: "Mencegah anemia, menambah stamina & fokus belajar, memperbaiki kadar Hb, dan menyiapkan tubuh agar kelak sehat saat kehamilan. Satu tablet, banyak manfaat!" },
-  { icon: "📅", title: "Jadwalnya", text: "Program sekolah (WIFAS): 1 tablet SEMINGGU, biasanya hari tertentu bersama teman-teman. Kalau sudah anemia: 1 tablet/HARI selama 90 hari sesuai petunjuk tenaga kesehatan." },
+  { icon: "📅", title: "Jadwalnya", text: "Program sekolah (WIFAS): 1 tablet SEMINGGU, biasanya hari tertentu bersama teman-teman. Kalau sudah anemia: konsultasikan dengan tenaga kesehatan terkait dosis terapi anemia." },
   { icon: "🥤", title: "Cara Minum yang Benar", text: "Setelah makan + segelas air putih. JANGAN bersamaan dengan teh, kopi, atau susu (jeda 2 jam). Boleh ditemani jus jeruk biar serapannya makin mantap!" },
   { icon: "⚠️", title: "Yang Perlu Diperhatikan", text: "Efek samping ringan itu normal: mual tipis, tinja agak hitam. Minum setelah makan mengurangi mual. Jangan gandakan dosis jika lupa! Ceritakan ke UKS jika keluhan berat." },
   { icon: "🧠", title: "Mitos yang Harus Diluruskan", text: "'TTD bikin gemuk'? MITOS! 'TTD bikin mandul'? MITOS! 'Tinja hitam itu bahaya'? MITOS — itu normal. Yuk jadi generasi yang kritis terhadap hoax kesehatan!" },

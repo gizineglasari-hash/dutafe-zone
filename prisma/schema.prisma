@@ -55,6 +55,7 @@ model Participant {
   educationLevel  String // SMP | SMA
   avatar          String   @default("🌸")
   profilePhotoUrl String?  // foto profil (mis. /uploads/profile/xxx.jpg)
+  phone           String? // nomor telepon/WhatsApp (wajib pendaftar baru; akun lama boleh kosong)
   xp              Int      @default(0)
   streakWeeks     Int      @default(0)
   lastCheckIn     String? // YYYY-MM-DD

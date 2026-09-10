@@ -18,7 +18,7 @@ export default function AuthPage() {
   const { authMode, setAuthMode, setView, setUser } = useFez();
   const isRegister = authMode === "register";
 
-  const [form, setForm] = useState({ name: "", age: "", school: "", schoolCity: "", schoolDistrict: "", schoolType: "", educationLevel: "", username: "", password: "" });
+  const [form, setForm] = useState({ name: "", age: "", school: "", schoolCity: "", schoolDistrict: "", schoolType: "", educationLevel: "", username: "", password: "", phone: "" });
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [welcome, setWelcome] = useState<string | null>(null);
@@ -84,6 +84,19 @@ export default function AuthPage() {
         variant: "destructive",
       });
       return;
+    }
+    // Validasi ringan nomor telepon di sisi client (validasi utama tetap di server)
+    if (isRegister) {
+      const p = form.phone.replace(/[\s\-().]/g, "");
+      const okPhone = /^(\+62|62|0)8[0-9]{7,12}$/.test(p);
+      if (!okPhone) {
+        toast({
+          title: "Nomor telepon belum benar 📱",
+          description: "Isi dengan format 08xxxxxxxxxx (contoh: 081234567890).",
+          variant: "destructive",
+        });
+        return;
+      }
     }
     setLoading(true);
     try {
@@ -312,6 +325,14 @@ export default function AuthPage() {
                   )}
                 </div>
                 <div>
+                  <Label htmlFor="phone" className="text-sm font-bold text-fez-ink">No. Telepon / WhatsApp *</Label>
+                  <Input
+                    id="phone" required type="tel" inputMode="tel" value={form.phone}
+                    onChange={(e) => set("phone", e.target.value)}
+                    placeholder="08xxxxxxxxxx" className="mt-1 h-12 rounded-xl border-2 bg-cream/50" />
+                  <p className="mt-1 text-[10px] font-semibold text-fez-ink/40">Untuk informasi program dari petugas. Boleh nomor HP sendiri atau orang tua/wali.</p>
+                </div>
+                <div>
                   <Label htmlFor="username" className="text-sm font-bold text-fez-ink">Email / Username *</Label>
                   <Input
                     id="username" required type="email" value={form.username}
@@ -335,7 +356,7 @@ export default function AuthPage() {
                   </div>
                 </div>
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  🔒 Data yang diminta hanya yang diperlukan program: nama, usia, sekolah, tingkat pendidikan, dan akun
+                  🔒 Data yang diminta hanya yang diperlukan program: nama, usia, sekolah, tingkat pendidikan, nomor telepon, dan akun
                   login. Tidak ada data pribadi sensitif lainnya. Password kamu dienkripsi (tidak disimpan sebagai teks biasa).
                 </p>
               </>
@@ -352,10 +373,19 @@ export default function AuthPage() {
                 </div>
                 <div>
                   <Label htmlFor="password-l" className="text-sm font-bold text-fez-ink">Password</Label>
-                  <Input
-                    id="password-l" required type="password" value={form.password}
-                    onChange={(e) => set("password", e.target.value)}
-                    placeholder="Password kamu" className="mt-1 h-12 rounded-xl border-2 bg-cream/50" />
+                  <div className="relative mt-1">
+                    <Input
+                      id="password-l" required type={showPass ? "text" : "password"} value={form.password}
+                      onChange={(e) => set("password", e.target.value)}
+                      placeholder="Password kamu" className="h-12 rounded-xl border-2 bg-cream/50 pr-12" />
+                    <button
+                      type="button" onClick={() => setShowPass(!showPass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-fez-ink/40 hover:text-fez-ink"
+                      aria-label={showPass ? "Sembunyikan password" : "Tampilkan password"}
+                    >
+                      {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
                 </div>
               </>
             )}

@@ -1,58 +1,46 @@
-PAKET PEMBARUAN 7 — FE-ZONE
 ================================================================
-Isi paket ini:
- A. ANALISA KUNJUNGAN WEB "ALA VERCEL" (tab baru di admin:
-    "Kunjungan Web"):
-    - 🟢 Sedang Online (pengunjung yang sedang buka web,
-      dihitung 5 menit terakhir)
-    - 👥 Pengunjung Unik  ·  👁️ Total Kunjungan Halaman
-      ·  Rata-rata halaman per pengunjung
-    - 📄 Halaman yang paling sering dibuka (bar list)
-    - 📱 Perangkat (Desktop/Mobile/Tablet) & 🌐 Browser
-    - Grafik tren kunjungan harian
-    - Filter waktu: HARI INI / 7 HARI / 1 BULAN / KUSTOM
-      (pilih rentang tanggal sendiri)
-    - Tombol UNDUH LAPORAN: PDF atau EXCEL sesuai periode
-      yang dipilih
- B. TOMBOL HAPUS PENGGUNA di tab "Data Peserta":
-    - Setiap baris peserta kini punya tombol "Hapus" (merah)
-    - SEBELUM menghapus, muncul pertanyaan konfirmasi yang
-      menjelaskan bahwa seluruh data akan hilang permanen
-      (XP, misi, badge, TTD, video, dll.) — tidak bisa dibatalkan
- C. Sekalian dalam paket ini (jika belum terpasang):
-    - Paket 5: lupa password via email + pemulihan admin
-    - Paket 4: analisa statistik program; Paket 3: gambar landing
-
-CATATAN PENTING:
-- Pencatatan kunjungan MULAI BERJALAN setelah paket ini dipasang.
-  Data muncul otomatis setiap ada pengunjung membuka website
-  (anonim — tidak menyimpan nama/email; ibarat kamera penghitung
-  di pintu, bukan buku tamu).
-- Tabel database PageView dibuat OTOMATIS saat deploy
-  (tidak perlu SQL manual).
-
+FE-ZONE — PEMBARUAN 8
+Tekan Terapi TTD + Mata Password Login + No. Telepon Pendaftaran
 ================================================================
-LANGKAH 1 — Salin file ke folder repo
-1. Klik kanan zip ini -> Extract All.
-2. Tekan Ctrl+A (pilih semua isi) -> Ctrl+C.
-3. Buka folder:  Downloads\Fe-zone\dutafe-zone
-   lalu Ctrl+V -> bila ditanya timpa, pilih YES/Replace.
 
-LANGKAH 2 — Commit & push
-4. Buka GitHub Desktop -> repository "dutafe-zone".
-5. Summary tulis:  pembaruan 7: analisa kunjungan web + hapus peserta
-6. Klik "Commit to main" -> "Push origin".
-7. Tunggu 1-2 menit sampai Vercel status "Ready".
+ISI PEMBARUAN INI (3 fitur):
+1. Materi edukasi TTD: teks "Terapi (jika sudah terdiagnosis anemia)"
+   diubah menjadi "konsultasikan dengan tenaga kesehatan terkait
+   dosis terapi anemia" — termasuk di ringkasan materi & pembahasan
+   soal quiz agar konsisten (tidak ada lagi klaim "90 hari").
+2. Halaman LOGIN: tombol mata (lihat/sembunyikan password).
+3. Halaman DAFTAR: kolom baru "No. Telepon / WhatsApp" (wajib,
+   format 08xxxxxxxxxx, divalidasi). Nomor otomatis tampil di
+   Admin > Data Peserta (kolom Telepon) dan ikut dalam ekspor
+   PDF/Excel. Akun lama tetap aman (kolom baru, boleh kosong).
 
-LANGKAH 3 — Cek hasil
-8. Masuk admin -> tab "Kunjungan Web":
-   - Kartu Sedang Online, Pengunjung Unik, Total Kunjungan
-   - Coba ganti filter Hari Ini / 7 Hari / 1 Bulan / Kustom
-   - Coba tombol PDF dan Excel -> laporan terunduh
-9. Buka website di HP/HP teman (beberapa halaman), lalu kembali
-   ke tab "Kunjungan Web" -> klik tombol muat ulang (panah putar)
-   -> kunjungan Anda tercatat.
-10. Tab "Data Peserta" -> tombol "Hapus" di kolom Aksi:
-    - Klik -> muncul konfirmasi "Hapus Pengguna Ini?"
-    - Klik "Batal" untuk membatalkan (jangan sampai klik
-      "Ya, Hapus Permanen" untuk peserta yang masih aktif!)
+CARA PASANG (4 langkah):
+1. Ekstrak fezone-pembaruan-8.zip
+2. Buka folder hasil ekstrak -> blok/selected SEMUA file & folder
+   di dalamnya -> SALIN (Ctrl+C)
+3. Buka folder proyek di komputermu:
+   Downloads\Fe-zone\dutafe-zone
+   -> TEMPEL (Ctrl+V) -> pilih "Replace/ Timpa" bila ditanya.
+   (Struktur folder sama, jadi file lama tertimpa tepat.)
+4. Buka aplikasi GitHub Desktop:
+   - Pastikan repository "dutafe-zone" terpilih (kiri atas)
+   - Kolom kiri: centang semua file yang berubah (biasanya otomatis)
+   - Kolom bawah kiri (Summary): tulis:
+     pembaruan 8: teks terapi ttd + show/hide password + no telepon
+   - Klik "Commit to main"
+   - Klik "Push origin" (tombol atas)
+5. Tunggu 1-2 menit — Vercel otomatis memasang pembaruan.
+   Kolom "phone" di database dibuat OTOMATIS saat build
+   (tidak perlu SQL apa pun).
+
+CARA MENCOBA SETELAH TERPASANG:
+- Materi: buka website > Edukasi > TTD > Jadwal Konsumsi
+  -> poin nomor 2 berbunyi "konsultasikan dengan tenaga kesehatan..."
+- Mata password: buka halaman Masuk -> ada ikon mata di kolom password
+- Telepon: Daftar akun baru -> kolom "No. Telepon / WhatsApp" wajib
+  diisi (coba isi salah, misal "abc" -> akan ditolak dengan pesan jelas).
+  Lalu cek Admin > Data Peserta -> kolom Telepon terisi.
+
+Catatan teknis (tidak perlu dilakukan apa pun):
+- Tidak ada fitur lama yang diubah/dihapus.
+- Tidak ada kredensial di dalam paket ini.
