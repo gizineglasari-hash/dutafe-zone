@@ -168,6 +168,18 @@ async function main() {
     );
   `).catch((e) => console.warn("[seed] buat tabel EduContent:", e?.message || e));
 
+  // --- QuizContent (Editor Soal / Bank Kuis — PAKET C lanjutan) ---
+  // Tabel ini BOLEH kosong: kalau kosong, kuis memakai soal bawaan.
+  // Baris baru hanya muncul saat admin menyimpan hasil editan soal.
+  await db.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "QuizContent" (
+      "key" TEXT NOT NULL,
+      "dataJson" TEXT NOT NULL,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "QuizContent_pkey" PRIMARY KEY ("key")
+    );
+  `).catch((e) => console.warn("[seed] buat tabel QuizContent:", e?.message || e));
+
   // WAJIB lowercase: route login mencari username dalam bentuk lowercase,
   // jadi akun admin juga harus tersimpan lowercase agar login tidak gagal.
   const username = (process.env.ADMIN_USERNAME || "admin@fezone.id").trim().toLowerCase();

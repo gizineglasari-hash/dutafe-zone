@@ -6,6 +6,7 @@ import type { DashData } from "@/components/fezone/app-shell";
 import { useFez } from "@/lib/store";
 import { QuizEngine } from "@/components/fezone/mission-games";
 import { QUIZ_POSTTEST, QUIZ_PRETEST } from "@/lib/content-quizzes";
+import { useQuizBanks } from "@/lib/quiz-client";
 import { SectionTitle } from "@/components/fezone/ui-bits";
 import { Button } from "@/components/ui/button";
 import { Trophy } from "lucide-react";
@@ -16,6 +17,8 @@ export default function TestView({ kind, data, refresh }: { kind: "pretest" | "p
   const p = data.profile;
   const isPre = kind === "pretest";
   const level = (p.educationLevel === "SMA" ? "SMA" : "SMP") as "SMP" | "SMA";
+  const banks = useQuizBanks(); // soal editan admin (fallback: soal bawaan)
+  const questions = isPre ? banks.PRETEST ?? QUIZ_PRETEST : banks.POSTTEST ?? QUIZ_POSTTEST;
 
   function onResult(r: { score: number; xpEarned: number; passed: boolean }) {
     refresh();
@@ -136,12 +139,12 @@ export default function TestView({ kind, data, refresh }: { kind: "pretest" | "p
         <div className="mb-4 text-center">
           <p className="font-display text-2xl font-extrabold text-fez-ink">{isPre ? "🧪 PRE-TEST" : "🧪 POST-TEST"}</p>
           <p className="text-sm text-muted-foreground">
-            {isPre ? "10 soal untuk mengukur pengetahuan awalmu" : "10 soal untuk membuktikan peningkatan pengetahuanmu"}
+            {isPre ? `${questions.length} soal untuk mengukur pengetahuan awalmu` : `${questions.length} soal untuk membuktikan peningkatan pengetahuanmu`}
           </p>
         </div>
         <QuizEngine
           title={isPre ? "Pre-Test Pengetahuan" : "Post-Test Pengetahuan"}
-          questions={isPre ? QUIZ_PRETEST : QUIZ_POSTTEST}
+          questions={questions}
           quizKey={isPre ? "PRETEST" : "POSTTEST"}
           level={level}
           onBack={() => setTab("dashboard")}

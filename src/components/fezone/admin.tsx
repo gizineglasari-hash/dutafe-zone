@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
-  Activity, BarChart3, BookOpen, CheckCircle2, ClipboardList, Crown, Download, Eye, FileSpreadsheet, Flame, GraduationCap, ImageUp, KeyRound, LayoutDashboard, Loader2,
+  Activity, BarChart3, BookOpen, CheckCircle2, ClipboardList, Crown, Download, Eye, FileQuestion, FileSpreadsheet, Flame, GraduationCap, ImageUp, KeyRound, LayoutDashboard, Loader2,
   LogOut, Pill, RefreshCw, School, Search, Trash2, Trophy, UserCheck, Users, Video, XCircle,
 } from "lucide-react";
 import {
@@ -20,6 +20,7 @@ import { PLATFORM_LABEL, PLATFORM_ICON } from "@/lib/video";
 import { SiteCredit } from "@/components/fezone/ui-bits";
 import AdminPushCard from "@/components/fezone/admin-push-card";
 import AdminEduEditor from "@/components/fezone/admin-edu-editor";
+import AdminQuizEditor from "@/components/fezone/admin-quiz-editor";
 
 // ============================================================
 // Admin Login
@@ -384,7 +385,7 @@ interface ModContent {
 
 export function AdminDashboard() {
   const { reset } = useFez();
-  const [tab, setTab] = useState<"overview" | "traffic" | "participants" | "duta" | "videos" | "moderation" | "konten" | "settings">("overview");
+  const [tab, setTab] = useState<"overview" | "traffic" | "participants" | "duta" | "videos" | "moderation" | "konten" | "soal" | "settings">("overview");
   const [overview, setOverview] = useState<Overview | null>(null);
   const [rows, setRows] = useState<AdminRow[]>([]);
   const [schools, setSchools] = useState<string[]>([]);
@@ -734,6 +735,7 @@ export function AdminDashboard() {
               { k: "moderation", label: "Content Moderation", icon: ClipboardList },
               { k: "videos", label: "Penilaian Video", icon: Video },
               { k: "konten", label: "Editor Edukasi", icon: BookOpen },
+              { k: "soal", label: "Editor Soal", icon: FileQuestion },
               { k: "settings", label: "Beranda", icon: ImageUp },
             ] as const).map((t) => (
               <button
@@ -1628,6 +1630,11 @@ export function AdminDashboard() {
         {/* ============ EDITOR EDUKASI (PAKET C) ============ */}
         {tab === "konten" && (
           <AdminEduEditor />
+        )}
+
+        {/* ============ EDITOR SOAL (PAKET C) ============ */}
+        {tab === "soal" && (
+          <AdminQuizEditor />
         )}
 
         {tab === "settings" && (

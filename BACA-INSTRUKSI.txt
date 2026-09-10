@@ -1,81 +1,83 @@
 ====================================================
-FE-ZONE — PEMBARUAN 11: EDITOR KONTEN EDUKASI (PAKET C)
+FE-ZONE — PEMBARUAN 12: EDITOR SOAL (PRE/POST-TEST & KUIS)
 ====================================================
 
 APA YANG BARU DI PEMBARUAN INI?
-1. MENU BARU DI PANEL ADMIN: "Editor Edukasi" 📚
-   - Buka admin FE-ZONE → lihat menu baru "Editor Edukasi"
-     di antara "Penilaian Video" dan "Beranda".
-   - Sekarang Anda bisa mengubah isi Pojok Edukasi SENDIRI
-     tanpa coding dan tanpa hubungi programmer: judul kategori,
-     ikon emoji, subjudul, kartu materi, poin-poin, dan tips.
-   - Ada tombol "Reset ke Bawaan" untuk mengembalikan teks
-     asli kapan saja kalau hasil edit kurang cocok.
-2. Perubahan langsung tampil di 3 tempat:
-   - Pojok Edukasi di aplikasi peserta
-   - Halaman depan (landing page) bagian "Materi Edukasi Seru"
-   - Misi 7 (Share the Fe-Zone) saat peserta memilih materi
-     yang mau dibagikan ke WhatsApp
-3. AMAN DARI SALAH EDIT:
-   - Kalau database kosong/terjadi gangguan, website otomatis
-     memakai teks asli bawaan — Pojok Edukasi tidak akan pernah
-     kosong.
-   - Soal quiz & misi masih dikelola programmer supaya skor dan
-     XP peserta tetap aman (bisa jadi paket berikutnya).
+1. MENU BARU DI PANEL ADMIN: "Editor Soal" 📝
+   - Buka admin FE-ZONE → menu baru "Editor Soal" di antara
+     "Editor Edukasi" dan "Beranda".
+   - Yang bisa diubah SENDIRI tanpa coding:
+     • Pre-Test (soal pengukuran awal)
+     • Post-Test (soal peningkatan pengetahuan)
+     • Kuis Mission 1 (Anemia) — versi SMP & SMA
+     • Kuis Mission TTD — versi SMP & SMA
+     • Mitos atau Fakta (pernyataan MITOS/FAKTA, Mission 6)
+     • Final Quiz Duta (Tahap 2 Duta Challenge)
+   - Per soal bisa: ubah pertanyaan, ubah pilihan jawaban,
+     tambah/hapus pilihan (2-6), tandai jawaban benar (klik
+     huruf A/B/C/D sampai hijau), tulis pembahasan, tambah
+     soal baru (maks 30), dan hapus soal.
+   - Tombol "Reset ke Bawaan" mengembalikan soal asli kapan saja.
+2. AMAN:
+   - Penilaian TETAP dihitung server (tidak bisa diakali peserta).
+   - Nilai minimal lulus tetap >=80 dan XP tetap mengikuti
+     aturan program — tidak berubah.
+   - Peserta yang SUDAH mengerjakan tetap menyimpan nilai
+     lamanya (mengubah soal tidak mengubah nilai lama).
+   - Kalau database bermasalah, otomatis pakai soal bawaan —
+     kuis tidak pernah kosong/rusak.
 
 CATATAN PENTING: TIDAK ADA YANG PERLU DIAWASI DI VERCEL.
-Tabel database baru dibuat OTOMATIS saat Vercel selesai build
-(berkat sistem seed otomatis yang sudah ada). Tidak perlu buka
-Supabase, tidak perlu SQL, tidak perlu menambah Environment
-Variables.
+Tabel database baru dibuat OTOMATIS saat Vercel selesai build.
+Tidak perlu buka Supabase, tidak perlu SQL, tidak perlu env var.
 
 ====================================================
 LANGKAH 1 — Salin file hasil unduhan ke folder proyek
 ====================================================
-1. Buka file ZIP "fezone-pembaruan-11.zip" yang saya kirim.
+1. Buka file ZIP "fezone-pembaruan-12.zip" yang saya kirim.
 2. Salin (extract) SELURUH isinya ke folder proyek:
    Downloads\Fe-zone\dutafe-zone
    - Timpa (replace) semua file lama yang ditanyakan Windows.
-   - Struktur foldernya sama persis, jadi tinggal timpa.
-3. File yang ikut dalam paket ini (10 file):
+3. File yang ikut dalam paket ini (16 file):
+   - BACA-INSTRUKSI.txt                            (timpa)
    - prisma/schema.prisma                          (timpa)
    - scripts/seed.production.js                    (timpa)
-   - src/lib/edu-client.ts                         (baru)
-   - src/app/api/content/edukasi/route.ts          (baru)
-   - src/app/api/admin/edukasi/route.ts            (baru)
-   - src/components/fezone/admin-edu-editor.tsx    (baru)
+   - src/lib/quiz-content.ts                       (baru)
+   - src/lib/quiz-client.ts                        (baru)
+   - src/app/api/content/quiz/route.ts             (baru)
+   - src/app/api/admin/quiz/route.ts               (baru)
+   - src/app/api/participant/quiz/route.ts         (timpa)
+   - src/app/api/participant/myth/route.ts         (timpa)
+   - src/components/fezone/admin-quiz-editor.tsx   (baru)
+   - src/components/fezone/admin-edu-editor.tsx    (timpa)
    - src/components/fezone/admin.tsx               (timpa)
-   - src/components/fezone/edukasi.tsx             (timpa)
-   - src/components/fezone/landing.tsx             (timpa)
+   - src/components/fezone/test-view.tsx           (timpa)
+   - src/components/fezone/missions.tsx            (timpa)
    - src/components/fezone/mission-games.tsx       (timpa)
+   - src/components/fezone/duta-challenge.tsx      (timpa)
 
 ====================================================
 LANGKAH 2 — Kirim ke GitHub (commit & push)
 ====================================================
 1. Buka aplikasi GitHub Desktop.
-2. Pastikan di bagian kiri atas repo yang dipilih adalah
-   "dutafe-zone".
-3. Akan terlihat banyak file berubah (sekitar 10 file).
-   Di kolom "Summary" isi pesan commit:
-   pembaruan 11: editor konten edukasi untuk admin
-4. Tekan tombol "Commit to main".
-5. Tekan tombol "Push origin".
-6. Tunggu 2-3 menit — Vercel akan otomatis membangun ulang
-   website (boleh dilihat di dasbor Vercel, status "Building"
-   lalu "Ready").
+2. Pastikan repo yang dipilih "dutafe-zone".
+3. Di kolom "Summary" isi pesan commit:
+   pembaruan 12: editor soal pre/post test dan kuis untuk admin
+4. Tekan "Commit to main" lalu "Push origin".
+5. Tunggu 2-3 menit sampai Vercel selesai build ("Ready").
 
 ====================================================
 LANGKAH 3 — Cek hasilnya di website
 ====================================================
-1. Buka https://dutafe-zone.vercel.app/ di browser (mode
-   penyamaran/incognito agar tidak memakai login lama).
-2. Masuk (login) sebagai ADMIN.
-3. Lihat menu baru "Editor Edukasi" di baris menu atas.
-4. Coba ubah sesuatu yang kecil dulu (mis. tips di kategori
-   "Kenali Anemia"), tekan "Simpan Perubahan".
-5. Buka menu Edukasi di akun peserta (atau halaman depan
-   sebelum login) → perubahan harus langsung terlihat.
-6. Kalau mau kembali ke teks asli: tekan "Reset ke Bawaan".
+1. Buka https://dutafe-zone.vercel.app/ (mode incognito).
+2. Login sebagai ADMIN → menu "Editor Soal".
+3. Coba uji kecil dulu: pilih "Post-Test" → ubah teks salah
+   satu soal → "Simpan Perubahan".
+4. Buka akun peserta → menu Post-Test → soal versi baru harus
+   tampil dan bisa dikerjakan sampai muncul nilai.
+5. Coba juga tab "Mitos atau Fakta" → ubah status MITOS/FAKTA
+   pada satu pernyataan → mainkan Mission 6 di akun peserta.
+6. Kalau mau kembali ke soal asli: "Reset ke Bawaan".
 
 SELESAI! Kalau ada kendala, kirim pesan error/screenshot-nya
 ke saya.

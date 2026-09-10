@@ -293,8 +293,10 @@ export default function DutaChallengeView({ data, refresh }: { data: DashData; r
 // ------------------------------------------------------------
 import { QuizEngine } from "@/components/fezone/mission-games";
 import { QUIZ_FINAL } from "@/lib/content-quizzes";
+import { useQuizBanks } from "@/lib/quiz-client";
 
 function FinalQuizOverlay({ level, onClose, onDone }: { level: "SMP" | "SMA"; onClose: () => void; onDone: (xp: number) => void }) {
+  const banks = useQuizBanks(); // soal editan admin (fallback: soal bawaan)
   return (
     <div className="fixed inset-0 z-[80] overflow-y-auto bg-fez-cream p-4">
       <div className="mx-auto max-w-3xl py-4">
@@ -306,7 +308,7 @@ function FinalQuizOverlay({ level, onClose, onDone }: { level: "SMP" | "SMA"; on
         </div>
         <QuizEngine
           title="Quiz Anemia Final"
-          questions={QUIZ_FINAL}
+          questions={banks.FINAL_QUIZ ?? QUIZ_FINAL}
           quizKey="FINAL_QUIZ"
           level={level}
           onBack={onClose}

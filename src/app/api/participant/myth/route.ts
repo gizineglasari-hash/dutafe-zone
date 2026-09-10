@@ -3,6 +3,24 @@ import { db } from "@/lib/db";
 import { requireParticipant } from "@/lib/auth";
 import { PASS_SCORE } from "@/lib/constants";
 import { assertMissionUnlocked, completeMission, syncMissionUnlocks } from "@/lib/gamification";
+import { parseBankData } from "@/lib/quiz-content";
+import type { MythItem } from "@/lib/content-quizzes";
+
+// Ambil pernyataan Mitos/Fakta: HASIL EDITAN ADMIN dari database
+// lebih dulu; kalau tidak ada / tidak valid → soal bawaan dari kode.
+async function loadMyths(): Promise<MythItem[]> {
+  try {
+    const row = await db.quizContent.findUnique({ where: { key: "MITOS" } });
+    if (row) {
+      const d = parseBankData(row.dataJson);
+      if (d?.kind === "myths" && d.myths.length > 0) return d.myths;
+    }
+  } catch {
+    // database bermasalah → lanjut ke soal bawaan
+  }
+  const { MYTHS } = await import("@/lib/content-quizzes");
+  return MYTHS;
+}
 
 // Mission 6 — Mitos atau Fakta (grading server-side)
 // LULUS jika score >= 80 — XP = 100 × skor/100, hanya sekali saat lulus pertama.
@@ -21,7 +39,7 @@ export async function POST(req: NextRequest) {
   const { answers } = await req.json();
   if (!Array.isArray(answers)) return NextResponse.json({ error: "answers wajib" }, { status: 400 });
 
-  const { MYTHS } = await import("@/lib/content-quizzes");
+  const MYTHS = await loadMyths();
   let correct = 0;
   MYTHS.forEach((m, i) => {
     if (answers[i] === m.isFact) correct++;

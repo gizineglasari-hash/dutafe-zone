@@ -11,6 +11,7 @@ import {
   QUIZ_PRETEST,
 } from "@/lib/content-quizzes";
 import { assertMissionUnlocked, awardBadge, awardXp, completeMission, getMissionProgress, syncMissionUnlocks } from "@/lib/gamification";
+import { parseBankData } from "@/lib/quiz-content";
 
 type QuizKey = "M1" | "M2" | "PRETEST" | "POSTTEST" | "MITOS" | "FINAL_QUIZ";
 
@@ -24,7 +25,33 @@ const QUIZ_TO_MISSION: Record<string, string | null> = {
   FINAL_QUIZ: null,
 };
 
-function getBank(key: QuizKey, level: "SMP" | "SMA") {
+// Ambil bank soal: HASIL EDITAN ADMIN dari database lebih dulu;
+// kalau tidak ada / bentuknya tidak valid → soal bawaan dari kode.
+// Dibuat async karena membaca database.
+async function getBank(key: QuizKey, level: "SMP" | "SMA"): Promise<typeof QUIZ_PRETEST> {
+  try {
+    const row = await db.quizContent.findUnique({ where: { key: String(key) } });
+    if (row) {
+      const d = parseBankData(row.dataJson);
+      if (d) {
+        if (d.kind === "list") return d.questions;
+        if (d.kind === "level") {
+          const arr = d.levels[level];
+          if (Array.isArray(arr) && arr.length > 0) return arr;
+        }
+        if (d.kind === "myths") {
+          return d.myths.map((m) => ({
+            q: m.statement,
+            options: ["MITOS", "FAKTA"],
+            answer: m.isFact ? 1 : 0,
+            explain: m.explain,
+          }));
+        }
+      }
+    }
+  } catch {
+    // database bermasalah → lanjut ke soal bawaan
+  }
   switch (key) {
     case "M1": return QUIZ_M1[level];
     case "M2": return QUIZ_M2[level];
@@ -49,7 +76,7 @@ export async function POST(req: NextRequest) {
   }
 
   const lv: "SMP" | "SMA" = level === "SMA" ? "SMA" : "SMP";
-  const bank = getBank(quizKey as QuizKey, lv);
+  const bank = await getBank(quizKey as QuizKey, lv);
   if (!bank) return NextResponse.json({ error: "Quiz tidak dikenal" }, { status: 400 });
 
   // ===== Validasi unlock misi di SERVER (anti manipulasi URL/API/frontend) =====

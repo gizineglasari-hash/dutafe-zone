@@ -13,6 +13,7 @@ import {
 } from "@/components/fezone/mission-games";
 import { PeerEducatorPanel } from "@/components/fezone/peer-educator";
 import { QUIZ_M1, QUIZ_M2 } from "@/lib/content-quizzes";
+import { useQuizBanks } from "@/lib/quiz-client";
 import { MATERI_M1, MATERI_M2 } from "@/lib/content-edukasi";
 
 type DetailView =
@@ -27,6 +28,7 @@ type DetailView =
 
 export default function MissionCenter({ data, refresh }: { data: DashData; refresh: () => void }) {
   const { celebrate, setTab } = useFez();
+  const banks = useQuizBanks(); // soal editan admin (fallback: soal bawaan)
   const [detail, setDetail] = useState<DetailView | null>(null);
   const level = (data.profile.educationLevel === "SMA" ? "SMA" : "SMP") as "SMP" | "SMA";
 
@@ -76,7 +78,7 @@ export default function MissionCenter({ data, refresh }: { data: DashData; refre
 
     if (detail.kind === "materi-quiz") {
       const def = missionByKey(detail.mission)!;
-      const questions = detail.mission === "M1" ? QUIZ_M1[level] : QUIZ_M2[level];
+      const questions = detail.mission === "M1" ? banks.M1?.[level] ?? QUIZ_M1[level] : banks.M2?.[level] ?? QUIZ_M2[level];
       return (
         <div>
           {detail.stage === "materi" ? (

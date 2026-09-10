@@ -127,6 +127,21 @@ model EduContent {
   updatedAt DateTime @updatedAt
 }
 
+// ============================================================
+// Editor Soal / Bank Kuis (PAKET C lanjutan)
+// Satu baris = satu bank soal yang pernah DIEDIT admin.
+// key: PRETEST | POSTTEST | M1 | M2 | MITOS | FINAL_QUIZ
+// Isinya JSON soal versi admin. Kalau baris dihapus / belum
+// ada → penilaian & tampilan otomatis memakai soal bawaan
+// dari src/lib/content-quizzes.ts, jadi kuis tidak pernah
+// bisa rusak karena salah edit.
+// ============================================================
+model QuizContent {
+  key       String   @id
+  dataJson  String // JSON bank soal (questions / levels SMP-SMA / myths)
+  updatedAt DateTime @updatedAt
+}
+
 model MissionProgress {
   id           String    @id @default(cuid())
   participantId String

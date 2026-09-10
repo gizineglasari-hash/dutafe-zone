@@ -9,6 +9,7 @@ import { ProgressBar } from "@/components/fezone/ui-bits";
 import { MYTHS, FOODS, MENU_SLOTS, QUIZ_M1, QUIZ_M2 } from "@/lib/content-quizzes";
 import { MATERI_M1, MATERI_M2 } from "@/lib/content-edukasi";
 import { useEdu } from "@/lib/edu-client";
+import { useQuizBanks } from "@/lib/quiz-client";
 import type { QuizQuestion } from "@/lib/content-quizzes";
 import { ChevronLeft, Loader2, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { useRef } from "react";
@@ -557,21 +558,27 @@ export function MenuBuilder({ onComplete, onBack }: { onComplete: () => void; on
 // kunci jawaban + pembahasan HANYA jika lulus nilai >= 80)
 // ============================================================
 export function MythGame({ onComplete, onBack }: { onComplete: () => void; onBack: () => void }) {
+  const banks = useQuizBanks(); // pernyataan editan admin (fallback: bawaan)
+  const MYTHS_LIST = banks.MITOS ?? MYTHS;
+  const len = MYTHS_LIST.length;
   const [idx, setIdx] = useState(0);
-  const [picks, setPicks] = useState<(boolean | null)[]>(Array(MYTHS.length).fill(null));
+  const [rawPicks, setRawPicks] = useState<(boolean | null)[]>([]);
+  // picks selalu sepanjang daftar (aman walau daftar berubah karena diedit admin)
+  const picks = Array.from({ length: len }, (_, i) => rawPicks[i] ?? null);
+  const cur = Math.min(idx, Math.max(0, len - 1));
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{
     passed: boolean; score: number; total: number; xpEarned: number; alreadyRewarded: boolean;
     detail: { q: string; userAns: number; answer: number; ok: boolean; explain: string }[] | null;
   } | null>(null);
 
-  const item = MYTHS[idx];
+  const item = MYTHS_LIST[cur] ?? MYTHS_LIST[0];
   const answered = picks.filter((p) => p !== null).length;
 
   function pick(val: boolean) {
-    setPicks((p) => {
-      const n = [...p];
-      n[idx] = val;
+    setRawPicks((p) => {
+      const n = Array.from({ length: len }, (_, i) => p[i] ?? null);
+      n[cur] = val;
       return n;
     });
   }
@@ -607,7 +614,7 @@ export function MythGame({ onComplete, onBack }: { onComplete: () => void; onBac
   }
 
   function retry() {
-    setPicks(Array(MYTHS.length).fill(null));
+    setRawPicks([]);
     setIdx(0);
     setResult(null);
   }
@@ -685,12 +692,12 @@ export function MythGame({ onComplete, onBack }: { onComplete: () => void; onBac
         </Button>
         <p className="font-display font-extrabold text-fez-ink">🧠 Mitos atau Fakta</p>
       </div>
-      <ProgressBar pct={((idx + 1) / MYTHS.length) * 100} />
-      <p className="mt-1.5 text-center text-xs font-bold text-muted-foreground">Pernyataan {idx + 1}/{MYTHS.length} · terjawab {answered}</p>
+      <ProgressBar pct={((cur + 1) / len) * 100} />
+      <p className="mt-1.5 text-center text-xs font-bold text-muted-foreground">Pernyataan {cur + 1}/{len} · terjawab {answered}</p>
       <p className="mt-1 text-center text-[11px] font-extrabold text-fez-rose">🎯 Nilai kelulusan: ≥80 — jawab semua, hasil &amp; pembahasan muncul di akhir!</p>
 
       <motion.div
-        key={idx}
+        key={cur}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="mt-5 rounded-3xl border-2 border-fez-ink bg-gradient-to-br from-amber-50 to-rose-50 p-6 text-center"
@@ -703,7 +710,7 @@ export function MythGame({ onComplete, onBack }: { onComplete: () => void; onBac
             whileTap={{ scale: 0.94 }}
             onClick={() => pick(false)}
             className={`rounded-2xl border-2 border-fez-ink py-4 font-display text-xl font-extrabold shadow-[4px_4px_0_0_#4a1d33] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#4a1d33] ${
-              picks[idx] === false ? "bg-rose-600 text-white ring-4 ring-rose-300" : "bg-rose-500 text-white"
+              picks[cur] === false ? "bg-rose-600 text-white ring-4 ring-rose-300" : "bg-rose-500 text-white"
             }`}
           >
             ❌ MITOS
@@ -712,26 +719,26 @@ export function MythGame({ onComplete, onBack }: { onComplete: () => void; onBac
             whileTap={{ scale: 0.94 }}
             onClick={() => pick(true)}
             className={`rounded-2xl border-2 border-fez-ink py-4 font-display text-xl font-extrabold shadow-[4px_4px_0_0_#4a1d33] transition hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#4a1d33] ${
-              picks[idx] === true ? "bg-teal-600 text-white ring-4 ring-teal-300" : "bg-teal-500 text-white"
+              picks[cur] === true ? "bg-teal-600 text-white ring-4 ring-teal-300" : "bg-teal-500 text-white"
             }`}
           >
             ✅ FAKTA
           </motion.button>
         </div>
-        {picks[idx] !== null && <p className="mt-3 text-xs font-bold text-emerald-600">✓ Jawaban tersimpan — lanjut ke pernyataan berikutnya</p>}
+        {picks[cur] !== null && <p className="mt-3 text-xs font-bold text-emerald-600">✓ Jawaban tersimpan — lanjut ke pernyataan berikutnya</p>}
 
         <div className="mt-5 flex items-center justify-between gap-3">
           <Button
-            variant="outline" disabled={idx === 0}
+            variant="outline" disabled={cur === 0}
             onClick={() => setIdx((i) => i - 1)}
             className="h-11 rounded-2xl border-2 border-fez-ink bg-white px-4 font-bold text-fez-ink"
           >
             ← Sebelumnya
           </Button>
-          {idx < MYTHS.length - 1 ? (
+          {cur < len - 1 ? (
             <Button
               onClick={() => setIdx((i) => i + 1)}
-              disabled={picks[idx] === null}
+              disabled={picks[cur] === null}
               className="h-11 rounded-2xl border-2 border-fez-ink bg-fez-rose px-6 font-extrabold text-white disabled:opacity-40"
             >
               Lanjut →
@@ -739,7 +746,7 @@ export function MythGame({ onComplete, onBack }: { onComplete: () => void; onBac
           ) : (
             <Button
               onClick={submitAll}
-              disabled={answered < MYTHS.length || busy}
+              disabled={answered < len || busy}
               className="h-11 rounded-2xl border-2 border-fez-ink bg-gradient-to-r from-rose-500 to-orange-400 px-6 font-extrabold text-white disabled:opacity-40"
             >
               {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : "Selesai & Kirim! 🏁"}
