@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
   Activity, BarChart3, BookOpen, CheckCircle2, ClipboardList, Crown, Download, Eye, FileQuestion, FileSpreadsheet, Flame, GraduationCap, ImageUp, KeyRound, LayoutDashboard, Loader2,
-  LogOut, Pill, RefreshCw, School, Search, Trash2, Trophy, UserCheck, Users, Video, XCircle,
+  LogOut, Pill, Puzzle, RefreshCw, School, Search, Trash2, Trophy, UserCheck, Users, Video, XCircle,
 } from "lucide-react";
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -21,6 +21,7 @@ import { SiteCredit } from "@/components/fezone/ui-bits";
 import AdminPushCard from "@/components/fezone/admin-push-card";
 import AdminEduEditor from "@/components/fezone/admin-edu-editor";
 import AdminQuizEditor from "@/components/fezone/admin-quiz-editor";
+import AdminMissionEditor from "@/components/fezone/admin-mission-editor";
 
 // ============================================================
 // Admin Login
@@ -124,7 +125,7 @@ interface AdminRow {
   id: string; name: string; age: number; school: string; schoolCity: string | null; schoolDistrict: string | null; schoolType: string | null;
   educationLevel: string; phone: string | null; username: string; joinedAt: string;
   xp: number; level: number; levelName: string; levelIcon: string; badges: string[];
-  missionsCompleted: number; streakWeeks: number; preTestScore: number | null; postTestScore: number | null;
+  missionsCompleted: number; ttdTaken: number; hbValue: number | null; hbCheckDate: string | null; streakWeeks: number; preTestScore: number | null; postTestScore: number | null;
   isDutaCandidate: boolean; isDuta: boolean; hasPendingVideo: boolean;
 }
 
@@ -143,9 +144,13 @@ function fmtDateId(iso: string): string {
 
 const EXPORT_HEADERS = [
   "No", "Nama", "Email", "Usia", "Sekolah", "Kota", "Kecamatan", "Status Sekolah", "Tingkat", "Telepon",
-  "XP", "Level", "Misi Selesai", "Jumlah Badge", "Streak (pekan)", "Nilai Pre-Test", "Nilai Post-Test",
-  "Status Duta", "Tanggal Gabung",
+  "XP", "Level", "Misi Selesai", "Jumlah Badge", "Streak (pekan)", "Tablet TTD Diminum", "Nilai Pre-Test", "Nilai Post-Test",
+  "Hb (g/dL)", "Tanggal Pemeriksaan Hb", "Status Duta", "Tanggal Gabung",
 ];
+
+function fmtHb(v: number | null): string {
+  return v === null || v === undefined ? "–" : String(v).replace(".", ",");
+}
 
 function toExportRows(rows: AdminRow[]): (string | number)[][] {
   return rows.map((r, i) => [
@@ -164,8 +169,11 @@ function toExportRows(rows: AdminRow[]): (string | number)[][] {
     `${r.missionsCompleted}/9`,
     r.badges.length,
     r.streakWeeks,
+    r.ttdTaken,
     r.preTestScore ?? "–",
     r.postTestScore ?? "–",
+    fmtHb(r.hbValue),
+    r.hbCheckDate ? fmtDateId(r.hbCheckDate) : "–",
     r.isDuta ? "Duta Terpilih" : r.isDutaCandidate ? "Kandidat Duta" : "Peserta",
     fmtDateId(r.joinedAt),
   ]);
@@ -176,7 +184,7 @@ async function exportExcel(rows: AdminRow[]): Promise<void> {
   const ws = XLSX.utils.aoa_to_sheet([EXPORT_HEADERS, ...toExportRows(rows)]);
   ws["!cols"] = [
     { wch: 4 }, { wch: 26 }, { wch: 28 }, { wch: 5 }, { wch: 40 }, { wch: 14 }, { wch: 17 }, { wch: 15 }, { wch: 9 }, { wch: 16 },
-    { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 13 }, { wch: 14 }, { wch: 15 }, { wch: 16 }, { wch: 16 }, { wch: 16 },
+    { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 13 }, { wch: 14 }, { wch: 16 }, { wch: 15 }, { wch: 16 }, { wch: 10 }, { wch: 18 }, { wch: 16 }, { wch: 16 },
   ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Data Peserta");
@@ -385,7 +393,7 @@ interface ModContent {
 
 export function AdminDashboard() {
   const { reset } = useFez();
-  const [tab, setTab] = useState<"overview" | "traffic" | "participants" | "duta" | "videos" | "moderation" | "konten" | "soal" | "settings">("overview");
+  const [tab, setTab] = useState<"overview" | "traffic" | "participants" | "duta" | "videos" | "moderation" | "konten" | "soal" | "misi" | "settings">("overview");
   const [overview, setOverview] = useState<Overview | null>(null);
   const [rows, setRows] = useState<AdminRow[]>([]);
   const [schools, setSchools] = useState<string[]>([]);
@@ -736,6 +744,7 @@ export function AdminDashboard() {
               { k: "videos", label: "Penilaian Video", icon: Video },
               { k: "konten", label: "Editor Edukasi", icon: BookOpen },
               { k: "soal", label: "Editor Soal", icon: FileQuestion },
+              { k: "misi", label: "Misi Buatan", icon: Puzzle },
               { k: "settings", label: "Beranda", icon: ImageUp },
             ] as const).map((t) => (
               <button
@@ -1232,11 +1241,11 @@ export function AdminDashboard() {
             </div>
 
             <div className="thin-scroll overflow-x-auto rounded-2xl border border-[#3d1526]/10 bg-white">
-              <table className="w-full min-w-[1150px] text-left text-xs">
+              <table className="w-full min-w-[1280px] text-left text-xs">
                 <thead className="border-b-2 border-[#3d1526]/10 bg-[#faf0e8]">
                   <tr className="[&>th]:px-3 [&>th]:py-2.5 [&>th]:font-extrabold [&>th]:uppercase [&>th]:text-[10px] [&>th]:text-[#3d1526]/50">
                     <th>Nama</th><th>Usia</th><th>Sekolah</th><th>Kota</th><th>Kecamatan</th><th>Status Sekolah</th><th>Tingkat</th><th>Telepon</th><th>XP</th><th>Level</th>
-                    <th>Misi</th><th>Badge</th><th>Streak</th><th>Pre</th><th>Post</th><th>Status Duta</th><th>Aksi</th>
+                    <th>Misi</th><th>Badge</th><th>Streak</th><th>💊 TTD</th><th>Pre</th><th>Post</th><th>🩸 Hb</th><th>Status Duta</th><th>Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#3d1526]/5">
@@ -1275,8 +1284,19 @@ export function AdminDashboard() {
                       <td className="px-3 py-2.5">{r.missionsCompleted}/9</td>
                       <td className="px-3 py-2.5">{r.badges.length}</td>
                       <td className="px-3 py-2.5">🔥{r.streakWeeks}</td>
+                      <td className="px-3 py-2.5 font-extrabold text-teal-700">💊{r.ttdTaken}</td>
                       <td className="px-3 py-2.5">{r.preTestScore ?? "–"}</td>
                       <td className="px-3 py-2.5">{r.postTestScore ?? "–"}</td>
+                      <td className="px-3 py-2.5">
+                        {r.hbValue === null || r.hbValue === undefined ? (
+                          <span className="text-[#3d1526]/30">–</span>
+                        ) : (
+                          <span className={`rounded-full px-2 py-0.5 font-extrabold ${r.hbValue < 12 ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
+                            {String(r.hbValue).replace(".", ",")}
+                            {r.hbCheckDate && <span className="ml-1 text-[9px] font-bold opacity-70">({fmtDateId(r.hbCheckDate)})</span>}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-3 py-2.5">
                         {r.isDuta ? (
                           <span className="rounded-full bg-amber-200 px-2 py-0.5 font-extrabold text-[#3d1526]">👑 DUTA</span>
@@ -1307,7 +1327,7 @@ export function AdminDashboard() {
                     </tr>
                   ))}
                   {rows.length === 0 && (
-                    <tr><td colSpan={17} className="px-3 py-8 text-center font-bold text-[#3d1526]/40">Tidak ada peserta yang cocok dengan filter</td></tr>
+                    <tr><td colSpan={19} className="px-3 py-8 text-center font-bold text-[#3d1526]/40">Tidak ada peserta yang cocok dengan filter</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1635,6 +1655,10 @@ export function AdminDashboard() {
         {/* ============ EDITOR SOAL (PAKET C) ============ */}
         {tab === "soal" && (
           <AdminQuizEditor />
+        )}
+
+        {tab === "misi" && (
+          <AdminMissionEditor />
         )}
 
         {tab === "settings" && (

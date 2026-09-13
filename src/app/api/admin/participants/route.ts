@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
-import { getLevel } from "@/lib/constants";
+import { CORE_MISSION_KEY_RE, getLevel } from "@/lib/constants";
 
 export async function GET(req: NextRequest) {
   const admin = await requireAdmin();
@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
       missionProgress: true,
       user: { select: { username: true, createdAt: true } },
       videoSubmissions: { where: { status: "PENDING" } },
+      _count: { select: { ttdCheckIns: true } },
     },
     orderBy: [{ xp: "desc" }, { name: "asc" }],
   });
@@ -49,7 +50,10 @@ export async function GET(req: NextRequest) {
     levelName: getLevel(p.xp).name,
     levelIcon: getLevel(p.xp).icon,
     badges: p.badges.map((b) => b.badgeKey),
-    missionsCompleted: p.missionProgress.filter((m) => m.status === "COMPLETED").length,
+    missionsCompleted: p.missionProgress.filter((m) => m.status === "COMPLETED" && CORE_MISSION_KEY_RE.test(m.missionKey)).length,
+    ttdTaken: p._count.ttdCheckIns,
+    hbValue: p.hbValue,
+    hbCheckDate: p.hbCheckDate,
     streakWeeks: p.streakWeeks,
     preTestScore: p.preTestScore,
     postTestScore: p.postTestScore,

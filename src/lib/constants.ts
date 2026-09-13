@@ -117,6 +117,11 @@ export const MISSIONS: MissionDef[] = [
 
 export const missionByKey = (key: string) => MISSIONS.find((m) => m.key === key);
 
+// Kunci MissionProgress untuk misi buatan admin: "CUST:<id>"
+export const customMissionKey = (id: string) => `CUST:${id}`;
+// Hanya misi inti M1-M9 (misi buatan admin tidak ikut dihitung utk /9, duta score, sertifikat)
+export const CORE_MISSION_KEY_RE = /^M[1-9]$/;
+
 // Urutan unlock: misi berikutnya hanya terbuka jika misi sebelumnya di rantai LULUS.
 // M1 & M2 terbuka sejak awal (M2 = TTD Tracker di luar rantai).
 export const UNLOCK_CHAIN = ["M1", "M3", "M4", "M5", "M6", "M7", "M8", "M9"] as const;

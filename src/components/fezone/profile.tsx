@@ -8,6 +8,8 @@ import { getLevel, LEVELS } from "@/lib/constants";
 import { BadgeVisual, SectionTitle, UserAvatar, XpCounter } from "@/components/fezone/ui-bits";
 import { BADGES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Download, FileDown, ImageDown, ImageUp, Loader2, LogOut, Share2, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -22,6 +24,62 @@ export default function ProfileView({ data, refresh }: { data: DashData; refresh
   const [showCert, setShowCert] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const lvl = getLevel(p.xp);
+
+  // ---- Pemeriksaan Hemoglobin (pembaruan 15) ----
+  const [hbInput, setHbInput] = useState<string>(p.hbValue !== null ? String(p.hbValue).replace(".", ",") : "");
+  const [hbDate, setHbDate] = useState<string>(p.hbCheckDate ? p.hbCheckDate.slice(0, 10) : "");
+  const [hbBusy, setHbBusy] = useState(false);
+  const hbAnemia = p.hbValue !== null && p.hbValue < 12;
+
+  async function saveHb() {
+    if (hbBusy) return;
+    if (!hbInput.trim() || !hbDate) {
+      toast({ title: "Lengkapi dulu ya", description: "Isi nilai Hb dan tanggal pemeriksaannya.", variant: "destructive" });
+      return;
+    }
+    setHbBusy(true);
+    try {
+      const res = await fetch("/api/participant/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hbValue: parseFloat(hbInput.replace(",", ".")), hbCheckDate: hbDate }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast({ title: "✅ Hasil pemeriksaan Hb tersimpan!", description: "Data ini juga terlihat oleh admin/pendamping programmu." });
+        await refresh();
+      } else {
+        toast({ title: "Gagal menyimpan", description: d.message || d.error || "Periksa isian, lalu coba lagi.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Koneksi bermasalah", description: "Internet atau server sedang tidak bisa dihubungi. Coba lagi.", variant: "destructive" });
+    } finally {
+      setHbBusy(false);
+    }
+  }
+
+  async function deleteHb() {
+    if (hbBusy) return;
+    if (!window.confirm("Hapus data pemeriksaan hemoglobin?")) return;
+    setHbBusy(true);
+    try {
+      const res = await fetch("/api/participant/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hbValue: null, hbCheckDate: null }),
+      });
+      if (res.ok) {
+        setHbInput("");
+        setHbDate("");
+        toast({ title: "Data Hb dihapus" });
+        await refresh();
+      } else {
+        toast({ title: "Gagal menghapus", variant: "destructive" });
+      }
+    } finally {
+      setHbBusy(false);
+    }
+  }
 
   // Downscale gambar ke max 512px (kotak) agar ringan & konsisten
   function processImage(file: File): Promise<Blob> {
@@ -247,6 +305,62 @@ export default function ProfileView({ data, refresh }: { data: DashData; refresh
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Pemeriksaan Hemoglobin (diisi peserta — tampil juga di panel admin) */}
+      <div className="rounded-3xl border-2 border-fez-ink bg-white p-5">
+        <p className="font-display text-lg font-extrabold text-fez-ink">🩸 Pemeriksaan Hemoglobin (Hb)</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Isi hasil cek darah Hb-mu (dari Posyandu/Puskesmas/sekolah). Angka normal remaja putri biasanya ≥ 12,0 g/dL.
+          Data ini membantu pendamping programmemu memantau kesehatanmu.
+        </p>
+
+        {p.hbValue !== null && (
+          <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl border-2 border-fez-ink/10 bg-rose-50/60 p-3">
+            <span className="font-display text-3xl font-extrabold text-fez-rose">{String(p.hbValue).replace(".", ",")}<span className="text-sm font-extrabold text-fez-ink/50"> g/dL</span></span>
+            <div className="text-xs font-bold text-fez-ink/60">
+              <p>Diperiksa: {p.hbCheckDate ? new Date(p.hbCheckDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "–"}</p>
+              <p className={hbAnemia ? "text-rose-600" : "text-emerald-600"}>
+                {hbAnemia ? "⚠️ Di bawah 12,0 — cenderung anemia, tetap rutin minum TTD & makan bergizi ya!" : "✅ Normal (≥ 12,0) — pertahankan!"}
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-3 flex flex-wrap items-end gap-2">
+          <div className="w-32">
+            <Label className="text-[11px] font-bold text-fez-ink/70">Nilai Hb (g/dL)</Label>
+            <Input
+              value={hbInput}
+              onChange={(e) => setHbInput(e.target.value.replace(/[^0-9.,]/g, ""))}
+              inputMode="decimal"
+              placeholder="cth. 11,5"
+              className="mt-1 h-10 rounded-xl border-2 border-fez-ink/15"
+            />
+          </div>
+          <div className="w-44">
+            <Label className="text-[11px] font-bold text-fez-ink/70">Tanggal pemeriksaan</Label>
+            <Input
+              type="date"
+              value={hbDate}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setHbDate(e.target.value)}
+              className="mt-1 h-10 rounded-xl border-2 border-fez-ink/15"
+            />
+          </div>
+          <Button onClick={saveHb} disabled={hbBusy} className="h-10 rounded-xl border-2 border-fez-ink bg-rose-500 px-4 text-xs font-extrabold text-white hover:bg-rose-600">
+            {hbBusy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+            Simpan Hasil
+          </Button>
+          {p.hbValue !== null && (
+            <Button onClick={deleteHb} disabled={hbBusy} variant="outline" className="h-10 rounded-xl border-2 border-rose-200 px-3 text-xs font-extrabold text-rose-500 hover:bg-rose-50">
+              <Trash2 className="mr-1 h-3.5 w-3.5" /> Hapus
+            </Button>
+          )}
+        </div>
+        <p className="mt-2 text-[11px] font-semibold text-fez-ink/45">
+          🔒 Hasil ini bersifat pribadi — hanya kamu dan admin/pendamping program yang bisa melihatnya.
+        </p>
       </div>
 
       {/* Level journey */}

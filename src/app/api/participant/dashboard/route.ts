@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireParticipant } from "@/lib/auth";
-import { CORE_MISSIONS } from "@/lib/constants";
+import { CORE_MISSIONS, CORE_MISSION_KEY_RE, customMissionKey } from "@/lib/constants";
 import { checkTrackerMissions, computeWeeklyStreak, syncMissionUnlocks } from "@/lib/gamification";
 
 export async function GET() {
@@ -45,8 +45,23 @@ export async function GET() {
   const streak = computeWeeklyStreak(checkins.map((c) => c.date));
 
   const coreDone = CORE_MISSIONS.every((k) => p.missionProgress.find((m) => m.missionKey === k)?.status === "COMPLETED");
-  const completedRows = p.missionProgress.filter((m) => m.status === "COMPLETED");
-  const completed = completedRows.length;
+  // Hanya misi inti M1-M9 yang dihitung (misi buatan admin dihitung terpisah)
+  const completed = p.missionProgress.filter((m) => m.status === "COMPLETED" && CORE_MISSION_KEY_RE.test(m.missionKey)).length;
+
+  // Misi buatan admin yang aktif + status penyelesaian peserta ini
+  const customs = await db.customMission.findMany({ where: { active: true }, orderBy: { createdAt: "asc" } });
+  const customMissions = customs.map((c) => {
+    const st = p.missionProgress.find((m) => m.missionKey === customMissionKey(c.id));
+    return {
+      id: c.id,
+      title: c.title,
+      icon: c.icon,
+      description: c.description,
+      xp: c.xp,
+      completed: st?.status === "COMPLETED",
+      completedAt: st?.completedAt ?? null,
+    };
+  });
 
   // Ranking dalam tingkat pendidikannya
   const sameLevel = await db.participant.findMany({
@@ -71,6 +86,8 @@ export async function GET() {
       streakWeeks: streak,
       preTestScore: p.preTestScore,
       postTestScore: p.postTestScore,
+      hbValue: p.hbValue,
+      hbCheckDate: p.hbCheckDate,
       isDutaCandidate: p.isDutaCandidate,
       isDuta: p.isDuta,
     },
@@ -88,6 +105,7 @@ export async function GET() {
     totalCheckins: checkins.length,
     postTestUnlocked: coreDone,
     allCompleted: completed >= 9,
+    customMissions,
     rank,
     videos: p.videoSubmissions.map((v) => ({ id: v.id, fileUrl: v.fileUrl, status: v.status, grade: v.grade, missionKey: v.missionKey })),
     community: {

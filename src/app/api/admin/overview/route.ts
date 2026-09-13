@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { computeDutaScore } from "@/lib/gamification";
-import { getLevel, LEVELS, BADGES, badgeByKey } from "@/lib/constants";
+import { getLevel, LEVELS, BADGES, badgeByKey, MISSIONS } from "@/lib/constants";
 
 export async function GET() {
   const admin = await requireAdmin();
@@ -13,7 +13,7 @@ export async function GET() {
       include: { badges: true, missionProgress: { where: { status: "COMPLETED" } }, user: { select: { username: true, createdAt: true } } },
     }),
     db.tTDCheckIn.findMany({ orderBy: { date: "desc" } }),
-    db.missionProgress.findMany({ where: { status: "COMPLETED" } }),
+    db.missionProgress.findMany({ where: { status: "COMPLETED", missionKey: { in: MISSIONS.map((m) => m.key) } } }),
     db.quizResult.findMany({ where: { quizKey: { in: ["PRETEST", "POSTTEST"] } } }),
     db.activityLog.findMany({ orderBy: { createdAt: "desc" } }),
     db.videoSubmission.findMany({ select: { status: true } }),

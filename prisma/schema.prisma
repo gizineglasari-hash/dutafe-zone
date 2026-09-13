@@ -61,6 +61,8 @@ model Participant {
   lastCheckIn     String? // YYYY-MM-DD
   preTestScore    Int?
   postTestScore   Int?
+  hbValue         Float?   // Hasil pemeriksaan hemoglobin (g/dL) — diisi peserta di Profil
+  hbCheckDate     DateTime? // Tanggal pemeriksaan Hb terakhir
   isDutaCandidate Boolean  @default(false)
   isDuta          Boolean  @default(false)
   createdAt       DateTime @default(now())
@@ -77,6 +79,24 @@ model Participant {
   missionShares    MissionShare[]
   pushSubscriptions PushSubscription[]
   reminderLogs     TtdReminderLog[]
+}
+
+// ============================================================
+// Misi Buatan Admin (pembaruan 15)
+// Satu baris = satu misi tambahan yang dibuat admin lewat panel.
+// Muncul di Mission Center peserta sebagai "Misi Tambahan".
+// Penyelesaian dicatat di tabel MissionProgress dengan missionKey
+// "CUST:<id>" — idempoten (XP hanya sekali per peserta).
+// ============================================================
+model CustomMission {
+  id          String   @id @default(cuid())
+  title       String
+  icon        String   @default("⭐")
+  description String
+  xp          Int      @default(50)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // ============================================================

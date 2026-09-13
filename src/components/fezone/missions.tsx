@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import type { DashData } from "@/components/fezone/app-shell";
 import { useFez } from "@/lib/store";
+import { toast } from "@/hooks/use-toast";
 import { MISSIONS, missionByKey } from "@/lib/constants";
 import { ProgressBar, SectionTitle } from "@/components/fezone/ui-bits";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,9 @@ export default function MissionCenter({ data, refresh }: { data: DashData; refre
   const { celebrate, setTab } = useFez();
   const banks = useQuizBanks(); // soal editan admin (fallback: soal bawaan)
   const [detail, setDetail] = useState<DetailView | null>(null);
+  const [customBusy, setCustomBusy] = useState<string | null>(null);
   const level = (data.profile.educationLevel === "SMA" ? "SMA" : "SMP") as "SMP" | "SMA";
+  const customs = data.customMissions ?? [];
 
   function statusOf(key: string) {
     return data.missions.find((m) => m.key === key)?.status ?? "LOCKED";
@@ -70,6 +73,30 @@ export default function MissionCenter({ data, refresh }: { data: DashData; refre
     refresh();
     const def = missionByKey(key);
     celebrate(`Mission ${key.slice(1)} — ${def?.title ?? ""} SELESAI!`, xp, badge ?? null);
+  }
+
+  // Misi buatan admin: tandai selesai (XP ditentukan & dicatat server, hanya sekali)
+  async function completeCustom(m: DashData["customMissions"][number]) {
+    if (customBusy) return;
+    setCustomBusy(m.id);
+    try {
+      const res = await fetch("/api/participant/custom-missions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: m.id }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) {
+        await refresh();
+        celebrate(`Misi "${m.title}" SELESAI! 🎉`, d.xpAwarded ?? 0, null);
+      } else {
+        toast({ title: "Gagal", description: d.message || "Coba lagi beberapa saat.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Koneksi bermasalah", description: "Internet atau server sedang tidak bisa dihubungi. Coba lagi.", variant: "destructive" });
+    } finally {
+      setCustomBusy(null);
+    }
   }
 
   // ===================== DETAIL VIEW =====================
@@ -274,6 +301,53 @@ export default function MissionCenter({ data, refresh }: { data: DashData; refre
           );
         })}
       </div>
+
+      {/* ================= MISI TAMBAHAN (BUATAN ADMIN) ================= */}
+      {customs.length > 0 && (
+        <div className="mt-8">
+          <SectionTitle icon="⭐" title="MISI TAMBAHAN" sub="Misi spesial dari admin Fe-Zone — kerjakan sesuai petunjuk, lalu tandai selesai untuk dapat XP!" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            {customs.map((m, i) => (
+              <motion.div
+                key={m.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+                className={`card-pop relative overflow-hidden rounded-3xl border-2 p-4 ${
+                  m.completed ? "border-emerald-400 bg-gradient-to-br from-emerald-50 to-teal-50" : "border-fez-ink bg-white"
+                }`}
+              >
+                {m.completed ? (
+                  <span className="absolute right-3 top-3 rounded-full border-2 border-emerald-500 bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold text-emerald-700">✅ SELESAI</span>
+                ) : (
+                  <span className="absolute right-3 top-3 rounded-full border-2 border-amber-400 bg-amber-100 px-2 py-0.5 text-[10px] font-extrabold text-amber-700">⭐ +{m.xp} XP</span>
+                )}
+                <div className="flex items-start gap-3">
+                  <span className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-2 border-fez-ink text-3xl sticker-sm`} style={{ background: m.completed ? "#d1fae5" : "#fef3c7" }}>
+                    {m.icon}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600">Misi Tambahan · +{m.xp} XP</p>
+                    <p className="font-display text-base font-extrabold leading-tight text-fez-ink">{m.title}</p>
+                    <p className="mt-1 whitespace-pre-line text-xs leading-snug text-fez-ink/60">{m.description}</p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => !m.completed && completeCustom(m)}
+                  disabled={m.completed || customBusy === m.id}
+                  className={`mt-3 h-11 w-full rounded-2xl border-2 font-extrabold ${
+                    m.completed
+                      ? "border-emerald-500 bg-white text-emerald-600"
+                      : "border-fez-ink bg-gradient-to-r from-amber-400 to-orange-400 text-white"
+                  }`}
+                >
+                  {m.completed ? "🎉 Terima kasih sudah mengerjakan!" : customBusy === m.id ? "Menyimpan..." : "✅ Tandai Sudah Dikerjakan"}
+                </Button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -27,10 +27,12 @@ export interface DashData {
     id: string; name: string; age: number; school: string; educationLevel: string;
     avatar: string; profilePhotoUrl: string | null; xp: number; streakWeeks: number; preTestScore: number | null;
     postTestScore: number | null; isDutaCandidate: boolean; isDuta: boolean;
+    hbValue: number | null; hbCheckDate: string | null;
   };
   badges: string[];
   missions: { key: string; status: string; progress: number; dataJson: string | null; score?: number | null; xpAwarded?: number; unlocked?: boolean; prevMission?: string | null }[];
   missionsCompleted: number;
+  customMissions: { id: string; title: string; icon: string; description: string; xp: number; completed: boolean; completedAt: string | null }[];
   checkins: string[];
   totalCheckins: number;
   postTestUnlocked: boolean;

@@ -180,6 +180,33 @@ async function main() {
     );
   `).catch((e) => console.warn("[seed] buat tabel QuizContent:", e?.message || e));
 
+  // --- Kolom Hb peserta (pembaruan 15) ---
+  // Hasil pemeriksaan hemoglobin yang diisi peserta di halaman Profil,
+  // tampil juga di panel admin (Data Peserta). Aman diulang.
+  await db.$executeRawUnsafe(
+    `ALTER TABLE "Participant" ADD COLUMN IF NOT EXISTS "hbValue" DOUBLE PRECISION;`
+  ).catch((e) => console.warn("[seed] kolom Participant.hbValue:", e?.message || e));
+  await db.$executeRawUnsafe(
+    `ALTER TABLE "Participant" ADD COLUMN IF NOT EXISTS "hbCheckDate" TIMESTAMP(3);`
+  ).catch((e) => console.warn("[seed] kolom Participant.hbCheckDate:", e?.message || e));
+
+  // --- CustomMission (Misi Buatan Admin — pembaruan 15) ---
+  // Tabel BOLEH kosong: kalau kosong, peserta hanya melihat 9 misi inti.
+  // Baris baru muncul saat admin membuat misi tambahan di panel admin.
+  // Penyelesaian peserta dicatat di "MissionProgress"."missionKey" = 'CUST:<id>'.
+  await db.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "CustomMission" (
+      "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+      "title" TEXT NOT NULL,
+      "icon" TEXT NOT NULL DEFAULT '⭐',
+      "description" TEXT NOT NULL,
+      "xp" INTEGER NOT NULL DEFAULT 50,
+      "active" BOOLEAN NOT NULL DEFAULT true,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `).catch((e) => console.warn("[seed] buat tabel CustomMission:", e?.message || e));
+
   // WAJIB lowercase: route login mencari username dalam bentuk lowercase,
   // jadi akun admin juga harus tersimpan lowercase agar login tidak gagal.
   const username = (process.env.ADMIN_USERNAME || "admin@fezone.id").trim().toLowerCase();

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireParticipant } from "@/lib/auth";
-import { CORE_MISSIONS, MISSIONS, prevMissionInChain } from "@/lib/constants";
+import { CORE_MISSION_KEY_RE, CORE_MISSIONS, MISSIONS, prevMissionInChain } from "@/lib/constants";
 import { checkTrackerMissions, countCompleted, getMissionProgress, startMission, syncMissionUnlocks } from "@/lib/gamification";
 
 export async function GET() {
@@ -26,7 +26,8 @@ export async function GET() {
   const rows = await db.missionProgress.findMany({ where: { participantId: pid } });
   const statusOf = (k: string) => rows.find((r) => r.missionKey === k)?.status ?? "LOCKED";
 
-  const completed = countCompleted(rows);
+  // Hanya misi inti M1-M9 yang dihitung utk counter (misi buatan admin terpisah)
+  const completed = countCompleted(rows.filter((r) => CORE_MISSION_KEY_RE.test(r.missionKey)));
   const coreDone = CORE_MISSIONS.every((k) => statusOf(k) === "COMPLETED");
 
   return NextResponse.json({

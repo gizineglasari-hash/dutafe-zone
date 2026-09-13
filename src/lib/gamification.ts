@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { ALWAYS_OPEN_MISSIONS, getLevel, missionByKey, prevMissionInChain, UNLOCK_CHAIN, XP_RULES } from "@/lib/constants";
+import { ALWAYS_OPEN_MISSIONS, CORE_MISSION_KEY_RE, getLevel, missionByKey, prevMissionInChain, UNLOCK_CHAIN, XP_RULES } from "@/lib/constants";
 
 // ------------------------------------------------------------
 // Award XP + auto level (dipanggil di server)
@@ -264,7 +264,9 @@ export async function computeDutaScore(participantId: string): Promise<DutaScore
 
   const knowledge = Math.round((p.postTestScore ?? 0)); // 0-100
 
-  const doneCount = p.missionProgress.filter((m) => m.status === "COMPLETED").length;
+  // Hanya misi inti M1-M9 yang dihitung untuk skor Duta (misi buatan
+  // admin tidak mengubah skor & sertifikat).
+  const doneCount = p.missionProgress.filter((m) => m.status === "COMPLETED" && CORE_MISSION_KEY_RE.test(m.missionKey)).length;
   const missions = Math.round((doneCount / 9) * 100);
 
   const checkins = p.ttdCheckIns.length;
