@@ -312,7 +312,7 @@ export default function ProfileView({ data, refresh }: { data: DashData; refresh
         <p className="font-display text-lg font-extrabold text-fez-ink">🩸 Pemeriksaan Hemoglobin (Hb)</p>
         <p className="mt-1 text-xs text-muted-foreground">
           Isi hasil cek darah Hb-mu (dari Posyandu/Puskesmas/sekolah). Angka normal remaja putri biasanya ≥ 12,0 g/dL.
-          Data ini membantu pendamping programmemu memantau kesehatanmu.
+          Data ini membantu pendamping program memantau kesehatanmu.
         </p>
 
         {p.hbValue !== null && (

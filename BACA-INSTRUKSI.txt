@@ -1,66 +1,34 @@
-PEMBARUAN 15 — MISI BUATAN ADMIN + TTD & Hb DI DATA PESERTA (FE-ZONE)
-=======================================================================
+PEMBARUAN 16 — Perbaikan Salah Ketik (Typo) di Profil
+======================================================
 
-APA YANG BARU?
---------------
-1. 🧩 MENU "MISI BUATAN" DI PANEL ADMIN
-   Admin bisa membuat misi tambahan sendiri (judul, ikon, petunjuk,
-   hadiah XP 0-500). Misinya langsung muncul di Mission Center peserta
-   pada bagian "⭐ Misi Tambahan". Peserta yang sudah mengerjakannya
-   menekan "Tandai Sudah Dikerjakan" dan dapat XP SEKALI saja (tidak
-   bisa diulang untuk XP ganda — dicatat oleh server). Misi bisa
-   diedit, dimatikan (disembunyikan), atau dihapus kapan saja.
-   Catatan aman: misi buatan TIDAK mengubah hitungan 9 misi utama,
-   skor Duta, dan sertifikat.
+APA YANG DIPERBAIKI?
+Di halaman Profil bagian "🩸 Pemeriksaan Hemoglobin (Hb)", ada salah ketik:
+kata "programmemu" diperbaiki menjadi "program".
 
-2. 💊 KOLOM "TTD" DI DATA PESERTA ADMIN
-   Tabel Data Peserta kini menampilkan jumlah tablet TTD yang sudah
-   diminum tiap peserta (mengikuti jumlah check-in TTD mereka).
+SEBELUM : Data ini membantu pendamping programmemu memantau kesehatanmu.
+SESUDAH : Data ini membantu pendamping program memantau kesehatanmu.
 
-3. 🩸 PEMERIKSAAN HEMOGLOBIN (Hb)
-   - Peserta: di halaman Profil muncul kartu "🩸 Pemeriksaan
-     Hemoglobin". Peserta mengisi nilai Hb (g/dL) + tanggal
-     pemeriksaan → tersimpan, lengkap dengan keterangan
-     Normal (≥12,0) atau cenderung anemia (<12,0).
-   - Admin: hasilnya tampil di tabel Data Peserta (kolom "🩸 Hb")
-     dengan warna (merah = <12, hijau = ≥12) beserta tanggalnya.
-   - Data Hb juga ikut saat admin mengekspor Excel/PDF.
+CATATAN PENTING
+- Paket ini hanya berisi 1 file. Tidak ada fitur atau data lain yang berubah.
+- WAJIB: pastikan PEMBARUAN 15 sudah terpasang lebih dulu, karena file di
+  paket ini adalah versi terbaru dari halaman Profil yang sudah berisi
+  kartu Pemeriksaan Hemoglobin + fitur Misi Tambahan & kolom TTD/Hb di admin.
 
-YANG PERLU DILAKUKAN (3 langkah, 16 file):
-------------------------------------------------
-1. Ekstrak paket ini. Buka folder project di komputer kamu:
+CARA PASANG (3 langkah):
+1. Ekstrak (unzip) file ini. Di dalamnya ada folder "src".
+2. Salin (copy) folder "src" tersebut ke dalam folder proyekmu:
    Downloads\Fe-zone\dutafe-zone
+   Saat muncul peringatan, pilih "Replace" / "Timpa file yang lama".
+3. Buka GitHub Desktop → pastikan ada 1 file yang berubah:
+   src/components/fezone/profile.tsx
+   Lalu: tulis keterangan (misalnya "pembaruan 16") → Commit to main
+   → Push origin. Selesai!
+   Vercel akan otomatis membangun ulang website (tunggu ± 2-3 menit).
 
-2. Salin SELURUH isi folder paket (prisma, scripts, src) ke folder
-   project — TIMPA file lama jika ditanya (struktur foldernya sama).
-   Yang ikut: 1 file prisma, 1 file scripts, 14 file di src
-   (termasuk 2 file API baru: custom-missions).
+SUDAH SELESAI? CARA CEK:
+Buka website → login → halaman Profil → bagian Pemeriksaan Hemoglobin.
+Tulisannya sekarang harus berbunyi:
+"Data ini membantu pendamping program memantau kesehatanmu."
 
-3. Buka GitHub Desktop:
-   - Pastikan ada banyak file berubah (16 file)
-   - Commit message: pembaruan 15: misi buatan admin + kolom TTD + data hemoglobin
-   - Klik "Commit to main" lalu "Push origin"
-   - Tunggu 3-5 menit, Vercel otomatis memasang. Tabel & kolom baru
-     dibuat OTOMATIS saat build — tidak perlu SQL manual.
-
-CARA MENGECEK SETELAH TERPASANG:
---------------------------------
-A. Misi Buatan:
-   1. Login admin → menu "Misi Buatan" → buat 1 misi coba-coba
-      (mis. judul "Coba Misi", XP 10)
-   2. Login peserta → Mission → bagian "⭐ MISI TAMBAHAN" → misi
-      tampil → tekan "Tandai Sudah Dikerjakan" → XP masuk
-   3. Coba tekan lagi / reload → XP TIDAK bertambah (aman dari dobel)
-   4. Kembali ke admin → "Misi Buatan" → jumlah peserta selesai naik
-B. TTD & Hb:
-   1. Login peserta → Profil → isi Nilai Hb (cth. 11,5) + tanggal
-      → Simpan Hasil → kartu hasil muncul
-   2. Login admin → Data Peserta → kolom "💊 TTD" dan "🩸 Hb" terisi
-      (Hb di bawah 12 tampil MERAH)
-
-CATATAN PENTING:
-----------------
-- Semua fitur lama tidak berubah: 9 misi inti, XP, badge, pre/post
-  test, editor edukasi & editor soal tetap berjalan normal.
-- Data Hb bersifat pribadi: hanya peserta pemiliknya dan admin yang
-  bisa melihat.
+Kalau tulisannya masih yang lama, tekan Ctrl + Shift + R di browser
+(hard refresh) agar halaman dimuat ulang dengan versi terbaru.
