@@ -1,0 +1,57 @@
+============================================================
+PEMBARUAN 17 — FE-ZONE
+Fitur CEK STATUS GIZI + Modul PERKIRAAN BB SESUAI TINGGI BADAN
+============================================================
+
+ISI PAKET (13 file kode + petunjuk ini)
+Bagian A — file LAMA yang DIGANTI (4 file):
+  1. prisma/schema.prisma
+  2. scripts/seed.production.js
+  3. src/components/fezone/admin.tsx
+  4. src/components/fezone/app-shell.tsx
+  5. src/components/fezone/dashboard.tsx
+  6. src/lib/store.ts
+Bagian B — file BARU (7 file, buat folder baru bila belum ada):
+  7.  src/app/api/admin/nutrition/route.ts
+  8.  src/app/api/admin/nutrition/[id]/route.ts   (folder [id])
+  9.  src/app/api/participant/nutrition/route.ts
+  10. src/components/fezone/admin-gizi.tsx
+  11. src/components/fezone/nutrition.tsx
+  12. src/lib/who2007-data.ts
+  13. src/lib/who2007.ts
+
+CARA PASANG (ringkas)
+ 1. Ekstrak zip ini di komputer.
+ 2. Masuk ke repo GitHub: gizineglasari-hash/dutafe-zone
+ 3. Unggah 13 file di atas ke folder yang PERSIS SAMA
+    seperti struktur foldernya (folder baru ikut dibuat).
+    - Untuk folder bernama "[id]" tanda kurung siku ikut
+      ditulis apa adanya.
+ 4. Setelah semua terunggah, Vercel otomatis membangun ulang
+    situs (kurang lebih 2-5 menit).
+
+YANG TERJADI OTOMATIS SAAT BUILD (tidak perlu diatur manual)
+ - 4 kolom database baru (bb_median_who, bb_min_who,
+   bb_max_who, who_reference) ditambahkan otomatis ke tabel
+   nutrition_assessments.
+   AMAN: hanya MENAMBAH kolom, tidak menghapus/mengubah
+   data lama. Riwayat lama tetap utuh (kolom baru kosong,
+   ditampilkan sebagai "-" ).
+ - Situs live: https://dutafe-zone.vercel.app/
+
+CARA UJI CEPAT SETELAH LIVE
+ 1. Login sebagai peserta > menu CEK STATUS GIZI.
+ 2. Isi tanggal lahir, berat badan, tinggi badan > Kirim.
+ 3. Kartu baru "Perkiraan BB sesuai Tinggi Badan" muncul:
+    BB saat ini, TB, Perkiraan BB median, Rentang BB sesuai.
+ 4. Login admin > tab Status Gizi > kolom "Perkiraan BB
+    median" + filter Sekolah & Usia + ekspor Excel/PDF
+    sudah memuat 4 kolom baru.
+
+CATATAN TEKNIS
+ - Kalkulasi memakai referensi WHO 2007 Female 5-19 years
+   (tabel LMS resmi, usia dihitung per BULAN, 61-228 bulan).
+ - Tanpa rumus dewasa (Broca/Lorentz/Devine tidak dipakai).
+ - Usia di luar 5-19 tahun: tidak dipaksa hitung, muncul
+   pesan "Referensi ini digunakan untuk usia 5-19 tahun."
+============================================================

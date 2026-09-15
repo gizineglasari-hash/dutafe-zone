@@ -207,6 +207,98 @@ async function main() {
     );
   `).catch((e) => console.warn("[seed] buat tabel CustomMission:", e?.message || e));
 
+  // ============================================================
+  // CEK STATUS GIZI (pembaruan 17)
+  // Tabel nutrition_assessments — satu baris = satu pemeriksaan.
+  // Dibuat dengan IF NOT EXISTS sehingga aman dijalankan berulang
+  // dan TIDAK PERNAH mengubah/menghapus tabel lain.
+  // ============================================================
+  await db.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "nutrition_assessments" (
+      "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid(),
+      "user_id" TEXT NOT NULL,
+      "participant_id" TEXT NOT NULL,
+      "nama_peserta" TEXT NOT NULL,
+      "jenis_kelamin" TEXT NOT NULL,
+      "tanggal_lahir" DATE NOT NULL,
+      "tanggal_pemeriksaan" DATE NOT NULL,
+      "usia_tahun" INTEGER NOT NULL,
+      "usia_bulan" INTEGER NOT NULL,
+      "usia_hari" INTEGER NOT NULL,
+      "usia_dalam_hari" INTEGER NOT NULL,
+      "berat_badan_kg" NUMERIC(5,2) NOT NULL,
+      "tinggi_badan_cm" NUMERIC(5,1) NOT NULL,
+      "imt" NUMERIC(6,4) NOT NULL,
+      "tb_u_zscore" NUMERIC(5,2) NOT NULL,
+      "tb_u_percentile" NUMERIC(5,2) NOT NULL,
+      "tb_u_status" TEXT NOT NULL,
+      "imt_u_zscore" NUMERIC(5,2) NOT NULL,
+      "imt_u_percentile" NUMERIC(5,2) NOT NULL,
+      "imt_u_status" TEXT NOT NULL,
+      "reference_standard" TEXT NOT NULL DEFAULT 'WHO Growth Reference 2007',
+      "reference_version" TEXT NOT NULL DEFAULT 'Tabel expanded LMS WHO, metode WHO AnthroPlus',
+      "interpretation" TEXT NOT NULL,
+      "recommendation" TEXT NOT NULL,
+      "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `).catch((e) => console.warn("[seed] buat tabel nutrition_assessments:", e?.message || e));
+
+  await db.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "nutrition_assessments_user_id_idx" ON "nutrition_assessments"("user_id");`
+  ).catch((e) => console.warn("[seed] index nutrition(user_id):", e?.message || e));
+  await db.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "nutrition_assessments_participant_id_tanggal_pemeriksaan_idx" ON "nutrition_assessments"("participant_id", "tanggal_pemeriksaan");`
+  ).catch((e) => console.warn("[seed] index nutrition(participant,tanggal):", e?.message || e));
+  await db.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "nutrition_assessments_tanggal_pemeriksaan_idx" ON "nutrition_assessments"("tanggal_pemeriksaan");`
+  ).catch((e) => console.warn("[seed] index nutrition(tanggal):", e?.message || e));
+
+  await db.$executeRawUnsafe(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'nutrition_assessments_user_id_fkey') THEN
+        ALTER TABLE "nutrition_assessments"
+          ADD CONSTRAINT "nutrition_assessments_user_id_fkey"
+          FOREIGN KEY ("user_id") REFERENCES "User"("id")
+          ON DELETE CASCADE ON UPDATE CASCADE;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'nutrition_assessments_participant_id_fkey') THEN
+        ALTER TABLE "nutrition_assessments"
+          ADD CONSTRAINT "nutrition_assessments_participant_id_fkey"
+          FOREIGN KEY ("participant_id") REFERENCES "Participant"("id")
+          ON DELETE CASCADE ON UPDATE CASCADE;
+      END IF;
+    END $$;
+  `).catch((e) => console.warn("[seed] relasi nutrition_assessments:", e?.message || e));
+
+  // ============================================================
+  // PERKIRAAN BB SESUAI TINGGI BADAN (tambahan fitur Cek Status Gizi)
+  // 4 kolom BARU pada tabel yang sama (BUKAN tabel duplikat).
+  // Additive + IF NOT EXISTS → aman diulang, data lama TIDAK disentuh.
+  // ============================================================
+  await db.$executeRawUnsafe(
+    `ALTER TABLE "nutrition_assessments" ADD COLUMN IF NOT EXISTS "bb_median_who" NUMERIC(5,2);`
+  ).catch((e) => console.warn("[seed] kolom bb_median_who:", e?.message || e));
+  await db.$executeRawUnsafe(
+    `ALTER TABLE "nutrition_assessments" ADD COLUMN IF NOT EXISTS "bb_min_who" NUMERIC(5,2);`
+  ).catch((e) => console.warn("[seed] kolom bb_min_who:", e?.message || e));
+  await db.$executeRawUnsafe(
+    `ALTER TABLE "nutrition_assessments" ADD COLUMN IF NOT EXISTS "bb_max_who" NUMERIC(5,2);`
+  ).catch((e) => console.warn("[seed] kolom bb_max_who:", e?.message || e));
+  await db.$executeRawUnsafe(
+    `ALTER TABLE "nutrition_assessments" ADD COLUMN IF NOT EXISTS "who_reference" TEXT;`
+  ).catch((e) => console.warn("[seed] kolom who_reference:", e?.message || e));
+
+  // Kolom pengingat formulir Cek Status Gizi (jenis kelamin & tanggal lahir
+  // disimpan agar pengecekan berikutnya terisi otomatis). Aman diulang.
+  await db.$executeRawUnsafe(
+    `ALTER TABLE "Participant" ADD COLUMN IF NOT EXISTS "jenisKelamin" TEXT;`
+  ).catch((e) => console.warn("[seed] kolom Participant.jenisKelamin:", e?.message || e));
+  await db.$executeRawUnsafe(
+    `ALTER TABLE "Participant" ADD COLUMN IF NOT EXISTS "tanggalLahir" TIMESTAMP(3);`
+  ).catch((e) => console.warn("[seed] kolom Participant.tanggalLahir:", e?.message || e));
+
   // WAJIB lowercase: route login mencari username dalam bentuk lowercase,
   // jadi akun admin juga harus tersimpan lowercase agar login tidak gagal.
   const username = (process.env.ADMIN_USERNAME || "admin@fezone.id").trim().toLowerCase();

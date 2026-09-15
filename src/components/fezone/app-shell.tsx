@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getLevel } from "@/lib/constants";
 import {
-  BookOpen, CalendarCheck, Crown, Home, LogOut, Medal, Menu, Target, Trophy, User, Users, X,
+  BookOpen, CalendarCheck, Crown, Heart, Home, LogOut, Medal, Menu, Target, Trophy, User, Users, X,
 } from "lucide-react";
 import DashboardView from "@/components/fezone/dashboard";
 import EdukasiView from "@/components/fezone/edukasi";
@@ -17,6 +17,7 @@ import LeaderboardView from "@/components/fezone/leaderboard";
 import BadgesView from "@/components/fezone/badges";
 import DutaChallengeView from "@/components/fezone/duta-challenge";
 import ProfileView from "@/components/fezone/profile";
+import NutritionView from "@/components/fezone/nutrition";
 import TestView from "@/components/fezone/test-view";
 import { CommunityTab } from "@/components/fezone/community";
 import { CommunitySubmitModal } from "@/components/fezone/peer-educator";
@@ -55,6 +56,7 @@ const TABS: { key: AppTab; label: string; icon: React.ElementType; mobile?: bool
   { key: "edukasi", label: "Edukasi", icon: BookOpen },
   { key: "missions", label: "Mission", icon: Target, mobile: true },
   { key: "ttd", label: "TTD Tracker", icon: CalendarCheck, mobile: true },
+  { key: "gizi", label: "Cek Status Gizi", icon: Heart },
   { key: "leaderboard", label: "Leaderboard", icon: Trophy, mobile: true },
   { key: "community", label: "Community", icon: Users },
   { key: "badges", label: "Badge", icon: Medal },
@@ -124,6 +126,7 @@ export default function AppShell() {
       case "edukasi": return <EdukasiView />;
       case "missions": return <MissionCenter data={data} refresh={refresh} />;
       case "ttd": return <TTDTrackerView data={data} refresh={refresh} />;
+      case "gizi": return <NutritionView />;
       case "leaderboard": return <LeaderboardView data={data} />;
       case "community": return <CommunityTab />;
       case "badges": return <BadgesView data={data} />;

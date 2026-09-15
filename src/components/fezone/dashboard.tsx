@@ -261,6 +261,7 @@ export default function DashboardView({ data, refresh }: { data: DashData; refre
             />
           )}
           <QuickCard icon="💊" title="TTD Tracker" desc={data.totalCheckins > 0 ? `${data.totalCheckins} check-in · 🔥${p.streakWeeks} mgg` : "Catat konsumsi TTD-mu"} color="from-teal-100 to-emerald-50" onClick={() => setTab("ttd")} />
+          <QuickCard icon="💗" title="Cek Status Gizi" desc="Kenali pertumbuhan & gizimu (WHO 5–19 th)" color="from-pink-100 to-rose-50" onClick={() => setTab("gizi")} />
           <QuickCard icon="📚" title="Pojok Edukasi" desc="7 kategori materi seru" color="from-violet-100 to-purple-50" onClick={() => setTab("edukasi")} />
           <QuickCard icon="🏆" title="Leaderboard" desc={`Peringkat #${data.rank} · ${p.educationLevel}`} color="from-amber-100 to-yellow-50" onClick={() => setTab("leaderboard")} />
           <QuickCard icon="🎖" title="Koleksi Badge" desc={`${earnedBadges.length}/6 badge terkumpul`} color="from-pink-100 to-rose-50" onClick={() => setTab("badges")} />

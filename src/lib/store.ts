@@ -19,6 +19,7 @@ export type AppTab =
   | "edukasi"
   | "missions"
   | "ttd"
+  | "gizi"
   | "leaderboard"
   | "community"
   | "badges"

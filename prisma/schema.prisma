@@ -17,6 +17,7 @@ model User {
   sessions     Session[]
   participant  Participant?
   resetTokens  PasswordResetToken[]
+  nutritionAssessments NutritionAssessment[]
 }
 
 // Token reset password (alur "Lupa Password" via email).
@@ -65,10 +66,13 @@ model Participant {
   hbCheckDate     DateTime? // Tanggal pemeriksaan Hb terakhir
   isDutaCandidate Boolean  @default(false)
   isDuta          Boolean  @default(false)
+  jenisKelamin    String?  // "L" | "P" — diingat dari fitur Cek Status Gizi (pembaruan 17)
+  tanggalLahir    DateTime? // diingat dari fitur Cek Status Gizi agar isi formulir otomatis
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   missionProgress  MissionProgress[]
+  nutritionAssessments NutritionAssessment[]
   badges           ParticipantBadge[]
   ttdCheckIns      TTDCheckIn[]
   quizResults      QuizResult[]
@@ -307,6 +311,62 @@ model MissionShare {
 model AppSetting {
   key   String @id
   value String
+}
+
+// ============================================================
+// CEK STATUS GIZI (pembaruan 17)
+// Satu baris = SATU pemeriksaan status gizi peserta.
+// Setiap pengecekan membuat baris BARU (riwayat tidak pernah
+// ditimpa). Semua angka dihitung server-side memakai WHO Growth
+// Reference 2007 (metode LMS / WHO AnthroPlus), usia 5–19 tahun.
+// Keamanan setara RLS: akses hanya lewat API route yang selalu
+// memeriksa session — peserta hanya bisa membaca baris miliknya
+// sendiri; admin (role ADMIN) bisa membaca semua.
+// ============================================================
+model NutritionAssessment {
+  id                 String   @id @default(cuid())
+  userId             String   @map("user_id") // wajib: dari session yang terautentikasi
+  participantId      String   @map("participant_id")
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  participant        Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  namaPeserta        String   @map("nama_peserta") // snapshot nama saat diperiksa
+  jenisKelamin       String   @map("jenis_kelamin") // "L" | "P"
+  tanggalLahir       DateTime @map("tanggal_lahir") @db.Date
+  tanggalPemeriksaan DateTime @map("tanggal_pemeriksaan") @db.Date
+  // usia presisi (bukan selisih tahun saja)
+  usiaTahun          Int      @map("usia_tahun")
+  usiaBulan          Int      @map("usia_bulan")
+  usiaHari           Int      @map("usia_hari")
+  usiaDalamHari      Int      @map("usia_dalam_hari")
+  // pengukuran & hasil
+  beratBadanKg       Decimal  @map("berat_badan_kg") @db.Decimal(5, 2)
+  tinggiBadanCm      Decimal  @map("tinggi_badan_cm") @db.Decimal(5, 1)
+  imt                Decimal  @db.Decimal(6, 4) // BB/TB(m)^2 — disimpan presisi penuh (ditampilkan 1–2 desimal)
+  tbUZscore          Decimal  @map("tb_u_zscore") @db.Decimal(5, 2)
+  tbUPercentile      Decimal  @map("tb_u_percentile") @db.Decimal(5, 2)
+  tbUStatus          String   @map("tb_u_status")
+  imtUZscore         Decimal  @map("imt_u_zscore") @db.Decimal(5, 2)
+  imtUPercentile     Decimal  @map("imt_u_percentile") @db.Decimal(5, 2)
+  imtUStatus         String   @map("imt_u_status")
+  // referensi yang dipakai
+  referenceStandard  String   @map("reference_standard") @default("WHO Growth Reference 2007")
+  referenceVersion   String   @map("reference_version") @default("Tabel expanded LMS WHO, metode WHO AnthroPlus")
+  // perkiraan BB sesuai tinggi badan (WHO 2007 perempuan) — nullable agar
+  // data pemeriksaan LAMA tetap utuh tanpa migrasi merusak
+  bbMedianWho        Decimal? @map("bb_median_who") @db.Decimal(5, 2)
+  bbMinWho           Decimal? @map("bb_min_who") @db.Decimal(5, 2)
+  bbMaxWho           Decimal? @map("bb_max_who") @db.Decimal(5, 2)
+  whoReference       String?  @map("who_reference") // "WHO 2007 Female 5-19 years"
+  // teks ramah remaja
+  interpretation     String
+  recommendation     String
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([participantId, tanggalPemeriksaan])
+  @@index([tanggalPemeriksaan])
+  @@map("nutrition_assessments")
 }
 
 // ============================================================
