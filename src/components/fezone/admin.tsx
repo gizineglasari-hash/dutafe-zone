@@ -402,6 +402,10 @@ export function AdminDashboard() {
   const [filters, setFilters] = useState({ level: "", school: "", q: "", lvl: "", duta: "" });
   const [grades, setGrades] = useState<Record<string, { grade: string; note: string }>>({});
   const [winners, setWinners] = useState(1);
+  // PEMBARUAN 18 — picker Kandidat Duta manual
+  const [candQuery, setCandQuery] = useState("");
+  const [candResults, setCandResults] = useState<AdminRow[]>([]);
+  const [candLoading, setCandLoading] = useState(false);
   const [modContents, setModContents] = useState<ModContent[]>([]);
   const [modStatus, setModStatus] = useState<"all" | "PENDING" | "APPROVED" | "REJECTED">("all");
   const [modType, setModType] = useState<"all" | "education" | "peer_educator">("all");
@@ -591,6 +595,30 @@ export function AdminDashboard() {
     }
   }, []);
 
+  // PEMBARUAN 18 — pencarian peserta untuk picker Kandidat Duta manual
+  useEffect(() => {
+    const q = candQuery.trim();
+    if (!q) {
+      setCandResults([]);
+      return;
+    }
+    setCandLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/admin/participants?q=${encodeURIComponent(q)}`);
+        if (res.ok) {
+          const d = await res.json();
+          setCandResults((d.participants ?? []).slice(0, 8));
+        }
+      } catch {
+        // offline
+      } finally {
+        setCandLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [candQuery]);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadOverview();
@@ -639,6 +667,23 @@ export function AdminDashboard() {
       loadOverview();
       loadParticipants();
     }
+  }
+
+  // PEMBARUAN 18 — penetapan Kandidat Duta MANUAL oleh admin
+  async function setCandidate(pid: string, isCandidate: boolean) {
+    const res = await fetch("/api/admin/grade", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "setCandidate", participantId: pid, isCandidate }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toast({ title: "Gagal", description: d.error, variant: "destructive" });
+      return;
+    }
+    toast({ title: isCandidate ? "🌟 Kandidat Duta ditetapkan!" : "Status kandidat dihapus" });
+    loadOverview();
+    loadParticipants();
   }
 
   async function moderate(action: "approve" | "reject" | "delete", contentId: string, reason?: string, xpAward?: number) {
@@ -1355,8 +1400,55 @@ export function AdminDashboard() {
               </div>
             </div>
             <p className="rounded-2xl bg-amber-50 p-3 text-xs font-semibold text-amber-700">
-              📋 Sistem penilaian: {Object.values(DUTA_WEIGHTS).map((w) => `${w.label.split(" ")[0]} ${w.pct}%`).join(" · ")}. Ranking dihitung otomatis per tingkat (SMP/SMA terpisah). Tekan &quot;Tetapkan Duta&quot; untuk menetapkan pemenang.
+              ✋ <b>Mode manual (pembaruan 18):</b> menyelesaikan semua tahap tantangan <b>tidak lagi otomatis</b> menjadikan peserta Kandidat Duta.
+              Kandidat ditetapkan DI SINI oleh admin — cari nama peserta di bawah, lalu tekan “+ Jadikan Kandidat”. Skor di kartu hanya
+              <b> informasi penilaian</b>, bukan penentu otomatis. Sistem penilaian: {Object.values(DUTA_WEIGHTS).map((w) => `${w.label.split(" ")[0]} ${w.pct}%`).join(" · ")}.
             </p>
+
+            {/* ---- TAMBAH KANDIDAT MANUAL ---- */}
+            <div className="rounded-3xl border-2 border-dashed border-[#3d1526]/30 bg-white p-4">
+              <p className="font-display text-sm font-extrabold text-[#3d1526]">➕ Tambah Kandidat Manual</p>
+              <p className="mt-0.5 text-[11px] font-semibold text-[#3d1526]/50">
+                Ketik nama peserta (semua peserta terdaftar bisa dipilih — termasuk yang belum menyelesaikan semua tahap).
+              </p>
+              <Input
+                value={candQuery}
+                onChange={(e) => setCandQuery(e.target.value)}
+                placeholder="🔎 Cari nama peserta… cth. Aulia"
+                className="mt-2 h-11 rounded-xl border-2"
+              />
+              {candQuery.trim() && (
+                <div className="mt-2 space-y-1.5">
+                  {candLoading && <p className="py-2 text-center text-xs font-bold text-[#3d1526]/40">Mencari…</p>}
+                  {!candLoading && candResults.length === 0 && (
+                    <p className="py-2 text-center text-xs font-bold text-[#3d1526]/40">Tidak ada peserta dengan nama itu.</p>
+                  )}
+                  {candResults.map((r) => {
+                    const already = r.isDutaCandidate;
+                    return (
+                      <div key={r.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-[#3d1526]/10 bg-[#faf5f0] px-3 py-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-extrabold text-[#3d1526]">
+                            {r.name} {r.isDuta && <Crown className="inline h-3.5 w-3.5 text-amber-500" />}
+                          </p>
+                          <p className="truncate text-[10px] font-semibold text-[#3d1526]/50">{r.school} · {r.educationLevel} · {r.xp} XP</p>
+                        </div>
+                        {already ? (
+                          <span className="rounded-full bg-violet-100 px-2.5 py-1 text-[10px] font-extrabold text-violet-700">✓ Sudah kandidat</span>
+                        ) : (
+                          <Button
+                            onClick={() => setCandidate(r.id, true)}
+                            className="h-8 rounded-xl border-2 border-[#3d1526] bg-violet-500 px-3 text-[11px] font-extrabold text-white hover:bg-violet-600"
+                          >
+                            + Jadikan Kandidat
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             {(["SMP", "SMA"] as const).map((lv) => {
               const list = overview.dutaCandidates.filter((c) => c.educationLevel === lv);
@@ -1383,16 +1475,28 @@ export function AdminDashboard() {
                             </div>
                             <div className="text-right">
                               <p className="font-display text-xl font-extrabold text-rose-600">{c.score.total}</p>
-                              <p className="text-[9px] font-extrabold uppercase text-[#3d1526]/40">Skor akhir</p>
+                              <p className="text-[9px] font-extrabold uppercase text-[#3d1526]/40">Skor (info)</p>
                             </div>
-                            <Button
-                              onClick={() => setDuta(c.id, !c.isDuta)}
-                              className={`h-9 rounded-xl border-2 px-3 text-xs font-extrabold ${
-                                c.isDuta ? "border-[#3d1526]/20 bg-white text-[#3d1526]/60" : "border-[#3d1526] bg-amber-400 text-[#3d1526] hover:bg-amber-300"
-                              }`}
-                            >
-                              {c.isDuta ? "Cabut" : "👑 Tetapkan Duta"}
-                            </Button>
+                            <div className="flex flex-wrap gap-1.5">
+                              <Button
+                                onClick={() => setDuta(c.id, !c.isDuta)}
+                                className={`h-9 rounded-xl border-2 px-3 text-xs font-extrabold ${
+                                  c.isDuta ? "border-[#3d1526]/20 bg-white text-[#3d1526]/60" : "border-[#3d1526] bg-amber-400 text-[#3d1526] hover:bg-amber-300"
+                                }`}
+                              >
+                                {c.isDuta ? "Cabut" : "👑 Tetapkan Duta"}
+                              </Button>
+                              {!c.isDuta && (
+                                <Button
+                                  onClick={() => {
+                                    if (window.confirm(`Hapus ${c.name} dari daftar Kandidat Duta?`)) setCandidate(c.id, false);
+                                  }}
+                                  className="h-9 rounded-xl border-2 border-rose-200 bg-white px-3 text-xs font-extrabold text-rose-600 hover:bg-rose-50"
+                                >
+                                  ✕ Hapus
+                                </Button>
+                              )}
+                            </div>
                           </div>
                           {/* breakdown */}
                           <div className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
@@ -1937,6 +2041,20 @@ function ModStatusChip({ status }: { status: string }) {
 
 // Preview media untuk moderasi — YouTube embed, TikTok embed, fallback link
 function ModerationPreviewMedia({ content }: { content: ModContent }) {
+  // PEMBARUAN 18 — video Google Drive bisa dipratinjau langsung di panel admin
+  if (content.platform === "gdrive" && content.videoUrl) {
+    return (
+      <div className="aspect-video w-full overflow-hidden rounded-2xl border-2 border-[#3d1526]/10 bg-black">
+        <iframe
+          src={content.videoUrl}
+          title={content.title}
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          allowFullScreen
+          className="h-full w-full"
+        />
+      </div>
+    );
+  }
   if (content.platform === "uploaded" && content.videoUrl) {
     return <video src={content.videoUrl} controls className="max-h-72 w-full rounded-2xl border-2 border-[#3d1526]/10 bg-black" />;
   }

@@ -124,6 +124,25 @@ export function VideoEmbed({ item, compact = false }: { item: FeedItem; compact?
     return <WatchFallback url={item.videoUrl ?? item.externalUrl} label="Tonton di Instagram" color="bg-gradient-to-r from-purple-500 to-pink-500 text-white" />;
   }
 
+  // PEMBARUAN 18 — video Google Drive: diputar LANGSUNG di dalam website (iframe preview)
+  if (item.platform === "gdrive" && item.videoUrl) {
+    if (!failed) {
+      return (
+        <div className={`relative w-full overflow-hidden rounded-2xl border-2 border-fez-ink/15 bg-black ${compact ? "aspect-video" : "aspect-video"}`}>
+          <iframe
+            src={item.videoUrl}
+            title={item.title}
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen
+            onError={() => setFailed(true)}
+            className="absolute inset-0 h-full w-full"
+          />
+        </div>
+      );
+    }
+    return <WatchFallback url={item.externalUrl ?? item.videoUrl} label="Tonton di Google Drive" color="bg-fez-ink text-white" />;
+  }
+
   if (item.platform === "uploaded" && item.videoUrl) {
     return (
       <video
@@ -214,7 +233,8 @@ export function LikeButton({ item, onChange }: { item: FeedItem; onChange?: (lik
 // Kartu konten feed (gaya media sosial)
 // ============================================================
 export function ContentCard({ item, onOpenProfile }: { item: FeedItem; onOpenProfile: (id: string) => void }) {
-  const isVideo = item.contentType === "peer_educator";
+  const isArticle = item.contentType === "peer_educator" && item.platform === "artikel";
+  const isVideo = item.contentType === "peer_educator" && !isArticle;
   return (
     <motion.article
       initial={{ opacity: 0, y: 16 }}
@@ -237,9 +257,9 @@ export function ContentCard({ item, onOpenProfile }: { item: FeedItem; onOpenPro
           </p>
         </div>
         <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-extrabold ${
-          isVideo ? "border-cyan-200 bg-cyan-50 text-cyan-700" : "border-violet-200 bg-violet-50 text-violet-700"
+          isVideo ? "border-cyan-200 bg-cyan-50 text-cyan-700" : isArticle ? "border-violet-200 bg-violet-50 text-violet-700" : "border-rose-200 bg-rose-50 text-rose-700"
         }`}>
-          {isVideo ? "🎥 Peer Educator" : "📚 Edukasi"}
+          {isVideo ? "🎥 Peer Educator" : isArticle ? "📄 Artikel" : "📚 Edukasi"}
         </span>
       </div>
 
@@ -253,8 +273,16 @@ export function ContentCard({ item, onOpenProfile }: { item: FeedItem; onOpenPro
         </div>
       )}
 
-      {item.description && (
-        <p className="mt-2 whitespace-pre-line px-4 text-sm leading-relaxed text-fez-ink/75">📝 {item.description}</p>
+      {isArticle ? (
+        <div className="mt-2 px-4">
+          <div className="rounded-2xl border-2 border-violet-100 bg-violet-50/40 p-4">
+            <p className="whitespace-pre-line text-sm leading-relaxed text-fez-ink/85">{item.description}</p>
+          </div>
+        </div>
+      ) : (
+        item.description && (
+          <p className="mt-2 whitespace-pre-line px-4 text-sm leading-relaxed text-fez-ink/75">📝 {item.description}</p>
+        )
       )}
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t-2 border-fez-ink/5 bg-cream/40 px-4 py-3">
@@ -369,6 +397,7 @@ const TYPE_FILTERS = [
   { key: "all", label: "Semua" },
   { key: "education", label: "📚 Edukasi" },
   { key: "peer_educator", label: "🎥 Peer Educator" },
+  { key: "artikel", label: "📄 Artikel" },
   { key: "youtube", label: "▶️ YouTube" },
   { key: "instagram", label: "📸 Instagram" },
   { key: "tiktok", label: "🎵 TikTok" },
@@ -384,7 +413,7 @@ export function CommunityFeed({ onOpenProfile, limit }: { onOpenProfile: (id: st
     setLoading(true);
     const params = new URLSearchParams();
     if (["education", "peer_educator"].includes(filter)) params.set("type", filter);
-    if (["youtube", "instagram", "tiktok"].includes(filter)) params.set("platform", filter);
+    if (["youtube", "instagram", "tiktok", "artikel"].includes(filter)) params.set("platform", filter);
     if (q.trim()) params.set("q", q.trim());
     if (limit) params.set("limit", String(limit));
     try {

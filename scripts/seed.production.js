@@ -289,6 +289,11 @@ async function main() {
   await db.$executeRawUnsafe(
     `ALTER TABLE "nutrition_assessments" ADD COLUMN IF NOT EXISTS "who_reference" TEXT;`
   ).catch((e) => console.warn("[seed] kolom who_reference:", e?.message || e));
+  // Pembaruan 18 (audit presisi Z-score): versi algoritma kalkulator per baris.
+  // v1 = floor(hari/30,4375) · v2 = round(hari/30,4375) — identik WHO AnthroPlus.
+  await db.$executeRawUnsafe(
+    `ALTER TABLE "nutrition_assessments" ADD COLUMN IF NOT EXISTS "calculation_version" TEXT;`
+  ).catch((e) => console.warn("[seed] kolom calculation_version:", e?.message || e));
 
   // Kolom pengingat formulir Cek Status Gizi (jenis kelamin & tanggal lahir
   // disimpan agar pengecekan berikutnya terisi otomatis). Aman diulang.

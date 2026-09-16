@@ -243,11 +243,12 @@ async function maybeCompleteDuta(
   s1: boolean, s2: boolean, s3: boolean, s4: boolean, s5: string | null
 ) {
   if (s1 && s2 && s3 && s4 && s5 && !s5.startsWith("__")) {
+    // PEMBARUAN 18: tidak lagi otomatis set isDutaCandidate —
+    // status Kandidat Duta ditetapkan MANUAL oleh admin (action setCandidate).
     await db.dutaStage.update({
       where: { participantId: pid },
       data: { completedAt: new Date() },
     });
-    await db.participant.update({ where: { id: pid }, data: { isDutaCandidate: true } });
     await db.activityLog.create({ data: { participantId: pid, type: "DUTA_STAGE", meta: "COMPLETED" } });
   }
 }

@@ -11,7 +11,7 @@
 // ============================================================
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Heart, History, Loader2, Ruler, Scale, ShieldCheck, Sparkles } from "lucide-react";
+import { Heart, History, Loader2, Ruler, Scale, ShieldCheck, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -148,6 +148,7 @@ export default function NutritionView() {
   const [hasil, setHasil] = useState<Hasil | null>(null);
   const [records, setRecords] = useState<GiziRecord[]>([]);
   const [today, setToday] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [nama, setNama] = useState("");
   const [dob, setDob] = useState("");
@@ -224,6 +225,27 @@ export default function NutritionView() {
       toast({ title: "❌ Hasil belum tersimpan", description: "Koneksi bermasalah. Coba lagi.", variant: "destructive" });
     } finally {
       setBusy(false);
+    }
+  }
+
+  // ---- HAPUS SATU CATATAN RIWAYAT (pembaruan 18) ----
+  // Server memvalidasi pemilik baris = pemegang session (lihat API [id]).
+  async function deleteRecord(id: string) {
+    if (!window.confirm("Hapus catatan pemeriksaan ini dari riwayatmu? Catatan yang sudah dihapus tidak bisa dikembalikan.")) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/participant/nutrition/${id}`, { method: "DELETE" });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok || !d.ok) {
+        toast({ title: "Gagal menghapus", description: d.error || "Coba lagi ya.", variant: "destructive" });
+        return;
+      }
+      setRecords((prev) => prev.filter((r) => r.id !== id));
+      toast({ title: "🗑️ Catatan dihapus", description: "Catatan pemeriksaan itu sudah keluar dari riwayatmu." });
+    } catch {
+      toast({ title: "Koneksi bermasalah", description: "Periksa internet lalu coba lagi.", variant: "destructive" });
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -429,7 +451,7 @@ export default function NutritionView() {
 
       {/* ============ RIWAYAT ============ */}
       <div className="rounded-[2rem] border-2 border-fez-ink bg-white p-6 shadow-[4px_4px_0_0_#4a1d33]">
-        <SectionTitle icon="🗂️" title="Riwayat Pemeriksaan" sub="Setiap cek tersimpan sebagai catatan baru" />
+        <SectionTitle icon="🗂️" title="Riwayat Pemeriksaan" sub="Setiap cek tersimpan sebagai catatan baru — bisa dihapus satu-satu" />
         {loading ? (
           <p className="py-6 text-center text-sm font-bold text-fez-ink/40">Memuat riwayat…</p>
         ) : records.length === 0 ? (
@@ -439,7 +461,7 @@ export default function NutritionView() {
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] text-left text-sm">
+            <table className="w-full min-w-[920px] text-left text-sm">
               <thead>
                 <tr className="border-b-2 border-fez-ink/10 text-[11px] font-extrabold uppercase text-fez-ink/45">
                   <th className="py-2 pr-3">Tanggal</th>
@@ -450,7 +472,8 @@ export default function NutritionView() {
                   <th className="py-2 pr-3">TB/U</th>
                   <th className="py-2 pr-3">IMT/U</th>
                   <th className="py-2 pr-3">Perkiraan BB median</th>
-                  <th className="py-2">Rentang BB sesuai</th>
+                  <th className="py-2 pr-3">Rentang BB sesuai</th>
+                  <th className="py-2 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -464,7 +487,18 @@ export default function NutritionView() {
                     <td className="py-2.5 pr-3">{r.tbUStatus}</td>
                     <td className="py-2.5 pr-3">{r.imtUStatus}</td>
                     <td className="py-2.5 pr-3">{r.bbMedianWho != null ? `${fmt1(r.bbMedianWho)} kg` : "—"}</td>
-                    <td className="py-2.5">{r.bbMinWho != null && r.bbMaxWho != null ? `${fmt1(r.bbMinWho)} – ${fmt1(r.bbMaxWho)} kg` : "—"}</td>
+                    <td className="py-2.5 pr-3">{r.bbMinWho != null && r.bbMaxWho != null ? `${fmt1(r.bbMinWho)} – ${fmt1(r.bbMaxWho)} kg` : "—"}</td>
+                    <td className="py-2.5 text-center">
+                      <button
+                        onClick={() => deleteRecord(r.id)}
+                        disabled={deletingId === r.id}
+                        title="Hapus catatan ini"
+                        aria-label={`Hapus catatan ${r.tanggalPemeriksaan}`}
+                        className="rounded-lg border border-rose-200 bg-rose-50 p-1.5 text-rose-500 transition hover:bg-rose-100 hover:text-rose-700 disabled:opacity-40"
+                      >
+                        {deletingId === r.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

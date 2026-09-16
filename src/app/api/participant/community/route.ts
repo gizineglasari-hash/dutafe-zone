@@ -10,8 +10,11 @@ const VIDEO_EXT = ["mp4", "mov", "webm", "m4v"];
 
 // ------------------------------------------------------------------
 // POST — kirim konten baru (bisa berkali-kali)
-//  - multipart: file video upload + title + description + durationSec + contentType
-//  - JSON: { contentType, title, description, platform, url }
+//  - multipart : file video jalur lama + title + description + durationSec
+//  - JSON      : { contentType, title, description, platform, url }
+//              | { mode:"gdrive", contentType, title, description,
+//                  fileId, embedUrl, thumbUrl, viewUrl, durationSec }  ← pembaruan 18
+//              | platform "artikel" — tulisan Peer Educator           ← pembaruan 18
 // ------------------------------------------------------------------
 export async function POST(req: NextRequest) {
   const auth = await requireParticipant();
@@ -73,27 +76,74 @@ export async function POST(req: NextRequest) {
     if (contentType !== "education" && contentType !== "peer_educator") {
       return NextResponse.json({ error: "Tipe konten tidak valid" }, { status: 400 });
     }
-    if (!title) return NextResponse.json({ error: "Judul konten wajib diisi" }, { status: 400 });
-    if (contentType === "peer_educator" && !description) {
-      return NextResponse.json({ error: "Caption/deskripsi wajib diisi untuk video Peer Educator" }, { status: 400 });
-    }
 
-    if (contentType === "peer_educator" || url) {
-      const parsed = parseVideoUrl(url, declared);
-      if (!parsed.ok || !parsed.platform) {
-        return NextResponse.json({ error: parsed.error || "⚠️ Masukkan link YouTube, Instagram, atau TikTok yang valid." }, { status: 400 });
+    // ---------- PEMBARUAN 18: video Google Drive (upload browser langsung) ----------
+    if (body.mode === "gdrive") {
+      const embedUrl = String(body.embedUrl || "");
+      const thumbUrl = String(body.thumbUrl || "");
+      const viewUrl = String(body.viewUrl || "");
+      const fileId = String(body.fileId || "");
+      if (!/^https:\/\/drive\.google\.com\/file\/d\/[\w-]+\/preview$/.test(embedUrl) || !fileId || !embedUrl.includes(fileId)) {
+        return NextResponse.json({ error: "Data video Google Drive tidak valid." }, { status: 400 });
       }
-      platform = parsed.platform;
-      externalUrl = url;
-      videoUrl = parsed.watchUrl;
-      thumbnailUrl = parsed.thumbnailUrl;
-    } else {
-      platform = "none";
+      if (!title) return NextResponse.json({ error: "Judul konten wajib diisi" }, { status: 400 });
+      if (!description) {
+        return NextResponse.json({ error: "Caption/deskripsi wajib diisi untuk video Peer Educator" }, { status: 400 });
+      }
+      durationSec = parseInt(String(body.durationSec || "0"), 10);
+      if (isNaN(durationSec!) || durationSec! < MIN_DURATION || durationSec! > MAX_DURATION) {
+        return NextResponse.json(
+          { error: `⚠️ Video Peer Educator harus berdurasi ${MIN_DURATION}–${MAX_DURATION} detik.` },
+          { status: 400 }
+        );
+      }
+      platform = "gdrive";
+      videoUrl = embedUrl;
+      thumbnailUrl = thumbUrl || null;
+      externalUrl = viewUrl || `https://drive.google.com/file/d/${fileId}/view`;
+      // lanjut ke validasi panjang + unlock di bawah
+    }
+    // ---------- PEMBARUAN 18: ARTIKEL Peer Educator ----------
+    else if (declared === "artikel") {
+      if (contentType !== "peer_educator") {
+        return NextResponse.json({ error: "Tipe konten tidak valid" }, { status: 400 });
+      }
+      if (!title) return NextResponse.json({ error: "Judul artikel wajib diisi" }, { status: 400 });
+      if (description.length < 200) {
+        return NextResponse.json({ error: "Artikel minimal 200 karakter — tulis edukasi yang bermanfaat ya!" }, { status: 400 });
+      }
+      if (description.length > 5000) {
+        return NextResponse.json({ error: "Artikel maksimal 5000 karakter." }, { status: 400 });
+      }
+      platform = "artikel";
+    }
+    else {
+      if (!title) return NextResponse.json({ error: "Judul konten wajib diisi" }, { status: 400 });
+      if (contentType === "peer_educator" && !description) {
+        return NextResponse.json({ error: "Caption/deskripsi wajib diisi untuk video Peer Educator" }, { status: 400 });
+      }
+
+      if (contentType === "peer_educator" || url) {
+        const parsed = parseVideoUrl(url, declared);
+        if (!parsed.ok || !parsed.platform) {
+          return NextResponse.json({ error: parsed.error || "⚠️ Masukkan link YouTube, Instagram, atau TikTok yang valid." }, { status: 400 });
+        }
+        platform = parsed.platform;
+        externalUrl = url;
+        videoUrl = parsed.watchUrl;
+        thumbnailUrl = parsed.thumbnailUrl;
+      } else {
+        platform = "none";
+      }
     }
   }
 
   if (title.length > 120) return NextResponse.json({ error: "Judul maksimal 120 karakter" }, { status: 400 });
-  if (description.length > 1200) return NextResponse.json({ error: "Deskripsi maksimal 1200 karakter" }, { status: 400 });
+  // Artikel boleh lebih panjang (pembaruan 18); konten lain tetap 1200
+  const maxDesc = platform === "artikel" ? 5000 : 1200;
+  if (description.length > maxDesc) {
+    return NextResponse.json({ error: `Deskripsi maksimal ${maxDesc} karakter` }, { status: 400 });
+  }
 
   // Validasi unlock server-side: Peer Educator (M8) hanya setelah Mission 7 LULUS
   if (contentType === "peer_educator") {

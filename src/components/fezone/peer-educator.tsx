@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useFez } from "@/lib/store";
-import { PLATFORM_LABEL, PLATFORM_ICON, MIN_DURATION, MAX_DURATION, MAX_UPLOAD_SIZE } from "@/lib/video";
+import { PLATFORM_LABEL, PLATFORM_ICON, MIN_DURATION, MAX_DURATION, MAX_DRIVE_VIDEO_SIZE } from "@/lib/video";
+import { DRIVE_WEBAPP_URL_PUBLIC } from "@/lib/drive-public";
 import { ChevronLeft, Film, Loader2, Upload, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -42,13 +43,15 @@ const TOPIC_HINTS = [
 // ============================================================
 export function PeerEducatorPanel({ onBack, onSubmitted }: { onBack?: () => void; onSubmitted?: () => void }) {
   const { user } = useFez();
-  const [mode, setMode] = useState<"link" | "upload">("link");
+  // PEMBARUAN 18: peserta MEMILIH — link platform, upload video ke Drive, atau tulis artikel
+  const [mode, setMode] = useState<"link" | "upload" | "artikel">("link");
   const [platform, setPlatform] = useState<string>("youtube");
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [duration, setDuration] = useState<number | null>(null);
+  const [uploadPct, setUploadPct] = useState<number | null>(null); // progres upload ke Drive
   const [busy, setBusy] = useState(false);
   const [contents, setContents] = useState<MyContent[] | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -72,8 +75,8 @@ export function PeerEducatorPanel({ onBack, onSubmitted }: { onBack?: () => void
 
   function pickFile(f: File | null) {
     if (!f) return;
-    if (f.size > MAX_UPLOAD_SIZE) {
-      toast({ title: "Video terlalu besar", description: `Ukuran maksimal ${MAX_UPLOAD_SIZE / 1024 / 1024}MB ya!`, variant: "destructive" });
+    if (f.size > MAX_DRIVE_VIDEO_SIZE) {
+      toast({ title: "Video terlalu besar", description: `Ukuran maksimal ${MAX_DRIVE_VIDEO_SIZE / 1024 / 1024}MB ya! Coba kompres videomu.`, variant: "destructive" });
       return;
     }
     if (!["video/mp4", "video/quicktime", "video/webm", "video/x-m4v"].includes(f.type)) {
@@ -99,7 +102,73 @@ export function PeerEducatorPanel({ onBack, onSubmitted }: { onBack?: () => void
     el.src = URL.createObjectURL(f);
   }
 
+  // PEMBARUAN 18 — unggah video LANGSUNG ke Google Drive via Apps Script
+  // (XHR dipakai agar bisa menampilkan progres % ke peserta).
+  function uploadToDrive(f: File): Promise<{ fileId: string; embed: string; thumb: string }> {
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => {
+        const dataBase64 = String(fr.result).split(",")[1] ?? "";
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", DRIVE_WEBAPP_URL_PUBLIC, true);
+        xhr.setRequestHeader("Content-Type", "text/plain;charset=utf-8");
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) setUploadPct(Math.round((e.loaded / e.total) * 100));
+        };
+        xhr.onload = () => {
+          try {
+            const d = JSON.parse(xhr.responseText);
+            if (d.ok && d.fileId) resolve({ fileId: d.fileId, embed: d.embed, thumb: d.thumb });
+            else reject(new Error(d.error || "Gagal unggah ke Google Drive"));
+          } catch {
+            reject(new Error("Respons Google Drive tidak valid"));
+          }
+        };
+        xhr.onerror = () => reject(new Error("Koneksi ke Google Drive terputus"));
+        xhr.send(
+          JSON.stringify({
+            uploadId: `video-${Date.now()}`,
+            fileName: f.name,
+            contentType: f.type || "video/mp4",
+            dataBase64,
+          })
+        );
+      };
+      fr.onerror = () => reject(new Error("Gagal membaca file"));
+      fr.readAsDataURL(f);
+    });
+  }
+
   async function submit() {
+    if (mode === "artikel") {
+      // ---------- MODE ARTIKEL (pembaruan 18) ----------
+      if (!title.trim()) {
+        toast({ title: "Judul wajib diisi", description: "Beri judul yang menarik untuk artikelmuh!", variant: "destructive" });
+        return;
+      }
+      if (description.trim().length < 200) {
+        toast({ title: "Artikel masih pendek", description: `Minimal 200 karakter — sekarang ${description.trim().length}. Tulis edukasi yang bermanfaat ya!`, variant: "destructive" });
+        return;
+      }
+      setBusy(true);
+      const res = await fetch("/api/participant/community", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contentType: "peer_educator", platform: "artikel", title: title.trim(), description: description.trim() }),
+      });
+      const d = await res.json();
+      setBusy(false);
+      if (!res.ok) {
+        toast({ title: "Gagal mengirim", description: d.error, variant: "destructive" });
+        return;
+      }
+      toast({ title: "📄 Artikel terkirim!", description: "Status: Pending — menunggu moderasi admin. Jika disetujui, admin menetapkan XP-mu!" });
+      setTitle(""); setDescription("");
+      await loadMine();
+      onSubmitted?.();
+      return;
+    }
+
     if (!title.trim()) {
       toast({ title: "Judul wajib diisi", description: "Beri judul yang menarik untuk videomu!", variant: "destructive" });
       return;
@@ -127,13 +196,33 @@ export function PeerEducatorPanel({ onBack, onSubmitted }: { onBack?: () => void
     setBusy(true);
     let res: Response;
     if (mode === "upload") {
-      const fd = new FormData();
-      fd.append("file", file!);
-      fd.append("contentType", "peer_educator");
-      fd.append("title", title.trim());
-      fd.append("description", description.trim());
-      fd.append("durationSec", String(duration ?? 0));
-      res = await fetch("/api/participant/community", { method: "POST", body: fd });
+      try {
+        // 1) Unggah video ke Google Drive (browser → Apps Script, tanpa server)
+        setUploadPct(0);
+        const drv = await uploadToDrive(file!);
+        // 2) Daftarkan video ke aplikasi (menunggu moderasi admin)
+        res = await fetch("/api/participant/community", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: "gdrive",
+            contentType: "peer_educator",
+            fileId: drv.fileId,
+            embedUrl: drv.embed,
+            thumbUrl: drv.thumb,
+            viewUrl: `https://drive.google.com/file/d/${drv.fileId}/view`,
+            title: title.trim(),
+            description: description.trim(),
+            durationSec: duration ?? 0,
+          }),
+        });
+      } catch (e) {
+        setBusy(false);
+        setUploadPct(null);
+        toast({ title: "Gagal unggah ke Google Drive", description: e instanceof Error ? e.message : "Coba lagi ya.", variant: "destructive" });
+        return;
+      }
+      setUploadPct(null);
     } else {
       res = await fetch("/api/participant/community", {
         method: "POST",
@@ -183,9 +272,9 @@ export function PeerEducatorPanel({ onBack, onSubmitted }: { onBack?: () => void
           </span>
         </div>
         <ul className="mt-2 space-y-1 text-sm text-fez-ink/75">
-          <li>⏱️ Durasi video: <b>30–60 detik</b></li>
-          <li>✅ Setiap video yang <b>disetujui admin</b> mendapat XP dari admin — <b className="text-fez-rose">maks +300 XP per video</b> (boleh kirim banyak video!)</li>
-          <li>🎬 Sumber: YouTube, Instagram, TikTok (link) atau upload langsung</li>
+          <li>🎥 <b>Video</b>: durasi 30–60 detik — link YouTube/IG/TikTok atau upload langsung (s.d. 30MB, tersimpan di Google Drive)</li>
+          <li>📄 <b>Atau artikel</b>: tulisan edukasi 200–5000 karakter — tanpa video pun bisa!</li>
+          <li>✅ Setiap karya yang <b>disetujui admin</b> mendapat XP dari admin — <b className="text-fez-rose">maks +300 XP per karya</b> (boleh kirim banyak!)</li>
           <li>💡 Topik: {TOPIC_HINTS.slice(0, 4).join(" · ")} ...dll</li>
         </ul>
         {(contents?.length ?? 0) > 0 && (
@@ -199,23 +288,31 @@ export function PeerEducatorPanel({ onBack, onSubmitted }: { onBack?: () => void
 
       {/* Pilih metode */}
       <div className="rounded-3xl border-2 border-fez-ink bg-white p-5">
-        <p className="font-display text-base font-extrabold text-fez-ink">1️⃣ Pilih cara berbagi video</p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        <p className="font-display text-base font-extrabold text-fez-ink">1️⃣ Pilih jenis karya & cara berbagi</p>
+        <div className="mt-3 grid grid-cols-3 gap-2">
           <button
             onClick={() => setMode("link")}
             className={`rounded-2xl border-2 p-3 text-center transition ${mode === "link" ? "border-fez-ink bg-cyan-50 shadow-[3px_3px_0_0_#4a1d33]" : "border-fez-ink/15 bg-white hover:border-fez-rose/40"}`}
           >
             <p className="text-2xl">🔗</p>
-            <p className="mt-1 text-xs font-extrabold text-fez-ink">Link dari Platform</p>
-            <p className="text-[10px] text-muted-foreground">YouTube · Instagram · TikTok</p>
+            <p className="mt-1 text-xs font-extrabold text-fez-ink">Link Video</p>
+            <p className="text-[10px] text-muted-foreground">YouTube · IG · TikTok</p>
           </button>
           <button
             onClick={() => setMode("upload")}
             className={`rounded-2xl border-2 p-3 text-center transition ${mode === "upload" ? "border-fez-ink bg-cyan-50 shadow-[3px_3px_0_0_#4a1d33]" : "border-fez-ink/15 bg-white hover:border-fez-rose/40"}`}
           >
             <p className="text-2xl">⬆️</p>
-            <p className="mt-1 text-xs font-extrabold text-fez-ink">Upload Langsung</p>
-            <p className="text-[10px] text-muted-foreground">File video 30–60 detik</p>
+            <p className="mt-1 text-xs font-extrabold text-fez-ink">Upload Video</p>
+            <p className="text-[10px] text-muted-foreground">File 30–60 detik · s.d. 30MB</p>
+          </button>
+          <button
+            onClick={() => setMode("artikel")}
+            className={`rounded-2xl border-2 p-3 text-center transition ${mode === "artikel" ? "border-fez-ink bg-violet-50 shadow-[3px_3px_0_0_#4a1d33]" : "border-fez-ink/15 bg-white hover:border-fez-rose/40"}`}
+          >
+            <p className="text-2xl">📄</p>
+            <p className="mt-1 text-xs font-extrabold text-fez-ink">Tulis Artikel</p>
+            <p className="text-[10px] text-muted-foreground">Edukasi tulisan 200–5000 karakter</p>
           </button>
         </div>
 
@@ -285,56 +382,91 @@ export function PeerEducatorPanel({ onBack, onSubmitted }: { onBack?: () => void
                 <>
                   <Upload className="mx-auto h-9 w-9 text-fez-rose" />
                   <p className="mt-2 text-sm font-bold text-fez-ink">Klik untuk pilih video dari HP/komputermu</p>
-                  <p className="text-xs text-muted-foreground">MP4 · MOV · WebM — maks {MAX_UPLOAD_SIZE / 1024 / 1024}MB — durasi 30–60 detik</p>
+                  <p className="text-xs text-muted-foreground">MP4 · MOV · WebM — maks {MAX_DRIVE_VIDEO_SIZE / 1024 / 1024}MB — durasi 30–60 detik · tersimpan di Google Drive</p>
                 </>
               )}
             </div>
             <input ref={inputRef} type="file" accept="video/mp4,video/quicktime,video/webm,video/x-m4v" className="hidden" onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
           </div>
         )}
+
+        {mode === "artikel" && (
+          <div className="mt-4 rounded-2xl border-2 border-violet-200 bg-violet-50/50 p-4">
+            <p className="text-sm font-extrabold text-fez-ink">📄 Tulis Artikel Edukasi</p>
+            <p className="mt-0.5 text-[11px] font-semibold text-muted-foreground">
+              Pilih bentuk tulisan: pengalaman edukasi, tips pencegahan anemia, atau ringkasan materi — minimal 200 karakter.
+              Setelah dikirim, artikel dimoderasi admin sebelum tampil di Community.
+            </p>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={5000}
+              rows={10}
+              placeholder="Tulis artikelmuh di sini... cth: '3 Hal yang Aku Pelajari Saat Edukasi Teman-teman tentang TTD' — mulai dari pengalamanmu, tips praktis, sampai ajakan bertindak..."
+              className="mt-3 rounded-xl border-2 border-fez-ink/20 text-sm"
+            />
+            <p className="mt-1 text-right text-[10px] font-bold text-muted-foreground">{description.length}/5000 (min. 200)</p>
+          </div>
+        )}
       </div>
 
       {/* Detail konten */}
       <div className="rounded-3xl border-2 border-fez-ink bg-white p-5">
-        <p className="font-display text-base font-extrabold text-fez-ink">2️⃣ Ceritakan videomu</p>
+        <p className="font-display text-base font-extrabold text-fez-ink">2️⃣ {mode === "artikel" ? "Judul artikelmu" : "Ceritakan videomu"}</p>
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           maxLength={120}
-          placeholder="Judul video (cth: 3 Tips Cegah Anemia di Sekolah)"
+          placeholder={mode === "artikel" ? "Judul artikel (cth: 5 Makanan Kaya Zat Besi Favoritku)" : "Judul video (cth: 3 Tips Cegah Anemia di Sekolah)"}
           className="mt-3 h-11 rounded-xl border-2 border-fez-ink/20 text-sm"
         />
-        <Textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          maxLength={1200}
-          rows={3}
-          placeholder="Caption edukasi singkat — apa yang orang lain akan pelajari dari videomu?"
-          className="mt-2 rounded-xl border-2 border-fez-ink/20 text-sm"
-        />
-        <p className="mt-1 text-right text-[10px] font-bold text-muted-foreground">{title.length}/120 · {description.length}/1200</p>
+        {mode !== "artikel" && (
+          <>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              maxLength={1200}
+              rows={3}
+              placeholder="Caption edukasi singkat — apa yang orang lain akan pelajari dari videomu?"
+              className="mt-2 rounded-xl border-2 border-fez-ink/20 text-sm"
+            />
+            <p className="mt-1 text-right text-[10px] font-bold text-muted-foreground">{title.length}/120 · {description.length}/1200</p>
+          </>
+        )}
         <Button
           onClick={submit}
           disabled={busy}
-          className="mt-2 h-13 w-full rounded-2xl border-2 border-fez-ink bg-gradient-to-r from-cyan-500 to-teal-400 py-3 font-extrabold text-white disabled:opacity-40"
+          className={`mt-2 h-13 w-full rounded-2xl border-2 border-fez-ink py-3 font-extrabold text-white disabled:opacity-40 ${
+            mode === "artikel" ? "bg-gradient-to-r from-violet-500 to-purple-400" : "bg-gradient-to-r from-cyan-500 to-teal-400"
+          }`}
         >
-          {busy ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Mengirim...</> : "🚀 Kirim untuk Dimoderasi Admin"}
+          {busy ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              {uploadPct !== null ? `Mengunggah ke Google Drive… ${uploadPct}%` : "Mengirim..."}
+            </>
+          ) : (
+            mode === "artikel" ? "🚀 Kirim Artikel untuk Dimoderasi Admin" : "🚀 Kirim untuk Dimoderasi Admin"
+          )}
         </Button>
         <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground">
-          Video baru berstatus <b>Pending</b> dan baru tampil di Fe-Zone Community setelah disetujui admin. Satu video yang sudah
-          mendapat XP tidak bisa mendapat XP ganda.
+          {mode === "upload"
+            ? "📹 Videomu diunggah ke Google Drive program (aman & bisa ditonton langsung di sini)."
+            : mode === "artikel"
+              ? "📄 Artikel baru berstatus Pending dan tampil di Fe-Zone Community setelah disetujui admin."
+              : "Video/artikel baru berstatus Pending dan baru tampil di Fe-Zone Community setelah disetujui admin. Satu karya yang sudah mendapat XP tidak bisa mendapat XP ganda."}
         </p>
       </div>
 
       {/* Riwayat: Video Saya */}
       {contents !== null && contents.length > 0 && (
         <div className="rounded-3xl border-2 border-fez-ink bg-white p-5">
-          <p className="font-display text-base font-extrabold text-fez-ink">🎬 Video Saya</p>
+          <p className="font-display text-base font-extrabold text-fez-ink">🎬📄 Karya Saya</p>
           <div className="thin-scroll mt-3 max-h-96 overflow-y-auto">
             <table className="w-full min-w-[480px] text-left text-xs">
               <thead>
                 <tr className="border-b-2 border-fez-ink/10 text-[10px] uppercase text-muted-foreground">
-                  <th className="pb-2 pr-2 font-extrabold">Video</th>
+                  <th className="pb-2 pr-2 font-extrabold">Karya</th>
                   <th className="pb-2 pr-2 font-extrabold">Platform</th>
                   <th className="pb-2 pr-2 font-extrabold">Status</th>
                   <th className="pb-2 pr-2 text-right font-extrabold">Like</th>
@@ -367,8 +499,8 @@ export function PeerEducatorPanel({ onBack, onSubmitted }: { onBack?: () => void
       {user?.role === "PARTICIPANT" && contents !== null && contents.length === 0 && (
         <div className="rounded-2xl border-2 border-dashed border-fez-rose/40 bg-white/70 p-5 text-center text-sm text-muted-foreground">
           <Film className="mx-auto h-8 w-8 text-fez-rose/60" />
-          <p className="mt-2 font-bold text-fez-ink">Belum ada video terkirim</p>
-          <p className="mt-1">Kirim video pertamamu dan mulai kumpulkan XP Peer Educator! 💪</p>
+          <p className="mt-2 font-bold text-fez-ink">Belum ada karya terkirim</p>
+          <p className="mt-1">Kirim video atau artikel pertamamu dan mulai kumpulkan XP Peer Educator! 💪</p>
         </div>
       )}
     </div>

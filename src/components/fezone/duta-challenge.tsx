@@ -72,7 +72,7 @@ export default function DutaChallengeView({ data, refresh }: { data: DashData; r
       return false;
     }
     if (d.completed) {
-      celebrate("FINAL DUTA CHALLENGE SELESAI — Kamu KANDIDAT DUTA!", 200, "DUTA_BESI");
+      celebrate("FINAL DUTA CHALLENGE SELESAI!", 200, "DUTA_BESI");
     }
     await load();
     await refresh();
@@ -264,12 +264,13 @@ export default function DutaChallengeView({ data, refresh }: { data: DashData; r
 
       {allDone && duta.completedAt && (
         <div className="rounded-2xl border-2 border-emerald-400 bg-emerald-50 p-4 text-center text-sm font-extrabold text-emerald-700">
-          🎉 Semua tahap selesai! Kamu terdaftar sebagai KANDIDAT DUTA ({data.profile.educationLevel}). Panitia akan menilai & menentukan Duta terpilih.
+          🎉 Semua tahap selesai ({data.profile.educationLevel})! Status <b>Kandidat Duta</b> akan ditentukan oleh admin/panitia —
+          terus jaga performamu. Skor penilaian di atas hanya gambaran, ya!
         </div>
       )}
       {!allDone && (
         <div className="rounded-2xl bg-amber-50 p-4 text-center text-xs font-bold text-amber-700">
-          Selesaikan kelima tahap untuk menjadi Kandidat Duta. +200 XP & kelengkapan portofoliomu menanti!
+          Selesaikan kelima tahap untuk melengkapi portofoliomu (+200 XP). Penetapan Kandidat Duta dilakukan oleh admin/panitia.
         </div>
       )}
 

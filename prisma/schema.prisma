@@ -351,6 +351,10 @@ model NutritionAssessment {
   // referensi yang dipakai
   referenceStandard  String   @map("reference_standard") @default("WHO Growth Reference 2007")
   referenceVersion   String   @map("reference_version") @default("Tabel expanded LMS WHO, metode WHO AnthroPlus")
+  // versi algoritma kalkulator (pembaruan 18 — audit presisi Z-score).
+  // v2 = round(hari/30,4375) — identik WHO AnthroPlus. Nullable agar
+  // baris lama (v1) tetap utuh tanpa migrasi merusak.
+  calculationVersion String?  @map("calculation_version")
   // perkiraan BB sesuai tinggi badan (WHO 2007 perempuan) — nullable agar
   // data pemeriksaan LAMA tetap utuh tanpa migrasi merusak
   bbMedianWho        Decimal? @map("bb_median_who") @db.Decimal(5, 2)

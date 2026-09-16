@@ -22,7 +22,7 @@ export async function GET() {
     await db.dutaStage.update({ where: { participantId: pid }, data: { stage1Posttest: true } });
   }
 
-  const score = p.isDutaCandidate ? await computeDutaScore(pid) : null;
+  const score = p.isDutaCandidate || ds.completedAt ? await computeDutaScore(pid) : null;
 
   return NextResponse.json({
     stages: {
@@ -35,7 +35,7 @@ export async function GET() {
     completedAt: ds.completedAt,
     isDutaCandidate: p.isDutaCandidate,
     isDuta: p.isDuta,
-    score,
+    score, // PEMBARUAN 18: skor hanya INFORMASI — tidak menentukan kandidat
     postTestScore: p.postTestScore,
     m7: p.missionProgress.find((m) => m.missionKey === "M7")?.dataJson ?? null,
     videos: p.videoSubmissions.map((v) => ({ id: v.id, fileUrl: v.fileUrl, status: v.status, grade: v.grade, missionKey: v.missionKey })),
@@ -79,13 +79,15 @@ export async function POST(req: NextRequest) {
   }
 
   // Cek kelengkapan semua tahap
+  // PEMBARUAN 18: menyelesaikan semua tahap TIDAK lagi otomatis menjadi
+  // Kandidat Duta. Kelengkapan tahap hanya dicatat (completedAt + XP) —
+  // status Kandidat Duta ditetapkan MANUAL oleh admin (action setCandidate).
   const allDone = ds.stage1Posttest && ds.stage2Quiz && ds.stage3Peer && ds.stage4Video && !!ds.stage5Presentation;
   if (allDone && !ds.completedAt) {
     await db.dutaStage.update({ where: { participantId: pid }, data: { completedAt: new Date() } });
-    await db.participant.update({ where: { id: pid }, data: { isDutaCandidate: true } });
     await awardXp(pid, XP_RULES.DUTA_COMPLETE, "DUTA_COMPLETE");
     await db.activityLog.create({ data: { participantId: pid, type: "DUTA_STAGE", meta: "COMPLETED" } });
-    return NextResponse.json({ ok: true, completed: true, message: "Selamat! Kamu resmi jadi KANDIDAT DUTA! 👑" });
+    return NextResponse.json({ ok: true, completed: true, message: "Selamat! Semua tahap Tantangan Duta selesai! 🎉" });
   }
 
   return NextResponse.json({ ok: true, stages: ds });

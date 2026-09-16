@@ -1,0 +1,117 @@
+================================================================
+PEMBARUAN 18 — FE-ZONE
+================================================================
+Isi pembaruan ini (6 perbaikan & fitur baru):
+
+ 1. AUDIT PRESISI Z-SCORE (fix akar masalah)
+    - Hasil Cek Status Gizi sekarang IDENTIK dengan WHO AnthroPlus.
+    - Akar masalah: pembulatan usia (floor -> round), BUKAN datanya.
+    - Kasus Anda sudah diuji: TB/U -0.30 dan IMT/U 2.32 (persis
+      sama dengan AnthroPlus). Label "Gizi Lebih" DIPERTAHANKAN.
+    - Setiap catatan baru menyimpan versi algoritma
+      (calculation_version) ke database.
+    - Panel admin punya "Debug Kalkulasi" (khusus admin, tidak
+      pernah tampil ke peserta): usia dalam hari, bulan tabel LMS,
+      nilai L/M/S, IMT presisi penuh, z presisi.
+
+ 2. TOMBOL HAPUS RIWAYAT GIZI
+    - Peserta bisa menghapus catatan pemeriksaannya sendiri
+      (satu-satu) dari tabel Riwayat Pemeriksaan.
+    - Aman: hanya catatan milik sendiri yang bisa dihapus.
+
+ 3. KANDIDAT DUTA -> DIPILIH MANUAL OLEH ADMIN
+    - Menyelesaikan semua tahap tantangan TIDAK lagi otomatis
+      menjadikan peserta Kandidat Duta.
+    - Admin memilih sendiri di tab "Kandidat Duta": cari nama
+      peserta, tekan "+ Jadikan Kandidat". Bisa juga menghapus
+      kandidat (tombol "Hapus").
+    - Skor penilaian tetap tampil sebagai INFORMASI saja.
+
+ 4. PEER EDUCATOR: BISA VIDEO ATAU ARTIKEL
+    - Sekarang ada 3 pilihan: Link Video (YouTube/IG/TikTok),
+      Upload Video, dan TULIS ARTIKEL (200-5000 karakter).
+    - Semua tetap lewat moderasi admin sebelum tampil publik.
+
+ 5. GOOGLE DRIVE (foto profil & video peer educator)
+    - Foto profil & video yang diunggah peserta kini tersimpan di
+      folder Google Drive program Anda — TIDAK memakai kuota
+      Supabase Storage.
+    - Karena diunggah langsung dari browser ke Drive:
+      * batas ukuran video naik dari 4MB menjadi 30MB,
+      * masalah/error ganti foto profil SELESAI,
+      * video ditonton LANGSUNG di dalam website (embed).
+    - Apps Script yang Anda pasang sudah teruji berfungsi.
+      TIDAK ada setting tambahan yang perlu dilakukan di Vercel.
+
+ 6. DAFTAR SMK KOTA BANDUNG DI FORMULIR REGISTRASI
+    - 107 SMK Kota Bandung (data yang Anda kirim) sudah masuk
+      ke daftar sekolah — bisa dicari & dipilih.
+    - SMK digolongkan jenjang SMA (setara), seperti permintaan.
+
+================================================================
+CARA PASANG (5 menit)
+================================================================
+1. Buka file zip ini (pembaruan-18.zip) dan EXTRACT.
+   Di dalamnya ada folder: prisma, scripts, src, public
+   + file PETUNJUK ini.
+
+2. Buka GitHub repo Anda:
+   https://github.com/gizineglasari-hash/dutafe-zone
+
+3. Upload file SATU PER SATU mengikuti struktur folder yang sama:
+   - Klik masuk ke folder tujuan di GitHub (contoh: folder "src/lib")
+   - Klik "Add file" -> "Upload files"
+   - Tarik file dari hasil extract ke tempat yang sama
+   - Klik "Commit changes"
+   Ulangi untuk semua file sampai habis.
+
+   DAFTAR FILE:
+   prisma/schema.prisma                              (ganti)
+   scripts/seed.production.js                        (ganti)
+   src/lib/who2007.ts                                (ganti)
+   src/lib/drive.ts                                  (BARU)
+   src/lib/drive-public.ts                           (BARU)
+   src/lib/storage.ts                                (ganti)
+   src/lib/video.ts                                  (ganti)
+   src/app/api/participant/nutrition/route.ts        (ganti)
+   src/app/api/participant/nutrition/[id]/route.ts   (BARU — buat folder [id])
+   src/app/api/admin/nutrition/[id]/route.ts         (ganti)
+   src/app/api/participant/duta/route.ts             (ganti)
+   src/app/api/participant/quiz/route.ts             (ganti)
+   src/app/api/admin/grade/route.ts                  (ganti)
+   src/app/api/participant/community/route.ts        (ganti)
+   src/app/api/community/route.ts                    (ganti)
+   src/components/fezone/nutrition.tsx               (ganti)
+   src/components/fezone/admin-gizi.tsx              (ganti)
+   src/components/fezone/admin.tsx                   (ganti)
+   src/components/fezone/duta-challenge.tsx          (ganti)
+   src/components/fezone/peer-educator.tsx           (ganti)
+   src/components/fezone/community.tsx               (ganti)
+   src/components/fezone/profile.tsx                 (ganti)
+   src/components/fezone/auth-page.tsx               (ganti)
+   public/data/schools.json                          (ganti)
+
+   TIPS: file BARU di dalam folder [id] — buat folder bernama
+   [id] di GitHub lalu upload route.ts ke dalamnya.
+
+4. Setelah semua ter-upload, Vercel OTOMATIS membangun ulang
+   website (tunggu 2-4 menit). Kolom database calculation_version
+   dibuat OTOMATIS saat build — data lama tidak tersentuh.
+
+5. Selesai! Tidak perlu mengatur apa pun di Vercel/Supabase.
+
+================================================================
+CHECKLIST UJI SETELAH PASANG
+================================================================
+[ ] Cek Status Gizi (kasus: lahir 17-07-2013, periksa 15-09-2026,
+    BB 68 kg, TB 155 cm) -> TB/U -0.30, IMT/U 2.32, status
+    "Obesitas" (karena z > +2, sesuai ketentuan WHO).
+[ ] Riwayat Pemeriksaan punya tombol hapus (ikon tempat sampah).
+[ ] Admin > Kandidat Duta: cari nama peserta, jadikan kandidat.
+[ ] Peer Educator: pilih "Tulis Artikel" -> kirim -> muncul di
+    moderasi admin.
+[ ] Ganti foto profil -> sukses, tanpa error.
+[ ] Upload video 30-60 detik (s.d. 30MB) -> tersimpan di Drive,
+    bisa diputar langsung di website.
+[ ] Formulir daftar: ketik "SMKN" -> muncul daftar SMK Bandung.
+================================================================

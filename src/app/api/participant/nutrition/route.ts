@@ -20,6 +20,7 @@ import {
   WHO_REFERENCE_LABEL,
   REFERENCE_STANDARD,
   REFERENCE_VERSION,
+  CALCULATION_VERSION,
   type Sex,
 } from "@/lib/who2007";
 
@@ -74,6 +75,7 @@ export async function GET() {
       bbMinWho: r.bbMinWho === null ? null : Number(r.bbMinWho),
       bbMaxWho: r.bbMaxWho === null ? null : Number(r.bbMaxWho),
       whoReference: r.whoReference,
+      calculationVersion: r.calculationVersion, // null = data lama (v1)
       createdAt: r.createdAt,
     })),
   });
@@ -151,6 +153,7 @@ export async function POST(req: Request) {
       whoReference: bbEst ? WHO_REFERENCE_LABEL : null,
       referenceStandard: REFERENCE_STANDARD,
       referenceVersion: REFERENCE_VERSION,
+      calculationVersion: CALCULATION_VERSION, // pembaruan 18 — audit presisi
       interpretation: result.interpretation,
       recommendation: result.recommendation,
     },
@@ -183,6 +186,7 @@ export async function POST(req: Request) {
       bbMinWho: created.bbMinWho === null ? null : Number(created.bbMinWho),
       bbMaxWho: created.bbMaxWho === null ? null : Number(created.bbMaxWho),
       whoReference: created.whoReference,
+      calculationVersion: created.calculationVersion,
       createdAt: created.createdAt,
     },
     hasil: {
@@ -208,6 +212,7 @@ export async function POST(req: Request) {
       interpretation: result.interpretation,
       recommendation: result.recommendation,
       referenceStandard: REFERENCE_STANDARD,
+      calculationVersion: CALCULATION_VERSION,
     },
   });
 }

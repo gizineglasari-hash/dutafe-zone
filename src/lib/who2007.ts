@@ -5,8 +5,12 @@
 //   z = ((y / M)^L − 1) / (L × S)          (rumus LMS)
 //   percentile = distribusi normal kumulatif Φ(z) × 100
 // Usia dihitung PERSIS per hari (bukan selisih tahun saja),
-// lalu dikonversi ke "bulan LMS" = floor(hari / 30.4375) —
-// konvensi yang sama dipakai paket WHO igrowup/AnthroPlus.
+// lalu dikonversi ke "bulan LMS" = Math.round(hari / 30.4375) —
+// DIBULATKAN KE BULAN TERDEKAT, sesuai perilaku software WHO
+// AnthroPlus/AnthroCal (terverifikasi empiris: kasus usia
+// 157,963 bulan → AnthroPlus memakai baris bulan 158).
+// v1 (lama) memakai floor → hasil beda ±0,01–0,05 SD vs
+// AnthroPlus; diperbaiki di v2 tanpa mengubah tabel LMS.
 // ------------------------------------------------------------
 // Klasifikasi (WHO 2007):
 //   TB/U  : < −3 Sangat Pendek · −3..−2 Pendek · ≥ −2 Normal
@@ -17,6 +21,14 @@ import { BFA_GIRLS, BFA_BOYS, HFA_GIRLS, HFA_BOYS, type LmsTable } from "./who20
 
 export const REFERENCE_STANDARD = "WHO Growth Reference 2007";
 export const REFERENCE_VERSION = "Tabel expanded LMS resmi WHO (hfa/bmi z-score, 61–228 bulan), metode WHO AnthroPlus";
+/**
+ * Versi algoritma kalkulator (spek bagian 22-23):
+ * - v1 = floor(hari/30,4375)  → versi lama, beda ±0,01-0,05 SD dari AnthroPlus
+ * - v2 = round(hari/30,4375)  → cocok WHO AnthroPlus/AnthroCal (|Δ| ≤ 0,01 SD)
+ * Setiap record baru menyimpan versi ini ke kolom calculation_version
+ * agar admin tahu algoritma apa yang dipakai saat pemeriksaan.
+ */
+export const CALCULATION_VERSION = "WHO2007-FEMALE-5-19-LMS-v2";
 export const DAYS_PER_MONTH_LMS = 30.4375;
 export const MIN_MONTH_LMS = 61; // 5 tahun
 export const MAX_MONTH_LMS = 228; // 19 tahun
@@ -77,7 +89,10 @@ export function computeDetailedAge(dobISO: string, checkISO: string): DetailedAg
     months += 12;
   }
 
-  const monthsLms = Math.floor(totalDays / DAYS_PER_MONTH_LMS);
+  // Konvensi WHO AnthroPlus: usia dalam hari dibagi 30,4375 lalu
+  // DIBULATKAN ke bulan terdekat (bukan floor). Audit 16-09-2026:
+  // kasus 4808 hari (157,963 bl) → AnthroPlus memakai bulan 158.
+  const monthsLms = Math.round(totalDays / DAYS_PER_MONTH_LMS);
   const label = `${years} tahun ${months} bulan ${days} hari`;
   return { years, months, days, totalDays, monthsLms, label };
 }
@@ -163,6 +178,25 @@ export interface AssessmentResult {
   imtU: StatusResult;
   interpretation: string;
   recommendation: string;
+  /** Debug kalkulasi (KHUSUS admin — tidak pernah ditampilkan ke peserta). */
+  debug: {
+    version: string;
+    sex: Sex;
+    dobISO: string;
+    checkISO: string;
+    totalDays: number;
+    monthsLmsExact: number; // hari / 30,4375 sebelum dibulatkan
+    monthsLms: number; // bulan tabel LMS yang dipakai
+    bmiRaw: number; // IMT presisi penuh sebelum tampil dibulatkan
+    tbU_L: number;
+    tbU_M: number;
+    tbU_S: number;
+    imtU_L: number;
+    imtU_M: number;
+    imtU_S: number;
+    tbURaw: number; // z sebelum pembulatan tampilan
+    imtURaw: number;
+  };
 }
 
 const COLOR_EMOJI: Record<ColorKey, string> = {
@@ -333,10 +367,10 @@ export function assess(input: AssessmentInput): AssessmentResult | { error: stri
   if (!age) return { error: "Tanggal pemeriksaan tidak boleh sebelum tanggal lahir." };
 
   if (age.monthsLms < MIN_MONTH_LMS) {
-    return { error: "Cek status gizi ini khusus usia 5–19 tahun. Usiamu masih di bawah 5 tahun, ya — minta bantuan orang tua/posyandu untuk pengukuran." };
+    return { error: "Referensi WHO AnthroPlus digunakan untuk usia 5–19 tahun. Usiamu masih di bawah 5 tahun — minta bantuan orang tua/posyandu untuk pengukuran." };
   }
   if (age.monthsLms > MAX_MONTH_LMS) {
-    return { error: "Cek status gizi ini khusus usia 5–19 tahun. Usiamu sudah melewati 19 tahun." };
+    return { error: "Referensi WHO AnthroPlus digunakan untuk usia 5–19 tahun. Usiamu sudah melewati 19 tahun." };
   }
 
   const heightM = heightCm / 100;
@@ -345,8 +379,12 @@ export function assess(input: AssessmentInput): AssessmentResult | { error: stri
     return { error: "Kombinasi berat & tinggi badan tidak masuk akal untuk remaja. Periksa kembali angkanya (perhatikan satuan: kg dan cm)." };
   }
 
-  const tbU = classifyTbU(zScore(heightTable(sex), age.monthsLms, heightCm));
-  const imtU = classifyImtU(zScore(bmiTable(sex), age.monthsLms, imt));
+  const tbLms = lmsLookup(heightTable(sex), age.monthsLms);
+  const bmiLms = lmsLookup(bmiTable(sex), age.monthsLms);
+  const tbURaw = zScore(heightTable(sex), age.monthsLms, heightCm);
+  const imtURaw = zScore(bmiTable(sex), age.monthsLms, imt);
+  const tbU = classifyTbU(tbURaw);
+  const imtU = classifyImtU(imtURaw);
 
   const tb = TB_TEXT[tbU.status];
   const imtTxt = IMT_TEXT[imtU.status];
@@ -365,5 +403,30 @@ export function assess(input: AssessmentInput): AssessmentResult | { error: stri
     `Catatan: hasil ini adalah skrining awal, bukan diagnosis. Diskusikan hasilnya dengan petugas kesehatan atau pendamping program FE-ZONE.`,
   ].join("\n");
 
-  return { age, imt, tbU, imtU, interpretation, recommendation };
+  return {
+    age,
+    imt,
+    tbU,
+    imtU,
+    interpretation,
+    recommendation,
+    debug: {
+      version: CALCULATION_VERSION,
+      sex,
+      dobISO,
+      checkISO,
+      totalDays: age.totalDays,
+      monthsLmsExact: Math.round((age.totalDays / DAYS_PER_MONTH_LMS) * 1e6) / 1e6,
+      monthsLms: age.monthsLms,
+      bmiRaw: imt,
+      tbU_L: tbLms[0],
+      tbU_M: tbLms[1],
+      tbU_S: tbLms[2],
+      imtU_L: bmiLms[0],
+      imtU_M: bmiLms[1],
+      imtU_S: bmiLms[2],
+      tbURaw,
+      imtURaw,
+    },
+  };
 }

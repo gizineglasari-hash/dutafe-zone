@@ -3,7 +3,7 @@
 // Hanya platform resmi yang diizinkan: YouTube, Instagram, TikTok
 // ============================================================
 
-export type VideoPlatform = "youtube" | "instagram" | "tiktok" | "uploaded" | "none";
+export type VideoPlatform = "youtube" | "instagram" | "tiktok" | "uploaded" | "gdrive" | "artikel" | "none";
 
 export interface ParsedVideo {
   ok: boolean;
@@ -106,6 +106,8 @@ export const PLATFORM_LABEL: Record<string, string> = {
   instagram: "Instagram",
   tiktok: "TikTok",
   uploaded: "Upload Langsung",
+  gdrive: "Google Drive",
+  artikel: "Artikel",
   none: "Teks",
 };
 
@@ -114,10 +116,17 @@ export const PLATFORM_ICON: Record<string, string> = {
   instagram: "📸",
   tiktok: "🎵",
   uploaded: "🎥",
+  gdrive: "🎥",
+  artikel: "📄",
   none: "📝",
 };
 
 // Durasi upload yang diizinkan (detik)
 export const MIN_DURATION = 30;
 export const MAX_DURATION = 60;
-export const MAX_UPLOAD_SIZE = 4 * 1024 * 1024; // 4MB (batas body request serverless Vercel)
+export const MAX_UPLOAD_SIZE = 4 * 1024 * 1024; // batas jalur lama via server (body serverless Vercel)
+
+// PEMBARUAN 18 — upload video via Google Drive dari browser langsung,
+// jadi tidak terkena batas 4,5MB serverless. Batas aman payload
+// Apps Script (payload base64 membesar ±33%).
+export const MAX_DRIVE_VIDEO_SIZE = 30 * 1024 * 1024; // 30MB

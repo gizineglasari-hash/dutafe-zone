@@ -247,7 +247,7 @@ export default function AuthPage() {
                           }`}
                         >
                           <RadioGroupItem value={lv} id={`lv-${lv}`} className="sr-only" />
-                          <span>{lv === "SMP" ? "🏫" : "🎓"} {lv}</span>
+                          <span>{lv === "SMP" ? "🏫 SMP" : "🎓 SMA/SMK"}</span>
                         </label>
                       ))}
                     </RadioGroup>
@@ -255,7 +255,7 @@ export default function AuthPage() {
                 </div>
                 <div ref={schoolBoxRef} className="relative">
                   <Label htmlFor="school" className="text-sm font-bold text-fez-ink">
-                    Nama Sekolah * <span className="text-[10px] font-semibold text-fez-ink/40">(Kota Bandung — ketik untuk mencari)</span>
+                    Nama Sekolah * <span className="text-[10px] font-semibold text-fez-ink/40">(SMP, SMA &amp; SMK Kota Bandung — ketik untuk mencari)</span>
                   </Label>
                   <div className="relative mt-1">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fez-ink/30" />
@@ -268,7 +268,7 @@ export default function AuthPage() {
                         setSchoolOpen(true);
                       }}
                       onFocus={() => setSchoolOpen(true)}
-                      placeholder="cth. SMP Negeri 2 Bandung"
+                      placeholder="cth. SMPN 2 Bandung · SMKN 1 Bandung · SMAN 5 Bandung"
                       className="h-12 rounded-xl border-2 bg-cream/50 pl-9"
                       autoComplete="off"
                     />
@@ -320,7 +320,7 @@ export default function AuthPage() {
                           <X className="h-4 w-4" />
                         </button>
                       </div>
-                      <p className="mt-1.5 text-[10px] font-semibold text-emerald-700">✓ Tingkat pendidikan otomatis terisi: {selectedSchool[4]}</p>
+                      <p className="mt-1.5 text-[10px] font-semibold text-emerald-700">✓ Tingkat pendidikan otomatis terisi: {selectedSchool[4]}{selectedSchool[0].toUpperCase().startsWith("SMK") ? " (SMK setara SMA)" : ""}</p>
                     </div>
                   )}
                 </div>

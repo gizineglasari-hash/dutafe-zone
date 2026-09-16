@@ -6,7 +6,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
-import { toISODate } from "@/lib/who2007";
+import { toISODate, assess, CALCULATION_VERSION } from "@/lib/who2007";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const admin = await requireAdmin();
@@ -56,8 +56,48 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       recommendation: record.recommendation,
       referenceStandard: record.referenceStandard,
       referenceVersion: record.referenceVersion,
+      calculationVersion: record.calculationVersion, // null = data lama (algoritma v1)
       createdAt: record.createdAt,
     },
+    // ----------------------------------------------------------
+    // DEBUG KALKULASI — pembaruan 18, KHUSUS ADMIN (spek audit).
+    // Pemeriksaan dihitung ULANG live dari tanggal lahir + tanggal
+    // pemeriksaan + BB + TB yang tersimpan, lalu dibandingkan dengan
+    // angka tersimpan. Cocok persis → algoritma konsisten. Tidak
+    // pernah dikirim ke tampilan peserta.
+    // ----------------------------------------------------------
+    debug: (() => {
+      const dobISO = toISODate(record.tanggalLahir);
+      const checkISO = toISODate(record.tanggalPemeriksaan);
+      const recomputed = assess({
+        sex: "P", // website khusus remaja putri
+        dobISO,
+        checkISO,
+        weightKg: Number(record.beratBadanKg),
+        heightCm: Number(record.tinggiBadanCm),
+      });
+      if ("error" in recomputed) {
+        return { available: false, pesan: recomputed.error, versionSekarang: CALCULATION_VERSION };
+      }
+      const d = recomputed.debug;
+      return {
+        available: true,
+        versionSekarang: CALCULATION_VERSION,
+        versionTersimpan: record.calculationVersion, // null = dibuat saat algoritma v1
+        cocokDenganTersimpan:
+          Math.abs(recomputed.tbU.z - Number(record.tbUZscore)) < 0.005 &&
+          Math.abs(recomputed.imtU.z - Number(record.imtUZscore)) < 0.005,
+        tanggalLahir: dobISO,
+        tanggalPemeriksaan: checkISO,
+        totalHari: d.totalDays,
+        usiaBulanEksak: d.monthsLmsExact,
+        usiaBulanTabel: d.monthsLms,
+        konvensiBulan: "round(hari / 30,4375) — identik WHO AnthroPlus",
+        bmiRaw: d.bmiRaw,
+        tbU: { L: d.tbU_L, M: d.tbU_M, S: d.tbU_S, zRaw: d.tbURaw, zTersimpan: Number(record.tbUZscore) },
+        imtU: { L: d.imtU_L, M: d.imtU_M, S: d.imtU_S, zRaw: d.imtURaw, zTersimpan: Number(record.imtUZscore) },
+      };
+    })(),
     history: history.map((h) => ({
       id: h.id,
       tanggalPemeriksaan: toISODate(h.tanggalPemeriksaan),

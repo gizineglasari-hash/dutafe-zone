@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
   const where: Record<string, unknown> = { status: "APPROVED" };
   if (type === "education" || type === "peer_educator") where.contentType = type;
-  if (["youtube", "instagram", "tiktok", "uploaded"].includes(platform)) where.platform = platform;
+  if (["youtube", "instagram", "tiktok", "uploaded", "gdrive", "artikel"].includes(platform)) where.platform = platform;
   if (level === "SMP" || level === "SMA") where.participant = { educationLevel: level };
 
   const contents = await db.communityContent.findMany({

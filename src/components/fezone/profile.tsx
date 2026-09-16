@@ -108,6 +108,33 @@ export default function ProfileView({ data, refresh }: { data: DashData; refresh
     });
   }
 
+  // PEMBARUAN 18 — unggah foto LANGSUNG ke Google Drive via Apps Script
+  // (tidak lewat server Vercel → bebas batas 4,5MB & tidak memakai
+  // Supabase Storage). Bila gagal → fallback jalur lama (FormData).
+  async function uploadPhotoToDrive(blob: Blob): Promise<string | null> {
+    const { DRIVE_WEBAPP_URL_PUBLIC } = await import("@/lib/drive-public");
+    const dataBase64 = await new Promise<string>((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(String(fr.result).split(",")[1] ?? "");
+      fr.onerror = () => reject(new Error("gagal baca"));
+      fr.readAsDataURL(blob);
+    });
+    const res = await fetch(DRIVE_WEBAPP_URL_PUBLIC, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, // bebas preflight CORS
+      body: JSON.stringify({
+        uploadId: `avatar-${Date.now()}`,
+        fileName: "foto-profil.jpg",
+        contentType: "image/jpeg",
+        dataBase64,
+      }),
+      redirect: "follow",
+    });
+    const d = await res.json();
+    if (!d.ok || !d.thumb) throw new Error(d.error || "Gagal unggah ke Google Drive");
+    return d.thumb as string;
+  }
+
   async function uploadPhoto(file: File) {
     if (!file.type.startsWith("image/")) {
       toast({ title: "File bukan gambar", description: "Pilih file JPG, PNG, atau WebP.", variant: "destructive" });
@@ -116,17 +143,41 @@ export default function ProfileView({ data, refresh }: { data: DashData; refresh
     setPhotoBusy(true);
     try {
       const blob = await processImage(file);
-      const fd = new FormData();
-      fd.append("file", new File([blob], "foto-profil.jpg", { type: "image/jpeg" }));
-      const res = await fetch("/api/participant/profile/photo", { method: "POST", body: fd });
-      const d = await res.json();
-      if (!res.ok) {
-        toast({ title: "Gagal upload", description: d.error, variant: "destructive" });
-        return;
+
+      // 1) Utama: simpan ke Google Drive, lalu kirim URL-nya ke API
+      let driveOk = false;
+      try {
+        const thumbUrl = await uploadPhotoToDrive(blob);
+        const res = await fetch("/api/participant/profile/photo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fileUrl: thumbUrl }),
+        });
+        const d = await res.json();
+        if (res.ok) {
+          driveOk = true;
+          setPhotoPreview(null);
+          toast({ title: "✅ Foto profil diperbarui!", description: "Foto tersimpan di Google Drive & tampil di leaderboard." });
+          await refresh();
+        } else {
+          toast({ title: "Gagal upload", description: d.error, variant: "destructive" });
+          return;
+        }
+      } catch {
+        // 2) Cadangan: jalur lama via server (Supabase/local)
+        if (driveOk) return;
+        const fd = new FormData();
+        fd.append("file", new File([blob], "foto-profil.jpg", { type: "image/jpeg" }));
+        const res = await fetch("/api/participant/profile/photo", { method: "POST", body: fd });
+        const d = await res.json();
+        if (!res.ok) {
+          toast({ title: "Gagal upload", description: d.error, variant: "destructive" });
+          return;
+        }
+        setPhotoPreview(null);
+        toast({ title: "✅ Foto profil diperbarui!", description: "Foto tampil di leaderboard & komunitas." });
+        await refresh();
       }
-      setPhotoPreview(null);
-      toast({ title: "✅ Foto profil diperbarui!", description: "Foto tampil di leaderboard & komunitas." });
-      await refresh();
     } catch {
       toast({ title: "Gagal memproses gambar", variant: "destructive" });
     } finally {

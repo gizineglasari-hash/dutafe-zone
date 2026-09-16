@@ -1,5 +1,6 @@
 import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
+import { isDriveUrl, extractDriveFileId, driveDelete } from "@/lib/drive";
 
 // ------------------------------------------------------------
 // Storage abstraction untuk production (Vercel + Supabase) & dev lokal.
@@ -72,10 +73,18 @@ export async function saveUpload(opts: {
 
 /**
  * Hapus file berdasarkan URL yang tersimpan di database.
- * Mendukung URL lama lokal (/uploads/...) dan URL Supabase Storage.
+ * Mendukung: Google Drive (pembaruan 18), URL lama lokal (/uploads/...)
+ * dan URL Supabase Storage.
  */
 export async function deleteUpload(url: string | null | undefined): Promise<void> {
   if (!url) return;
+
+  // Google Drive (via Apps Script) — foto profil & video Peer Educator
+  if (isDriveUrl(url)) {
+    const fileId = extractDriveFileId(url);
+    if (fileId) await driveDelete(fileId).catch(() => {});
+    return;
+  }
 
   // Supabase Storage
   if (url.startsWith(`${publicBaseUrl()}/`)) {

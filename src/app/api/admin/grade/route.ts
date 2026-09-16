@@ -56,6 +56,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, participant: { id: p.id, isDuta: p.isDuta } });
   }
 
+  if (action === "setCandidate") {
+    // PEMBARUAN 18: penetapan Kandidat Duta MANUAL oleh admin.
+    // Tidak ada lagi otomatisasi dari sisi peserta (tahapan selesai
+    // hanya menjadi portofolio). isCandidate=true juga tidak otomatis
+    // menjadikan Duta — tetap lewat action setDuta.
+    const { participantId, isCandidate } = body;
+    if (typeof participantId !== "string" || typeof isCandidate !== "boolean") {
+      return NextResponse.json({ error: "Parameter tidak valid" }, { status: 400 });
+    }
+    const p = await db.participant.findUnique({
+      where: { id: participantId },
+      select: { id: true, isDuta: true, isDutaCandidate: true },
+    });
+    if (!p) return NextResponse.json({ error: "Peserta tidak ditemukan" }, { status: 404 });
+    // Jaga-jaga: Duta terpilih tidak boleh dicabut dari daftar kandidat
+    if (p.isDuta && !isCandidate) {
+      return NextResponse.json({ error: "Peserta ini Duta terpilih. Cabut status Dutanya dulu." }, { status: 400 });
+    }
+    const updated = await db.participant.update({
+      where: { id: participantId },
+      data: { isDutaCandidate: isCandidate },
+    });
+    return NextResponse.json({ ok: true, participant: { id: updated.id, isDutaCandidate: updated.isDutaCandidate } });
+  }
+
   if (action === "setCandidatesCount") {
     const { count } = body;
     const n = parseInt(String(count), 10);

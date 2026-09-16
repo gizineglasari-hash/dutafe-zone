@@ -45,8 +45,24 @@ interface GiziRow {
 }
 
 interface DetailData {
-  record: GiziRow & { referenceVersion: string; usiaDalamHari: number };
+  record: GiziRow & { referenceVersion: string; usiaDalamHari: number; calculationVersion: string | null };
   history: { id: string; tanggalPemeriksaan: string; usiaLabel: string; beratBadanKg: number; tinggiBadanCm: number; imt: number; tbUStatus: string; imtUStatus: string; bbMedianWho: number | null; bbMinWho: number | null; bbMaxWho: number | null }[];
+  debug?: {
+    available: boolean;
+    pesan?: string;
+    versionSekarang: string;
+    versionTersimpan?: string | null;
+    cocokDenganTersimpan?: boolean;
+    tanggalLahir?: string;
+    tanggalPemeriksaan?: string;
+    totalHari?: number;
+    usiaBulanEksak?: number;
+    usiaBulanTabel?: number;
+    konvensiBulan?: string;
+    bmiRaw?: number;
+    tbU?: { L: number; M: number; S: number; zRaw: number; zTersimpan: number };
+    imtU?: { L: number; M: number; S: number; zRaw: number; zTersimpan: number };
+  };
 }
 
 // format angka gaya Indonesia: 50,0
@@ -112,6 +128,7 @@ export default function AdminGiziTab() {
   const [page, setPage] = useState(1);
   const [detail, setDetail] = useState<DetailData | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [showDebug, setShowDebug] = useState(false); // mode debug KHUSUS admin
   const [exporting, setExporting] = useState<"pdf" | "excel" | null>(null);
   const PAGE_SIZE = 25;
 
@@ -495,6 +512,66 @@ export default function AdminGiziTab() {
                 </tbody>
               </table>
             </div>
+
+            {/* ---------- DEBUG KALKULASI (KHUSUS ADMIN — pembaruan 18) ---------- */}
+            {detail.debug && (
+              <div className="mt-4 rounded-2xl border-2 border-dashed border-[#3d1526]/25 bg-[#3d1526]/[0.03] p-4">
+                <button onClick={() => setShowDebug((v) => !v)} className="flex w-full items-center justify-between gap-2 text-left">
+                  <p className="text-xs font-extrabold text-[#3d1526]/70">
+                    🔧 Debug Kalkulasi (khusus admin — tidak tampil ke peserta)
+                  </p>
+                  <span className="rounded-full bg-[#3d1526]/10 px-2.5 py-1 text-[10px] font-extrabold text-[#3d1526]/60">
+                    {showDebug ? "Sembunyikan ▲" : "Tampilkan ▼"}
+                  </span>
+                </button>
+                {showDebug && (
+                  <div className="mt-3 space-y-2 text-[11px] font-bold text-[#3d1526]/75">
+                    {detail.debug.available ? (
+                      <>
+                        <div className="flex flex-wrap gap-1.5">
+                          <span className={`rounded-full px-2.5 py-1 ${detail.debug.cocokDenganTersimpan ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+                            {detail.debug.cocokDenganTersimpan ? "✓ Hitung ulang = angka tersimpan" : "✕ Hitung ulang BERBEDA dari angka tersimpan"}
+                          </span>
+                          <span className="rounded-full bg-white px-2.5 py-1">Algoritma sekarang: {detail.debug.versionSekarang}</span>
+                          <span className="rounded-full bg-white px-2.5 py-1">
+                            Algoritma saat data dibuat: {detail.debug.versionTersimpan ?? "v1 (lama, floor)"}
+                          </span>
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <div className="rounded-xl bg-white p-2.5">
+                            <p className="text-[10px] uppercase text-[#3d1526]/40">Usia & konversi bulan</p>
+                            <p>Total hari: <b>{detail.debug.totalHari}</b></p>
+                            <p>Bulan eksak: <b>{detail.debug.usiaBulanEksak}</b> → baris tabel LMS: <b>{detail.debug.usiaBulanTabel}</b></p>
+                            <p className="text-[#3d1526]/50">{detail.debug.konvensiBulan}</p>
+                          </div>
+                          <div className="rounded-xl bg-white p-2.5">
+                            <p className="text-[10px] uppercase text-[#3d1526]/40">IMT presisi penuh</p>
+                            <p>BB/TB(m)² = <b>{detail.debug.bmiRaw?.toFixed(6)}</b> kg/m²</p>
+                            <p className="text-[#3d1526]/50">Tampilan peserta dibulatkan 2 desimal — kalkulasi memakai nilai penuh ini.</p>
+                          </div>
+                          <div className="rounded-xl bg-white p-2.5">
+                            <p className="text-[10px] uppercase text-[#3d1526]/40">TB/U — L·M·S (bulan {detail.debug.usiaBulanTabel})</p>
+                            <p>L=<b>{detail.debug.tbU?.L}</b> · M=<b>{detail.debug.tbU?.M}</b> · S=<b>{detail.debug.tbU?.S}</b></p>
+                            <p>z presisi: <b>{detail.debug.tbU?.zRaw.toFixed(6)}</b> · tersimpan: <b>{detail.debug.tbU?.zTersimpan}</b></p>
+                          </div>
+                          <div className="rounded-xl bg-white p-2.5">
+                            <p className="text-[10px] uppercase text-[#3d1526]/40">IMT/U — L·M·S (bulan {detail.debug.usiaBulanTabel})</p>
+                            <p>L=<b>{detail.debug.imtU?.L}</b> · M=<b>{detail.debug.imtU?.M}</b> · S=<b>{detail.debug.imtU?.S}</b></p>
+                            <p>z presisi: <b>{detail.debug.imtU?.zRaw.toFixed(6)}</b> · tersimpan: <b>{detail.debug.imtU?.zTersimpan}</b></p>
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-[#3d1526]/45">
+                          Rumus: z = ((y/M)^L − 1)/(L×S); jika L=0 → z = ln(y/M)/S. Persentil = Φ(z)×100.
+                          Referensi: WHO Growth Reference 2007 (perempuan 5–19 th, 61–228 bulan).
+                        </p>
+                      </>
+                    ) : (
+                      <p className="rounded-xl bg-white p-2.5">⚠️ {detail.debug.pesan}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
