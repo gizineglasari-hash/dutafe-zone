@@ -63,6 +63,15 @@ async function main() {
   ).catch((e) => console.warn("[seed] kolom Participant.phone:", e?.message || e));
 
   // ------------------------------------------------------------
+  // PEMULIHAN SKEMA OTOMATIS: kolom nik pada Participant
+  // (Nomor Induk Kependudukan, 16 digit, wajib pendaftar baru;
+  // akun lama tetap kosong). Aman diulang.
+  // ------------------------------------------------------------
+  await db.$executeRawUnsafe(
+    `ALTER TABLE "Participant" ADD COLUMN IF NOT EXISTS "nik" TEXT;`
+  ).catch((e) => console.warn("[seed] kolom Participant.nik:", e?.message || e));
+
+  // ------------------------------------------------------------
   // PEMULIHAN SKEMA OTOMATIS: tabel PageView untuk analisa
   // kunjungan web admin (ala Vercel Analytics). Aman diulang.
   // ------------------------------------------------------------

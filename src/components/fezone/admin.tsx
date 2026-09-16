@@ -124,7 +124,7 @@ interface Overview {
 
 interface AdminRow {
   id: string; name: string; age: number; school: string; schoolCity: string | null; schoolDistrict: string | null; schoolType: string | null;
-  educationLevel: string; phone: string | null; username: string; joinedAt: string;
+  educationLevel: string; phone: string | null; nik: string | null; username: string; joinedAt: string;
   xp: number; level: number; levelName: string; levelIcon: string; badges: string[];
   missionsCompleted: number; ttdTaken: number; hbValue: number | null; hbCheckDate: string | null; streakWeeks: number; preTestScore: number | null; postTestScore: number | null;
   isDutaCandidate: boolean; isDuta: boolean; hasPendingVideo: boolean;
@@ -144,7 +144,7 @@ function fmtDateId(iso: string): string {
 }
 
 const EXPORT_HEADERS = [
-  "No", "Nama", "Email", "Usia", "Sekolah", "Kota", "Kecamatan", "Status Sekolah", "Tingkat", "Telepon",
+  "No", "Nama", "Email", "Usia", "Sekolah", "Kota", "Kecamatan", "Status Sekolah", "Tingkat", "Telepon", "NIK",
   "XP", "Level", "Misi Selesai", "Jumlah Badge", "Streak (pekan)", "Tablet TTD Diminum", "Nilai Pre-Test", "Nilai Post-Test",
   "Hb (g/dL)", "Tanggal Pemeriksaan Hb", "Status Duta", "Tanggal Gabung",
 ];
@@ -165,6 +165,7 @@ function toExportRows(rows: AdminRow[]): (string | number)[][] {
     r.schoolType ?? "–",
     r.educationLevel,
     r.phone ?? "–",
+    r.nik ?? "–",
     r.xp,
     `Lv${r.level}`,
     `${r.missionsCompleted}/9`,
@@ -1288,10 +1289,10 @@ export function AdminDashboard() {
             </div>
 
             <div className="thin-scroll overflow-x-auto rounded-2xl border border-[#3d1526]/10 bg-white">
-              <table className="w-full min-w-[1280px] text-left text-xs">
+              <table className="w-full min-w-[1400px] text-left text-xs">
                 <thead className="border-b-2 border-[#3d1526]/10 bg-[#faf0e8]">
                   <tr className="[&>th]:px-3 [&>th]:py-2.5 [&>th]:font-extrabold [&>th]:uppercase [&>th]:text-[10px] [&>th]:text-[#3d1526]/50">
-                    <th>Nama</th><th>Usia</th><th>Sekolah</th><th>Kota</th><th>Kecamatan</th><th>Status Sekolah</th><th>Tingkat</th><th>Telepon</th><th>XP</th><th>Level</th>
+                    <th>Nama</th><th>Usia</th><th>Sekolah</th><th>Kota</th><th>Kecamatan</th><th>Status Sekolah</th><th>Tingkat</th><th>Telepon</th><th>NIK</th><th>XP</th><th>Level</th>
                     <th>Misi</th><th>Badge</th><th>Streak</th><th>💊 TTD</th><th>Pre</th><th>Post</th><th>🩸 Hb</th><th>Status Duta</th><th>Aksi</th>
                   </tr>
                 </thead>
@@ -1326,6 +1327,7 @@ export function AdminDashboard() {
                         </span>
                       </td>
                       <td className="px-3 py-2.5 font-semibold text-[#3d1526]/70">{r.phone ?? "–"}</td>
+                      <td className="px-3 py-2.5 font-mono text-[11px] font-semibold text-[#3d1526]/70">{r.nik ?? "–"}</td>
                       <td className="px-3 py-2.5 font-display font-extrabold text-rose-600">{r.xp.toLocaleString("id-ID")}</td>
                       <td className="px-3 py-2.5">{r.levelIcon} Lv{r.level}</td>
                       <td className="px-3 py-2.5">{r.missionsCompleted}/9</td>

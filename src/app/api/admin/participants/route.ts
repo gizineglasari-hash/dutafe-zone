@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
     schoolType: p.schoolType,
     educationLevel: p.educationLevel,
     phone: p.phone,
+    nik: p.nik,
     username: p.user.username,
     joinedAt: p.user.createdAt,
     xp: p.xp,

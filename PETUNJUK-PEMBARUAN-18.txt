@@ -48,6 +48,15 @@ Isi pembaruan ini (6 perbaikan & fitur baru):
       ke daftar sekolah — bisa dicari & dipilih.
     - SMK digolongkan jenjang SMA (setara), seperti permintaan.
 
+ 7. NIK WAJIB SAAT PENDAFTARAN + TAMPIL DI DATABASE ADMIN
+    - Formulir daftar punya kolom baru: NIK (Nomor Induk
+      Kependudukan), WAJIB diisi, harus 16 angka sesuai Kartu
+      Keluarga/Akta. Hanya angka, tidak bisa huruf.
+    - Sistem otomatis menolak NIK yang sudah pernah dipakai
+      (mencegah pendaftaran ganda).
+    - NIK muncul di panel admin > Data Peserta (kolom "NIK",
+      di samping kolom Telepon) dan ikut dalam ekspor PDF/Excel.
+
 ================================================================
 CARA PASANG (5 menit)
 ================================================================
@@ -73,6 +82,8 @@ CARA PASANG (5 menit)
    src/lib/drive-public.ts                           (BARU)
    src/lib/storage.ts                                (ganti)
    src/lib/video.ts                                  (ganti)
+   src/app/api/auth/register/route.ts                (ganti)
+   src/app/api/admin/participants/route.ts           (ganti)
    src/app/api/participant/nutrition/route.ts        (ganti)
    src/app/api/participant/nutrition/[id]/route.ts   (BARU — buat folder [id])
    src/app/api/admin/nutrition/[id]/route.ts         (ganti)
@@ -114,4 +125,7 @@ CHECKLIST UJI SETELAH PASANG
 [ ] Upload video 30-60 detik (s.d. 30MB) -> tersimpan di Drive,
     bisa diputar langsung di website.
 [ ] Formulir daftar: ketik "SMKN" -> muncul daftar SMK Bandung.
+[ ] Formulir daftar: kolom NIK wajib — tanpa NIK / NIK kurang
+    dari 16 angka -> tidak bisa mendaftar.
+[ ] Admin > Data Peserta: ada kolom NIK berisi NIK peserta baru.
 ================================================================

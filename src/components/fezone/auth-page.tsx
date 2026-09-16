@@ -18,7 +18,7 @@ export default function AuthPage() {
   const { authMode, setAuthMode, setView, setUser } = useFez();
   const isRegister = authMode === "register";
 
-  const [form, setForm] = useState({ name: "", age: "", school: "", schoolCity: "", schoolDistrict: "", schoolType: "", educationLevel: "", username: "", password: "", phone: "" });
+  const [form, setForm] = useState({ name: "", age: "", school: "", schoolCity: "", schoolDistrict: "", schoolType: "", educationLevel: "", username: "", password: "", phone: "", nik: "" });
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [welcome, setWelcome] = useState<string | null>(null);
@@ -85,7 +85,7 @@ export default function AuthPage() {
       });
       return;
     }
-    // Validasi ringan nomor telepon di sisi client (validasi utama tetap di server)
+    // Validasi ringan nomor telepon & NIK di sisi client (validasi utama tetap di server)
     if (isRegister) {
       const p = form.phone.replace(/[\s\-().]/g, "");
       const okPhone = /^(\+62|62|0)8[0-9]{7,12}$/.test(p);
@@ -93,6 +93,15 @@ export default function AuthPage() {
         toast({
           title: "Nomor telepon belum benar 📱",
           description: "Isi dengan format 08xxxxxxxxxx (contoh: 081234567890).",
+          variant: "destructive",
+        });
+        return;
+      }
+      const n = form.nik.replace(/[\s.\-]/g, "");
+      if (!/^[0-9]{16}$/.test(n)) {
+        toast({
+          title: "NIK belum lengkap 🪪",
+          description: "NIK harus 16 angka sesuai Kartu Keluarga/Akta Kelahiran.",
           variant: "destructive",
         });
         return;
@@ -333,6 +342,14 @@ export default function AuthPage() {
                   <p className="mt-1 text-[10px] font-semibold text-fez-ink/40">Untuk informasi program dari petugas. Boleh nomor HP sendiri atau orang tua/wali.</p>
                 </div>
                 <div>
+                  <Label htmlFor="nik" className="text-sm font-bold text-fez-ink">NIK (Nomor Induk Kependudukan) *</Label>
+                  <Input
+                    id="nik" required type="text" inputMode="numeric" maxLength={19} value={form.nik}
+                    onChange={(e) => set("nik", e.target.value.replace(/[^0-9\s.]/g, ""))}
+                    placeholder="16 angka sesuai Kartu Keluarga" className="mt-1 h-12 rounded-xl border-2 bg-cream/50" />
+                  <p className="mt-1 text-[10px] font-semibold text-fez-ink/40">Lihat NIK di Kartu Keluarga / Akta Kelahiran. Hanya admin program yang bisa melihatnya.</p>
+                </div>
+                <div>
                   <Label htmlFor="username" className="text-sm font-bold text-fez-ink">Email / Username *</Label>
                   <Input
                     id="username" required type="email" value={form.username}
@@ -356,8 +373,8 @@ export default function AuthPage() {
                   </div>
                 </div>
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  🔒 Data yang diminta hanya yang diperlukan program: nama, usia, sekolah, tingkat pendidikan, nomor telepon, dan akun
-                  login. Tidak ada data pribadi sensitif lainnya. Password kamu dienkripsi (tidak disimpan sebagai teks biasa).
+                  🔒 Data yang diminta hanya yang diperlukan program: nama, usia, sekolah, tingkat pendidikan, nomor telepon, NIK, dan akun
+                  login. NIK dipakai hanya untuk administrasi program & tidak dibagikan ke pihak lain. Password kamu dienkripsi (tidak disimpan sebagai teks biasa).
                 </p>
               </>
             )}

@@ -6,7 +6,7 @@ import { getMissionProgress } from "@/lib/gamification";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, age, school, schoolCity, schoolDistrict, schoolType, educationLevel, username, password, phone } = body ?? {};
+    const { name, age, school, schoolCity, schoolDistrict, schoolType, educationLevel, username, password, phone, nik } = body ?? {};
 
     if (!name || !age || !school || !educationLevel || !username || !password) {
       return NextResponse.json({ error: "Semua field wajib diisi ya!" }, { status: 400 });
@@ -25,6 +25,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Format nomor telepon tidak valid. Gunakan format 08xxxxxxxxxx (9-13 digit setelah 08)" },
         { status: 400 }
+      );
+    }
+    // ===== Validasi NIK (Nomor Induk Kependudukan — wajib utk pendaftar baru) =====
+    // NIK selalu 16 digit angka. Spasi/titik yang diketik pengguna diabaikan.
+    // Disimpan sebagai TEKS agar angka 0 di depan tidak hilang.
+    const nikNorm = String(nik ?? "").replace(/[\s.\-]/g, "");
+    if (!nikNorm) {
+      return NextResponse.json({ error: "NIK wajib diisi ya!" }, { status: 400 });
+    }
+    if (!/^[0-9]{16}$/.test(nikNorm)) {
+      return NextResponse.json(
+        { error: "NIK harus terdiri dari 16 angka sesuai Kartu Keluarga/Akta. Contoh: 3273xxxxxxxxxxxx" },
+        { status: 400 }
+      );
+    }
+    const nikTaken = await db.participant.findFirst({ where: { nik: nikNorm }, select: { name: true } });
+    if (nikTaken) {
+      return NextResponse.json(
+        { error: "NIK ini sudah terdaftar di program (atas nama " + nikTaken.name + "). Gunakan NIK sendiri sesuai identitas." },
+        { status: 409 }
       );
     }
     if (educationLevel !== "SMP" && educationLevel !== "SMA") {
@@ -62,6 +82,7 @@ export async function POST(req: NextRequest) {
             schoolType: schoolType ? String(schoolType).trim() : null,
             educationLevel,
             phone: phoneNorm,
+            nik: nikNorm,
           },
         },
       },
