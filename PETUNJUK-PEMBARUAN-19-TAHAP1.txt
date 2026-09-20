@@ -1,0 +1,109 @@
+================================================================
+PEMBARUAN 19 — TAHAP 1 (FONDASI SISTEM PUSKESMAS)
+FE-ZONE — Duta Remaja Putri Bebas Anemia
+================================================================
+
+APA YANG ADA DI DALAM PEMBARUAN INI?
+
+Pembaruan 19 adalah sistem monitoring Puskesmas (sesuai spesifikasi
+besar yang kamu kirim). Dikerjakan BERTAHAP supaya situs yang sudah
+jalan tidak terganggu. Tahap 1 ini adalah FONDASI-nya — seperti
+pondasi rumah: belum terlihat menggunanya, tapi semua tahap
+berikutnya berdiri di atasnya.
+
+ISI TAHAP 1:
+1. 7 tabel database baru:
+   - MasterKecamatan (30 kecamatan resmi Kota Bandung)
+   - MasterKelurahan (151 kelurahan resmi)
+   - MasterPuskesmas (80 UPT Puskesmas resmi Dinkes Kota Bandung)
+   - PuskesmasWilayah (pemetaan Puskesmas -> kelurahan)
+   - PuskesmasStaff (akun petugas — dipakai di tahap berikutnya)
+   - HemoglobinRecord (riwayat Hb — dipakai di tahap berikutnya)
+   - AuditLog (catatan jejak aksi sensitif)
+2. Data induk RESMI di-seed otomatis saat deploy (bukan data uji!):
+   sumber: Profil Kesehatan Kota Bandung 2023, Open Data Bandung,
+   dan Peta Wilayah Kerja Dinkes. Detail di SOURCES.md terlampir.
+3. Menu baru di panel admin: "Data Induk"
+   - statistik kelurahan terpetakan
+   - daftar 80 Puskesmas + pencarian
+   - tambah / ubah / nonaktifkan Puskesmas
+   - kelola wilayah kerja (petakan & pindahkan kelurahan)
+4. Setiap aksi admin di menu ini tercatat otomatis di AuditLog.
+
+YANG TIDAK BERUBAH:
+- Semua fitur lama (misi, XP, badge, TTD, gizi, peer educator,
+  leaderboard, dll.) tidak tersentuh.
+- Tidak ada data lama yang diubah atau dihapus.
+
+FILE YANG BERUBAH / BARU (8 file):
+  prisma/schema.prisma                              (diubah)
+  scripts/seed.production.js                        (diubah)
+  scripts/seed-puskesmas.js                         (BARU)
+  scripts/master-data.json                          (BARU — data resmi)
+  src/app/api/admin/puskesmas/route.ts              (BARU)
+  src/app/api/admin/puskesmas/wilayah/route.ts      (BARU)
+  src/components/fezone/admin-puskesmas.tsx         (BARU)
+  src/components/fezone/admin.tsx                   (diubah)
+
+================================================================
+CARA PASANG
+================================================================
+
+1. Ekstrak zip ini. Kamu mendapat folder: prisma, scripts, src
+   dan file petunjuk ini (plus SOURCES.md & sumber data).
+
+2. Salin-timpa ke folder proyek lokal:
+   D:\Data C\Documents\Website Fe-Zone\Fe-zone\dutafe-zone
+   (samakan folder-nya dengan folder di zip; file lama yang
+   namanya sama akan tertimpa, file baru langsung tercopy)
+
+3. Upload ke GitHub — Add file > Upload files — SEMUA folder di
+   atas sekaligus (prisma, scripts, src). PENTING: periksa nama
+   jalur tiap file setelah di-drag, harus berawalan nama folder
+   yang benar, contoh:
+     prisma/schema.prisma
+     scripts/seed-puskesmas.js
+     scripts/master-data.json
+     scripts/seed.production.js
+     src/app/api/admin/puskesmas/route.ts
+     src/app/api/admin/puskesmas/wilayah/route.ts
+     src/components/fezone/admin-puskesmas.tsx
+     src/components/fezone/admin.tsx
+
+   Tulis pesan commit: "pembaruan 19 tahap 1"
+   lalu klik "Commit changes".
+
+4. Tunggu Vercel selesai deploy (1-3 menit). Saat build berjalan,
+   database diperbarui OTOMATIS: 7 tabel baru dibuat dan data
+   induk resmi ter-seed sendiri. Tidak perlu setting apa pun.
+
+================================================================
+CARA MEMASTIKAN BERHASIL
+================================================================
+1. Buka dutafe-zone.vercel.app > login Admin.
+2. Di baris menu atas ada tombol baru "Data Induk" (ikon gedung).
+3. Klik — harus tampil:
+   - kartu "PUSKESMAS AKTIF 80 / 80"
+   - kartu "KELURAHAN TERPETAKAN 82 / 151"
+   - kartu "KECAMATAN 30"
+   - tabel berisi Puskesmas Ahmad Yani, Antapani, Arcamanik, dst.
+4. Coba ketik "Cicendo" di pencarian — daftar tersaring.
+5. Coba tombol "Wilayah" pada salah satu Puskesmas — modal
+   wilayah kerja terbuka (daftar kelurahan + tambah kelurahan).
+6. Semua halaman lama harus tetap normal.
+
+CATATAN KEAMANAN DATA:
+- Seed data induk hanya MENAMBAH; tidak pernah menimpa hasil
+  editan admin di masa depan.
+- Nonaktifkan Puskesmas = disembunyikan dari pilihan baru,
+  bukan dihapus (data historis tetap aman).
+- 1 kelurahan hanya boleh dipetakan ke 1 Puskesmas; bila sudah
+  dipunyai Puskesmas lain, sistem meminta konfirmasi pemindahan.
+
+================================================================
+TAHAP BERIKUTNYA (setelah kamu konfirmasi tahap 1 sukses):
+- Tahap 2: registrasi & login petugas Puskesmas + verifikasi admin
+- Tahap 3: dashboard petugas + data remaja wilayah
+- Tahap 4: input Hb + pesan gizi otomatis di sisi remaja
+- Tahap 5: rekap, filter, export, audit lengkap + uji regresi
+================================================================

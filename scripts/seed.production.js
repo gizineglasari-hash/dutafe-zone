@@ -12,6 +12,7 @@
 
 const { PrismaClient } = require("@prisma/client");
 const { randomBytes, scryptSync } = require("crypto");
+const { seedPuskesmas } = require("./seed-puskesmas.js");
 
 const db = new PrismaClient();
 
@@ -22,6 +23,18 @@ function hashPassword(password) {
 }
 
 async function main() {
+  // ------------------------------------------------------------
+  // PEMBARUAN 19 — tabel & data induk Puskesmas (dulu, agar
+  // fitur monitoring Puskesmas siap sebelum halaman dibangun).
+  // Dibungkus try/catch: kegagalan bagian ini TIDAK boleh
+  // menggagalkan deploy fitur lama yang sudah jalan.
+  // ------------------------------------------------------------
+  try {
+    await seedPuskesmas(db);
+  } catch (e) {
+    console.warn("[seed] pembaruan 19 (puskesmas):", e?.message || e);
+  }
+
   // ------------------------------------------------------------
   // PEMULIHAN SKEMA OTOMATIS: pastikan tabel PasswordResetToken ada.
   // Dipakai fitur "Lupa Password" (reset via email). Dibuat dengan

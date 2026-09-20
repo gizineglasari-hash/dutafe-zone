@@ -1,0 +1,1534 @@
+{
+  "kecamatan": [
+    "Andir",
+    "Antapani",
+    "Arcamanik",
+    "Astana Anyar",
+    "Babakan Ciparay",
+    "Bandung Kidul",
+    "Bandung Kulon",
+    "Bandung Wetan",
+    "Batununggal",
+    "Bojongloa Kaler",
+    "Bojongloa Kidul",
+    "Buahbatu",
+    "Cibeunying Kaler",
+    "Cibeunying Kidul",
+    "Cibiru",
+    "Cicendo",
+    "Cidadap",
+    "Cinambo",
+    "Coblong",
+    "Gedebage",
+    "Kiaracondong",
+    "Lengkong",
+    "Mandalajati",
+    "Panyileukan",
+    "Rancasari",
+    "Regol",
+    "Sukajadi",
+    "Sukasari",
+    "Sumur Bandung",
+    "Ujungberung"
+  ],
+  "kelurahan": [
+    {
+      "nama": "Campaka",
+      "kecamatan": "Andir"
+    },
+    {
+      "nama": "Ciroyom",
+      "kecamatan": "Andir"
+    },
+    {
+      "nama": "Dungus Cariang",
+      "kecamatan": "Andir"
+    },
+    {
+      "nama": "Garuda",
+      "kecamatan": "Andir"
+    },
+    {
+      "nama": "Kebon Jeruk",
+      "kecamatan": "Andir"
+    },
+    {
+      "nama": "Maleber",
+      "kecamatan": "Andir"
+    },
+    {
+      "nama": "Cibadak",
+      "kecamatan": "Astana Anyar"
+    },
+    {
+      "nama": "Karang Anyar",
+      "kecamatan": "Astana Anyar"
+    },
+    {
+      "nama": "Karasak",
+      "kecamatan": "Astana Anyar"
+    },
+    {
+      "nama": "Nyengseret",
+      "kecamatan": "Astana Anyar"
+    },
+    {
+      "nama": "Panjunan",
+      "kecamatan": "Astana Anyar"
+    },
+    {
+      "nama": "Pelindung Hewan",
+      "kecamatan": "Astana Anyar"
+    },
+    {
+      "nama": "Antapani Kidul",
+      "kecamatan": "Antapani"
+    },
+    {
+      "nama": "Antapani Kulon",
+      "kecamatan": "Antapani"
+    },
+    {
+      "nama": "Antapani Tengah",
+      "kecamatan": "Antapani"
+    },
+    {
+      "nama": "Antapani Wetan",
+      "kecamatan": "Antapani"
+    },
+    {
+      "nama": "Cisaranten Bina Harapan",
+      "kecamatan": "Arcamanik"
+    },
+    {
+      "nama": "Cisaranten Endah",
+      "kecamatan": "Arcamanik"
+    },
+    {
+      "nama": "Cisaranten Kulon",
+      "kecamatan": "Arcamanik"
+    },
+    {
+      "nama": "Sukamiskin",
+      "kecamatan": "Arcamanik"
+    },
+    {
+      "nama": "Babakan",
+      "kecamatan": "Babakan Ciparay"
+    },
+    {
+      "nama": "Babakan Ciparay",
+      "kecamatan": "Babakan Ciparay"
+    },
+    {
+      "nama": "Cirangrang",
+      "kecamatan": "Babakan Ciparay"
+    },
+    {
+      "nama": "Margahayu Utara",
+      "kecamatan": "Babakan Ciparay"
+    },
+    {
+      "nama": "Margasuka",
+      "kecamatan": "Babakan Ciparay"
+    },
+    {
+      "nama": "Sukahaji",
+      "kecamatan": "Babakan Ciparay"
+    },
+    {
+      "nama": "Batununggal",
+      "kecamatan": "Bandung Kidul"
+    },
+    {
+      "nama": "Kujangsari",
+      "kecamatan": "Bandung Kidul"
+    },
+    {
+      "nama": "Mengger",
+      "kecamatan": "Bandung Kidul"
+    },
+    {
+      "nama": "Wates",
+      "kecamatan": "Bandung Kidul"
+    },
+    {
+      "nama": "Caringin",
+      "kecamatan": "Bandung Kulon"
+    },
+    {
+      "nama": "Cibuntu",
+      "kecamatan": "Bandung Kulon"
+    },
+    {
+      "nama": "Cigondewah Kaler",
+      "kecamatan": "Bandung Kulon"
+    },
+    {
+      "nama": "Cigondewah Kidul",
+      "kecamatan": "Bandung Kulon"
+    },
+    {
+      "nama": "Cigondewah Rahayu",
+      "kecamatan": "Bandung Kulon"
+    },
+    {
+      "nama": "Cijerah",
+      "kecamatan": "Bandung Kulon"
+    },
+    {
+      "nama": "Gempol Sari",
+      "kecamatan": "Bandung Kulon"
+    },
+    {
+      "nama": "Warung Muncang",
+      "kecamatan": "Bandung Kulon"
+    },
+    {
+      "nama": "Cihapit",
+      "kecamatan": "Bandung Wetan"
+    },
+    {
+      "nama": "Citarum",
+      "kecamatan": "Bandung Wetan"
+    },
+    {
+      "nama": "Taman Sari",
+      "kecamatan": "Bandung Wetan"
+    },
+    {
+      "nama": "Binong",
+      "kecamatan": "Batununggal"
+    },
+    {
+      "nama": "Cibangkong",
+      "kecamatan": "Batununggal"
+    },
+    {
+      "nama": "Gumuruh",
+      "kecamatan": "Batununggal"
+    },
+    {
+      "nama": "Kacapiring",
+      "kecamatan": "Batununggal"
+    },
+    {
+      "nama": "Kebon Gedang",
+      "kecamatan": "Batununggal"
+    },
+    {
+      "nama": "Kebon Waru",
+      "kecamatan": "Batununggal"
+    },
+    {
+      "nama": "Maleer",
+      "kecamatan": "Batununggal"
+    },
+    {
+      "nama": "Samoja",
+      "kecamatan": "Batununggal"
+    },
+    {
+      "nama": "Babakan Asih",
+      "kecamatan": "Bojongloa Kaler"
+    },
+    {
+      "nama": "Babakan Tarogong",
+      "kecamatan": "Bojongloa Kaler"
+    },
+    {
+      "nama": "Jamika",
+      "kecamatan": "Bojongloa Kaler"
+    },
+    {
+      "nama": "Kopo",
+      "kecamatan": "Bojongloa Kaler"
+    },
+    {
+      "nama": "Suka Asih",
+      "kecamatan": "Bojongloa Kaler"
+    },
+    {
+      "nama": "Cibaduyut",
+      "kecamatan": "Bojongloa Kidul"
+    },
+    {
+      "nama": "Cibaduyut Kidul",
+      "kecamatan": "Bojongloa Kidul"
+    },
+    {
+      "nama": "Cibaduyut Wetan",
+      "kecamatan": "Bojongloa Kidul"
+    },
+    {
+      "nama": "Kebon Lega",
+      "kecamatan": "Bojongloa Kidul"
+    },
+    {
+      "nama": "Mekar Wangi",
+      "kecamatan": "Bojongloa Kidul"
+    },
+    {
+      "nama": "Situsaeur",
+      "kecamatan": "Bojongloa Kidul"
+    },
+    {
+      "nama": "Cijaura",
+      "kecamatan": "Buahbatu"
+    },
+    {
+      "nama": "Jatisari",
+      "kecamatan": "Buahbatu"
+    },
+    {
+      "nama": "Margasari",
+      "kecamatan": "Buahbatu"
+    },
+    {
+      "nama": "Sekejati",
+      "kecamatan": "Buahbatu"
+    },
+    {
+      "nama": "Cigadung",
+      "kecamatan": "Cibeunying Kaler"
+    },
+    {
+      "nama": "Cihaurgeulis",
+      "kecamatan": "Cibeunying Kaler"
+    },
+    {
+      "nama": "Neglasari",
+      "kecamatan": "Cibeunying Kaler"
+    },
+    {
+      "nama": "Sukaluyu",
+      "kecamatan": "Cibeunying Kaler"
+    },
+    {
+      "nama": "Cicadas",
+      "kecamatan": "Cibeunying Kidul"
+    },
+    {
+      "nama": "Cikutra",
+      "kecamatan": "Cibeunying Kidul"
+    },
+    {
+      "nama": "Padasuka",
+      "kecamatan": "Cibeunying Kidul"
+    },
+    {
+      "nama": "Pasirlayung",
+      "kecamatan": "Cibeunying Kidul"
+    },
+    {
+      "nama": "Sukamaju",
+      "kecamatan": "Cibeunying Kidul"
+    },
+    {
+      "nama": "Sukapada",
+      "kecamatan": "Cibeunying Kidul"
+    },
+    {
+      "nama": "Cipadung",
+      "kecamatan": "Cibiru"
+    },
+    {
+      "nama": "Cisurupan",
+      "kecamatan": "Cibiru"
+    },
+    {
+      "nama": "Palasari",
+      "kecamatan": "Cibiru"
+    },
+    {
+      "nama": "Pasir Biru",
+      "kecamatan": "Cibiru"
+    },
+    {
+      "nama": "Arjuna",
+      "kecamatan": "Cicendo"
+    },
+    {
+      "nama": "Husen Sastranegara",
+      "kecamatan": "Cicendo"
+    },
+    {
+      "nama": "Pajajaran",
+      "kecamatan": "Cicendo"
+    },
+    {
+      "nama": "Pamoyanan",
+      "kecamatan": "Cicendo"
+    },
+    {
+      "nama": "Pasirkaliki",
+      "kecamatan": "Cicendo"
+    },
+    {
+      "nama": "Sukaraja",
+      "kecamatan": "Cicendo"
+    },
+    {
+      "nama": "Ciumbuleuit",
+      "kecamatan": "Cidadap"
+    },
+    {
+      "nama": "Hegarmanah",
+      "kecamatan": "Cidadap"
+    },
+    {
+      "nama": "Ledeng",
+      "kecamatan": "Cidadap"
+    },
+    {
+      "nama": "Babakan Penghulu",
+      "kecamatan": "Cinambo"
+    },
+    {
+      "nama": "Cisaranten Wetan",
+      "kecamatan": "Cinambo"
+    },
+    {
+      "nama": "Pakemitan",
+      "kecamatan": "Cinambo"
+    },
+    {
+      "nama": "Sukamulya",
+      "kecamatan": "Cinambo"
+    },
+    {
+      "nama": "Cipaganti",
+      "kecamatan": "Coblong"
+    },
+    {
+      "nama": "Dago",
+      "kecamatan": "Coblong"
+    },
+    {
+      "nama": "Lebak Gede",
+      "kecamatan": "Coblong"
+    },
+    {
+      "nama": "Lebak Siliwangi",
+      "kecamatan": "Coblong"
+    },
+    {
+      "nama": "Sadang Serang",
+      "kecamatan": "Coblong"
+    },
+    {
+      "nama": "Sekeloa",
+      "kecamatan": "Coblong"
+    },
+    {
+      "nama": "Cimincrang",
+      "kecamatan": "Gedebage"
+    },
+    {
+      "nama": "Cisaranten Kidul",
+      "kecamatan": "Gedebage"
+    },
+    {
+      "nama": "Rancabolang",
+      "kecamatan": "Gedebage"
+    },
+    {
+      "nama": "Rancanumpang",
+      "kecamatan": "Gedebage"
+    },
+    {
+      "nama": "Babakan Sari",
+      "kecamatan": "Kiaracondong"
+    },
+    {
+      "nama": "Babakan Surabaya",
+      "kecamatan": "Kiaracondong"
+    },
+    {
+      "nama": "Cicaheum",
+      "kecamatan": "Kiaracondong"
+    },
+    {
+      "nama": "Kebon Kangkung",
+      "kecamatan": "Kiaracondong"
+    },
+    {
+      "nama": "Kebun Jayanti",
+      "kecamatan": "Kiaracondong"
+    },
+    {
+      "nama": "Sukapura",
+      "kecamatan": "Kiaracondong"
+    },
+    {
+      "nama": "Burangrang",
+      "kecamatan": "Lengkong"
+    },
+    {
+      "nama": "Cijagra",
+      "kecamatan": "Lengkong"
+    },
+    {
+      "nama": "Cikawao",
+      "kecamatan": "Lengkong"
+    },
+    {
+      "nama": "Lingkar Selatan",
+      "kecamatan": "Lengkong"
+    },
+    {
+      "nama": "Malabar",
+      "kecamatan": "Lengkong"
+    },
+    {
+      "nama": "Paledang",
+      "kecamatan": "Lengkong"
+    },
+    {
+      "nama": "Turangga",
+      "kecamatan": "Lengkong"
+    },
+    {
+      "nama": "Jatihandap",
+      "kecamatan": "Mandalajati"
+    },
+    {
+      "nama": "Karang Pamulang",
+      "kecamatan": "Mandalajati"
+    },
+    {
+      "nama": "Pasir Impun",
+      "kecamatan": "Mandalajati"
+    },
+    {
+      "nama": "Sindang Jaya",
+      "kecamatan": "Mandalajati"
+    },
+    {
+      "nama": "Cipadung Kidul",
+      "kecamatan": "Panyileukan"
+    },
+    {
+      "nama": "Cipadung Kulon",
+      "kecamatan": "Panyileukan"
+    },
+    {
+      "nama": "Cipadung Wetan",
+      "kecamatan": "Panyileukan"
+    },
+    {
+      "nama": "Mekar Mulya",
+      "kecamatan": "Panyileukan"
+    },
+    {
+      "nama": "Cipamokolan",
+      "kecamatan": "Rancasari"
+    },
+    {
+      "nama": "Derwati",
+      "kecamatan": "Rancasari"
+    },
+    {
+      "nama": "Manjahlega",
+      "kecamatan": "Rancasari"
+    },
+    {
+      "nama": "Mekarjaya",
+      "kecamatan": "Rancasari"
+    },
+    {
+      "nama": "Ancol",
+      "kecamatan": "Regol"
+    },
+    {
+      "nama": "Balong Gede",
+      "kecamatan": "Regol"
+    },
+    {
+      "nama": "Ciateul",
+      "kecamatan": "Regol"
+    },
+    {
+      "nama": "Cigereleng",
+      "kecamatan": "Regol"
+    },
+    {
+      "nama": "Ciseureuh",
+      "kecamatan": "Regol"
+    },
+    {
+      "nama": "Pasirluyu",
+      "kecamatan": "Regol"
+    },
+    {
+      "nama": "Pungkur",
+      "kecamatan": "Regol"
+    },
+    {
+      "nama": "Cipedes",
+      "kecamatan": "Sukajadi"
+    },
+    {
+      "nama": "Pasteur",
+      "kecamatan": "Sukajadi"
+    },
+    {
+      "nama": "Sukabungah",
+      "kecamatan": "Sukajadi"
+    },
+    {
+      "nama": "Sukagalih",
+      "kecamatan": "Sukajadi"
+    },
+    {
+      "nama": "Sukawarna",
+      "kecamatan": "Sukajadi"
+    },
+    {
+      "nama": "Gegerkalong",
+      "kecamatan": "Sukasari"
+    },
+    {
+      "nama": "Isola",
+      "kecamatan": "Sukasari"
+    },
+    {
+      "nama": "Sarijadi",
+      "kecamatan": "Sukasari"
+    },
+    {
+      "nama": "Sukarasa",
+      "kecamatan": "Sukasari"
+    },
+    {
+      "nama": "Babakan Ciamis",
+      "kecamatan": "Sumur Bandung"
+    },
+    {
+      "nama": "Braga",
+      "kecamatan": "Sumur Bandung"
+    },
+    {
+      "nama": "Kebon Pisang",
+      "kecamatan": "Sumur Bandung"
+    },
+    {
+      "nama": "Merdeka",
+      "kecamatan": "Sumur Bandung"
+    },
+    {
+      "nama": "Cigending",
+      "kecamatan": "Ujungberung"
+    },
+    {
+      "nama": "Pasanggrahan",
+      "kecamatan": "Ujungberung"
+    },
+    {
+      "nama": "Pasir Endah",
+      "kecamatan": "Ujungberung"
+    },
+    {
+      "nama": "Pasirjati",
+      "kecamatan": "Ujungberung"
+    },
+    {
+      "nama": "Pasir Wangi",
+      "kecamatan": "Ujungberung"
+    }
+  ],
+  "puskesmas": [
+    {
+      "nama": "Puskesmas Ahmad Yani",
+      "kecamatan": "Batununggal",
+      "alamat": "Jl. Cianjur",
+      "telp": "0857-2215-1378"
+    },
+    {
+      "nama": "Puskesmas Antapani",
+      "kecamatan": "Antapani",
+      "alamat": "Jl. Majalaya 2 No. 31 RT 02 RW 02",
+      "telp": "0813-2000-3842"
+    },
+    {
+      "nama": "Puskesmas Arcamanik",
+      "kecamatan": "Arcamanik",
+      "alamat": "Jl. Olah Raga No. 7 RT 02 RW 09 Arcamanik",
+      "telp": "0821-2344-0363"
+    },
+    {
+      "nama": "Puskesmas Astana Anyar",
+      "kecamatan": "Astana Anyar",
+      "alamat": "Jl. Rusdan No. 1",
+      "telp": "0812-2472-792 / 0812-7076-9262"
+    },
+    {
+      "nama": "Puskesmas Babakan Sari",
+      "kecamatan": "Kiaracondong",
+      "alamat": "Jl. Babakan Sari No. 183",
+      "telp": "0811-2000-647"
+    },
+    {
+      "nama": "Puskesmas Babakan Surabaya",
+      "kecamatan": "Kiaracondong",
+      "alamat": "Jl. Atlas VII No.25",
+      "telp": "0851-6151-7500"
+    },
+    {
+      "nama": "Puskesmas Babakan Tarogong",
+      "kecamatan": "Bojongloa Kaler",
+      "alamat": "Jl. Babakan Tarogong No.46",
+      "telp": "0812-1044-1488"
+    },
+    {
+      "nama": "Puskesmas Babatan",
+      "kecamatan": "Andir",
+      "alamat": "Jl. Babatan",
+      "telp": null
+    },
+    {
+      "nama": "Puskesmas Balai Kota",
+      "kecamatan": "Sumur Bandung",
+      "alamat": "Jl. Wastukancana",
+      "telp": "0821-2081-7723"
+    },
+    {
+      "nama": "Puskesmas Caringin",
+      "kecamatan": "Babakan Ciparay",
+      "alamat": "Jl. Caringin No. 103 Kec. Babakan Ciparay 40223",
+      "telp": "0818-0971-2167"
+    },
+    {
+      "nama": "Puskesmas Cempaka Arum",
+      "kecamatan": "Gedebage",
+      "alamat": "Jl. Usman bin Afan",
+      "telp": "0811-2134-281"
+    },
+    {
+      "nama": "Puskesmas Cibaduyut Kidul",
+      "kecamatan": "Bojongloa Kidul",
+      "alamat": "Jl. Sewu No.2",
+      "telp": "0813-8235-2781"
+    },
+    {
+      "nama": "Puskesmas Cibaduyut Wetan",
+      "kecamatan": "Bojongloa Kidul",
+      "alamat": "Jl. Pitaloka No.1",
+      "telp": "0821-2018-1951"
+    },
+    {
+      "nama": "Puskesmas Cibiru",
+      "kecamatan": "Cibiru",
+      "alamat": "Jl. Manisi No. 87",
+      "telp": "0811-216-560"
+    },
+    {
+      "nama": "Puskesmas Cibolerang",
+      "kecamatan": "Babakan Ciparay",
+      "alamat": "Jl. Cibolerang No. 187 Kel. Margasuka Kec. Babakan Ciparay",
+      "telp": "0857-2117-8381"
+    },
+    {
+      "nama": "Puskesmas Cibuntu",
+      "kecamatan": "Bandung Kulon",
+      "alamat": "Jl. Syahbandar",
+      "telp": "(022) 600-8944"
+    },
+    {
+      "nama": "Puskesmas Cigadung",
+      "kecamatan": "Cibeunying Kaler",
+      "alamat": "Jl. Cigadung Raya Barat No. 12",
+      "telp": "(022) 204-52-321"
+    },
+    {
+      "nama": "Puskesmas Cigondewah",
+      "kecamatan": "Bandung Kulon",
+      "alamat": "Jl. Terusan Holis",
+      "telp": "0812-7601-9453"
+    },
+    {
+      "nama": "Puskesmas Cijagra Baru",
+      "kecamatan": "Lengkong",
+      "alamat": "Jl. Cijagra No. 28",
+      "telp": "0858-1937-5000"
+    },
+    {
+      "nama": "Puskesmas Cijagra Lama",
+      "kecamatan": "Lengkong",
+      "alamat": "Jl. Buah Batu",
+      "telp": "0813-9465-9162"
+    },
+    {
+      "nama": "Puskesmas Cijerah",
+      "kecamatan": "Bandung Kulon",
+      "alamat": "Jl. Melong Asih",
+      "telp": "(022) 600-8003"
+    },
+    {
+      "nama": "Puskesmas Cikutra Lama",
+      "kecamatan": "Coblong",
+      "alamat": "Jl. Cikutra Barat No. 118",
+      "telp": "0856-2252-921"
+    },
+    {
+      "nama": "Puskesmas Cilengkrang",
+      "kecamatan": "Cibiru",
+      "alamat": "Jl. Cilengkrang 1",
+      "telp": "0812-2055-5656"
+    },
+    {
+      "nama": "Puskesmas Cinambo",
+      "kecamatan": "Cinambo",
+      "alamat": "Jl. Gedebage No. 19 A Bandung",
+      "telp": "(022) 878-81-964 (Tlp) / 0821-1143-1142 (WA)"
+    },
+    {
+      "nama": "Puskesmas Cipadung",
+      "kecamatan": "Cibiru",
+      "alamat": "Jl. Cigagak RT 01 Rw15",
+      "telp": "0858-7611-3612"
+    },
+    {
+      "nama": "Puskesmas Cipaku",
+      "kecamatan": "Cidadap",
+      "alamat": "Jl. Cipaku Indah IV No. 17 A",
+      "telp": "0813-2425-3844"
+    },
+    {
+      "nama": "Puskesmas Cipamokolan",
+      "kecamatan": "Rancasari",
+      "alamat": "Jl. Cipamokalan 04/08",
+      "telp": "0813-8966-3998"
+    },
+    {
+      "nama": "Puskesmas Citarip",
+      "kecamatan": "Bojongloa Kaler",
+      "alamat": "Jl. Citarip Barat No. 3",
+      "telp": "0877-3380-3454"
+    },
+    {
+      "nama": "Puskesmas Ciumbuleuit",
+      "kecamatan": "Cidadap",
+      "alamat": "Jl. Bukit Resik",
+      "telp": "0896-5634-8813"
+    },
+    {
+      "nama": "Puskesmas Dago",
+      "kecamatan": "Coblong",
+      "alamat": "Jl. Ir.h. Djuanda No. 360 RT 09 RW 06",
+      "telp": "0812-2112-9536"
+    },
+    {
+      "nama": "Puskesmas Derwati",
+      "kecamatan": "Rancasari",
+      "alamat": "Jl. Raya Derwati No. 38",
+      "telp": "0821-1728-3893"
+    },
+    {
+      "nama": "Puskesmas Garuda",
+      "kecamatan": "Andir",
+      "alamat": "Jl. Dadali No. 81",
+      "telp": "0821-1806-6700"
+    },
+    {
+      "nama": "Puskesmas Girimande",
+      "kecamatan": "Mandalajati",
+      "alamat": "Jl. Cikadut Komp. Girimande",
+      "telp": "0812-1282-1654"
+    },
+    {
+      "nama": "Puskesmas Griya Antapani",
+      "kecamatan": "Antapani",
+      "alamat": "Jl. Plered Raya No.2 Antapani",
+      "telp": "0812-2190-2846"
+    },
+    {
+      "nama": "Puskesmas Gumuruh",
+      "kecamatan": "Batununggal",
+      "alamat": "Jl. Rancagoong No. 11 Bandung",
+      "telp": "0856-9633-0184"
+    },
+    {
+      "nama": "Puskesmas Ibrahim Adjie",
+      "kecamatan": "Batununggal",
+      "alamat": "Jl. Ibrahim Djie",
+      "telp": "0877-2388-2588"
+    },
+    {
+      "nama": "Puskesmas Jajaway",
+      "kecamatan": "Antapani",
+      "alamat": "Jl. Pratista Timur 13",
+      "telp": "0817-4116-234"
+    },
+    {
+      "nama": "Puskesmas Jatihandap",
+      "kecamatan": "Mandalajati",
+      "alamat": "Jl. Jatihandap",
+      "telp": "0895-61710-5500"
+    },
+    {
+      "nama": "Puskesmas Karangsetra",
+      "kecamatan": "Sukasari",
+      "alamat": "Jl. Sindang Sirna",
+      "telp": "0859-5603-9062"
+    },
+    {
+      "nama": "Puskesmas Kopo",
+      "kecamatan": "Bojongloa Kidul",
+      "alamat": "Jl. Kopo No. 369 Kebon Lega",
+      "telp": "0811-2223-846"
+    },
+    {
+      "nama": "Puskesmas Kujangsari",
+      "kecamatan": "Bandung Kidul",
+      "alamat": "Jl. Terusan Buah Batu No. 314",
+      "telp": "0812-1493-7625"
+    },
+    {
+      "nama": "Puskesmas Ledeng",
+      "kecamatan": "Sukasari",
+      "alamat": "Jl. Sersan Bajuri",
+      "telp": "0812-1430-419"
+    },
+    {
+      "nama": "Puskesmas Lio Genteng",
+      "kecamatan": "Astana Anyar",
+      "alamat": "Jl. Lio Genteng 04/05",
+      "telp": "(022) 428-23-542 / (022) 523-2166"
+    },
+    {
+      "nama": "Puskesmas Mandalamekar",
+      "kecamatan": "Mandalajati",
+      "alamat": "Jl. Mandala VII No. 123 04/11 Kel.jatihandap",
+      "telp": "0899-3701-868"
+    },
+    {
+      "nama": "Puskesmas Margahayu Raya",
+      "kecamatan": "Buahbatu",
+      "alamat": "Jl. Pluto Raya No. 54 Bandung",
+      "telp": "0821-1700-0973"
+    },
+    {
+      "nama": "Puskesmas Mengger",
+      "kecamatan": "Bandung Kidul",
+      "alamat": "Jl. Sukamanah No. 32",
+      "telp": "0877-1178-3847"
+    },
+    {
+      "nama": "Puskesmas Moch. Ramdan",
+      "kecamatan": "Regol",
+      "alamat": "Jl. Moch Ramdan No. 108",
+      "telp": "0896-9903-9242"
+    },
+    {
+      "nama": "Puskesmas Neglasari",
+      "kecamatan": "Cibeunying Kaler",
+      "alamat": "Jl. Cikutra No. 276 C",
+      "telp": "0812-8707-0304"
+    },
+    {
+      "nama": "Puskesmas Padasuka",
+      "kecamatan": "Cibeunying Kidul",
+      "alamat": "Jl. Padasuka No. 3 Bdg",
+      "telp": "0812-2400-0119"
+    },
+    {
+      "nama": "Puskesmas Pagarsih",
+      "kecamatan": "Astana Anyar",
+      "alamat": "Jl. Pagarsih No. 95 01/09 Kel.cibadak",
+      "telp": "0821-2567-6460"
+    },
+    {
+      "nama": "Puskesmas Pamulang",
+      "kecamatan": "Mandalajati",
+      "alamat": "Jl. Cikadut No. 1",
+      "telp": "0853-2005-3260"
+    },
+    {
+      "nama": "Puskesmas Panghegar",
+      "kecamatan": "Panyileukan",
+      "alamat": "Jl. Teratai Mekar No. 2",
+      "telp": "0821-2081-4084"
+    },
+    {
+      "nama": "Puskesmas Panyileukan",
+      "kecamatan": "Panyileukan",
+      "alamat": "Jl. Raya Panyileukan",
+      "telp": "0895-3161-0664"
+    },
+    {
+      "nama": "Puskesmas Pasawahan",
+      "kecamatan": "Bandung Kidul",
+      "alamat": "Jl. Naradireja No. 24",
+      "telp": "0822-4643-4372"
+    },
+    {
+      "nama": "Puskesmas Pasirjati",
+      "kecamatan": "Ujungberung",
+      "alamat": "Jl. Nagrog No.3",
+      "telp": "0811-222-753"
+    },
+    {
+      "nama": "Puskesmas Pasirkaliki",
+      "kecamatan": "Cicendo",
+      "alamat": "Jl. Pasirkaliki No. 188",
+      "telp": "0821-2081-8125"
+    },
+    {
+      "nama": "Puskesmas Pasirlayung",
+      "kecamatan": "Cibeunying Kidul",
+      "alamat": "Jl. Padasuka No. 146",
+      "telp": "0877-0232-3233"
+    },
+    {
+      "nama": "Puskesmas Pasirluyu",
+      "kecamatan": "Regol",
+      "alamat": "Jl. Sukaati I No. 1",
+      "telp": "0821-2080-6800"
+    },
+    {
+      "nama": "Puskesmas Pasundan",
+      "kecamatan": "Regol",
+      "alamat": "Jl. Pasundan No. 99",
+      "telp": "0813-2125-1201"
+    },
+    {
+      "nama": "Puskesmas Pelindung Hewan",
+      "kecamatan": "Astana Anyar",
+      "alamat": "Jl. Pelindung Hewan No. 6",
+      "telp": "0812-2175-9262"
+    },
+    {
+      "nama": "Puskesmas Puter",
+      "kecamatan": "Coblong",
+      "alamat": "Jl. Puter No. 3 Bandung 40133",
+      "telp": "0812-2482-9434"
+    },
+    {
+      "nama": "Puskesmas Riung Bandung",
+      "kecamatan": "Gedebage",
+      "alamat": "Jl. Riung Purna XI No. 02",
+      "telp": "0882-00111-3411"
+    },
+    {
+      "nama": "Puskesmas Rusunawa",
+      "kecamatan": "Arcamanik",
+      "alamat": "Komplek Rusunawa Cingised RT 02 RW 06",
+      "telp": "0882-2096-6096"
+    },
+    {
+      "nama": "Puskesmas Salam",
+      "kecamatan": "Bandung Wetan",
+      "alamat": "Jl. Salam No. 27 Rt02 Rw06 Bandung",
+      "telp": "0811-207-114"
+    },
+    {
+      "nama": "Puskesmas Sarijadi",
+      "kecamatan": "Sukasari",
+      "alamat": "Jl. Sariasih 76",
+      "telp": "0813-8378-4844"
+    },
+    {
+      "nama": "Puskesmas Sekejati",
+      "kecamatan": "Buahbatu",
+      "alamat": "Jl. Yupiter Tengah",
+      "telp": "(022) 750-6501 (Tlp) / 0813-8606-1603 (WA)"
+    },
+    {
+      "nama": "Puskesmas Sekeloa",
+      "kecamatan": "Coblong",
+      "alamat": "Jl. Tubagus Ismail Bawah No. 4 01/01",
+      "telp": "0812-2285-7737"
+    },
+    {
+      "nama": "Puskesmas Sindangjaya",
+      "kecamatan": "Mandalajati",
+      "alamat": "Jl. Arcamanik No. 30",
+      "telp": "0857-9800-5278"
+    },
+    {
+      "nama": "Puskesmas Sukagalih",
+      "kecamatan": "Sukajadi",
+      "alamat": "Jl. Mulyasari No.12",
+      "telp": "0821-2840-9842"
+    },
+    {
+      "nama": "Puskesmas Sukahaji",
+      "kecamatan": "Babakan Ciparay",
+      "alamat": "Gg. H. Zakaria RT 08 RW 01 Sukahaji Babakan Ciparay",
+      "telp": "(022) 600-8251"
+    },
+    {
+      "nama": "Puskesmas Sukajadi",
+      "kecamatan": "Sukajadi",
+      "alamat": "Jl. Sukagalih No. 26 Bandung",
+      "telp": "0821-1858-9007"
+    },
+    {
+      "nama": "Puskesmas Sukapakir",
+      "kecamatan": "Bojongloa Kaler",
+      "alamat": "Jl. Pagarsih Gg.pa Oyoh No. 27 6/6",
+      "telp": "0811-8895-656"
+    },
+    {
+      "nama": "Puskesmas Sukaraja",
+      "kecamatan": "Cicendo",
+      "alamat": "Jl. Mega Raya I",
+      "telp": "0895-2400-0437"
+    },
+    {
+      "nama": "Puskesmas Sukarasa",
+      "kecamatan": "Sukasari",
+      "alamat": "Jl. Gegerkalong Hilir No. 157",
+      "telp": "0821-2055-2052"
+    },
+    {
+      "nama": "Puskesmas Sukawarna",
+      "kecamatan": "Sukajadi",
+      "alamat": "Jl. Cibogo No.76",
+      "telp": "0882-00043-9777"
+    },
+    {
+      "nama": "Puskesmas Suryalaya",
+      "kecamatan": "Lengkong",
+      "alamat": "Jl. Suryalaya VII No. 1 Bandung",
+      "telp": "0813-2227-6006"
+    },
+    {
+      "nama": "Puskesmas Talaga Bodas",
+      "kecamatan": "Lengkong",
+      "alamat": "Jl. Talagabodas",
+      "telp": "0895-0415-5711"
+    },
+    {
+      "nama": "Puskesmas Taman Sari",
+      "kecamatan": "Bandung Wetan",
+      "alamat": "Jl. Taman Sari",
+      "telp": "0857-7969-1319"
+    },
+    {
+      "nama": "Puskesmas Tamblong",
+      "kecamatan": "Sumur Bandung",
+      "alamat": "Jl. Tamblong No. 66",
+      "telp": "0896-6822-3131"
+    },
+    {
+      "nama": "Puskesmas Ujungberung Indah",
+      "kecamatan": "Ujungberung",
+      "alamat": "Komp.perumahan Ujungberung Indah Blok 18 No. 16 Kel.cigending",
+      "telp": "0811-224-220"
+    }
+  ],
+  "wilayah": [
+    {
+      "puskesmas": "Puskesmas Ahmad Yani",
+      "kelurahan": "Kacapiring",
+      "kecamatan": "Batununggal"
+    },
+    {
+      "puskesmas": "Puskesmas Antapani",
+      "kelurahan": "Antapani Wetan",
+      "kecamatan": "Antapani"
+    },
+    {
+      "puskesmas": "Puskesmas Arcamanik",
+      "kelurahan": "Sukamiskin",
+      "kecamatan": "Arcamanik"
+    },
+    {
+      "puskesmas": "Puskesmas Astana Anyar",
+      "kelurahan": "Nyengseret",
+      "kecamatan": "Astana Anyar"
+    },
+    {
+      "puskesmas": "Puskesmas Babakan Sari",
+      "kelurahan": "Kebon Kangkung",
+      "kecamatan": "Kiaracondong"
+    },
+    {
+      "puskesmas": "Puskesmas Babakan Surabaya",
+      "kelurahan": "Cicaheum",
+      "kecamatan": "Kiaracondong"
+    },
+    {
+      "puskesmas": "Puskesmas Babakan Tarogong",
+      "kelurahan": "Babakan Asih",
+      "kecamatan": "Bojongloa Kaler"
+    },
+    {
+      "puskesmas": "Puskesmas Babatan",
+      "kelurahan": "Kebon Jeruk",
+      "kecamatan": "Andir"
+    },
+    {
+      "puskesmas": "Puskesmas Balai Kota",
+      "kelurahan": "Babakan Ciamis",
+      "kecamatan": "Sumur Bandung"
+    },
+    {
+      "puskesmas": "Puskesmas Caringin",
+      "kelurahan": "Babakan Ciparay",
+      "kecamatan": "Babakan Ciparay"
+    },
+    {
+      "puskesmas": "Puskesmas Cempaka Arum",
+      "kelurahan": "Cimincrang",
+      "kecamatan": "Gedebage"
+    },
+    {
+      "puskesmas": "Puskesmas Cibaduyut Kidul",
+      "kelurahan": "Cibaduyut Kidul",
+      "kecamatan": "Bojongloa Kidul"
+    },
+    {
+      "puskesmas": "Puskesmas Cibaduyut Wetan",
+      "kelurahan": "Mekar Wangi",
+      "kecamatan": "Bojongloa Kidul"
+    },
+    {
+      "puskesmas": "Puskesmas Cibiru",
+      "kelurahan": "Pasir Biru",
+      "kecamatan": "Cibiru"
+    },
+    {
+      "puskesmas": "Puskesmas Cibolerang",
+      "kelurahan": "Cirangrang",
+      "kecamatan": "Babakan Ciparay"
+    },
+    {
+      "puskesmas": "Puskesmas Cibuntu",
+      "kelurahan": "Cibuntu",
+      "kecamatan": "Bandung Kulon"
+    },
+    {
+      "puskesmas": "Puskesmas Cigadung",
+      "kelurahan": "Cigadung",
+      "kecamatan": "Cibeunying Kaler"
+    },
+    {
+      "puskesmas": "Puskesmas Cigondewah",
+      "kelurahan": "Cigondewah Kaler",
+      "kecamatan": "Bandung Kulon"
+    },
+    {
+      "puskesmas": "Puskesmas Cijagra Baru",
+      "kelurahan": "Cijagra",
+      "kecamatan": "Lengkong"
+    },
+    {
+      "puskesmas": "Puskesmas Cijagra Lama",
+      "kelurahan": "Turangga",
+      "kecamatan": "Lengkong"
+    },
+    {
+      "puskesmas": "Puskesmas Cijerah",
+      "kelurahan": "Cijerah",
+      "kecamatan": "Bandung Kulon"
+    },
+    {
+      "puskesmas": "Puskesmas Cijerah",
+      "kelurahan": "Gempol Sari",
+      "kecamatan": "Bandung Kulon"
+    },
+    {
+      "puskesmas": "Puskesmas Cikutra Lama",
+      "kelurahan": "Sekeloa",
+      "kecamatan": "Coblong"
+    },
+    {
+      "puskesmas": "Puskesmas Cilengkrang",
+      "kelurahan": "Cisurupan",
+      "kecamatan": "Cibiru"
+    },
+    {
+      "puskesmas": "Puskesmas Cinambo",
+      "kelurahan": "Sukamulya",
+      "kecamatan": "Cinambo"
+    },
+    {
+      "puskesmas": "Puskesmas Cipadung",
+      "kelurahan": "Palasari",
+      "kecamatan": "Cibiru"
+    },
+    {
+      "puskesmas": "Puskesmas Cipaku",
+      "kelurahan": "Ledeng",
+      "kecamatan": "Cidadap"
+    },
+    {
+      "puskesmas": "Puskesmas Cipamokolan",
+      "kelurahan": "Cipamokolan",
+      "kecamatan": "Rancasari"
+    },
+    {
+      "puskesmas": "Puskesmas Citarip",
+      "kelurahan": "Kopo",
+      "kecamatan": "Bojongloa Kaler"
+    },
+    {
+      "puskesmas": "Puskesmas Ciumbuleuit",
+      "kelurahan": "Hegarmanah",
+      "kecamatan": "Cidadap"
+    },
+    {
+      "puskesmas": "Puskesmas Dago",
+      "kelurahan": "Lebak Siliwangi",
+      "kecamatan": "Coblong"
+    },
+    {
+      "puskesmas": "Puskesmas Derwati",
+      "kelurahan": "Derwati",
+      "kecamatan": "Rancasari"
+    },
+    {
+      "puskesmas": "Puskesmas Derwati",
+      "kelurahan": "Mekarjaya",
+      "kecamatan": "Rancasari"
+    },
+    {
+      "puskesmas": "Puskesmas Garuda",
+      "kelurahan": "Campaka",
+      "kecamatan": "Andir"
+    },
+    {
+      "puskesmas": "Puskesmas Girimande",
+      "kelurahan": "Karang Pamulang",
+      "kecamatan": "Mandalajati"
+    },
+    {
+      "puskesmas": "Puskesmas Griya Antapani",
+      "kelurahan": "Antapani Tengah",
+      "kecamatan": "Antapani"
+    },
+    {
+      "puskesmas": "Puskesmas Gumuruh",
+      "kelurahan": "Maleer",
+      "kecamatan": "Batununggal"
+    },
+    {
+      "puskesmas": "Puskesmas Ibrahim Adjie",
+      "kelurahan": "Cibangkong",
+      "kecamatan": "Batununggal"
+    },
+    {
+      "puskesmas": "Puskesmas Ibrahim Adjie",
+      "kelurahan": "Kebon Gedang",
+      "kecamatan": "Batununggal"
+    },
+    {
+      "puskesmas": "Puskesmas Jajaway",
+      "kelurahan": "Antapani Kidul",
+      "kecamatan": "Antapani"
+    },
+    {
+      "puskesmas": "Puskesmas Jatihandap",
+      "kelurahan": "Jatihandap",
+      "kecamatan": "Mandalajati"
+    },
+    {
+      "puskesmas": "Puskesmas Karangsetra",
+      "kelurahan": "Gegerkalong",
+      "kecamatan": "Sukasari"
+    },
+    {
+      "puskesmas": "Puskesmas Kopo",
+      "kelurahan": "Situsaeur",
+      "kecamatan": "Bojongloa Kidul"
+    },
+    {
+      "puskesmas": "Puskesmas Kujangsari",
+      "kelurahan": "Kujangsari",
+      "kecamatan": "Bandung Kidul"
+    },
+    {
+      "puskesmas": "Puskesmas Ledeng",
+      "kelurahan": "Isola",
+      "kecamatan": "Sukasari"
+    },
+    {
+      "puskesmas": "Puskesmas Lio Genteng",
+      "kelurahan": "Panjunan",
+      "kecamatan": "Astana Anyar"
+    },
+    {
+      "puskesmas": "Puskesmas Margahayu Raya",
+      "kelurahan": "Margasari",
+      "kecamatan": "Buahbatu"
+    },
+    {
+      "puskesmas": "Puskesmas Mengger",
+      "kelurahan": "Mengger",
+      "kecamatan": "Bandung Kidul"
+    },
+    {
+      "puskesmas": "Puskesmas Moch. Ramdan",
+      "kelurahan": "Cigereleng",
+      "kecamatan": "Regol"
+    },
+    {
+      "puskesmas": "Puskesmas Neglasari",
+      "kelurahan": "Sukaluyu",
+      "kecamatan": "Cibeunying Kaler"
+    },
+    {
+      "puskesmas": "Puskesmas Padasuka",
+      "kelurahan": "Cicadas",
+      "kecamatan": "Cibeunying Kidul"
+    },
+    {
+      "puskesmas": "Puskesmas Pagarsih",
+      "kelurahan": "Cibadak",
+      "kecamatan": "Astana Anyar"
+    },
+    {
+      "puskesmas": "Puskesmas Panghegar",
+      "kelurahan": "Mekar Mulya",
+      "kecamatan": "Panyileukan"
+    },
+    {
+      "puskesmas": "Puskesmas Panyileukan",
+      "kelurahan": "Cipadung Kidul",
+      "kecamatan": "Panyileukan"
+    },
+    {
+      "puskesmas": "Puskesmas Pasawahan",
+      "kelurahan": "Wates",
+      "kecamatan": "Bandung Kidul"
+    },
+    {
+      "puskesmas": "Puskesmas Pasirjati",
+      "kelurahan": "Pasirjati",
+      "kecamatan": "Ujungberung"
+    },
+    {
+      "puskesmas": "Puskesmas Pasirkaliki",
+      "kelurahan": "Husen Sastranegara",
+      "kecamatan": "Cicendo"
+    },
+    {
+      "puskesmas": "Puskesmas Pasirlayung",
+      "kelurahan": "Sukapada",
+      "kecamatan": "Cibeunying Kidul"
+    },
+    {
+      "puskesmas": "Puskesmas Pasirluyu",
+      "kelurahan": "Ancol",
+      "kecamatan": "Regol"
+    },
+    {
+      "puskesmas": "Puskesmas Pasundan",
+      "kelurahan": "Pungkur",
+      "kecamatan": "Regol"
+    },
+    {
+      "puskesmas": "Puskesmas Pelindung Hewan",
+      "kelurahan": "Pelindung Hewan",
+      "kecamatan": "Astana Anyar"
+    },
+    {
+      "puskesmas": "Puskesmas Puter",
+      "kelurahan": "Sadang Serang",
+      "kecamatan": "Coblong"
+    },
+    {
+      "puskesmas": "Puskesmas Riung Bandung",
+      "kelurahan": "Cisaranten Kidul",
+      "kecamatan": "Gedebage"
+    },
+    {
+      "puskesmas": "Puskesmas Riung Bandung",
+      "kelurahan": "Rancabolang",
+      "kecamatan": "Gedebage"
+    },
+    {
+      "puskesmas": "Puskesmas Rusunawa",
+      "kelurahan": "Cisaranten Endah",
+      "kecamatan": "Arcamanik"
+    },
+    {
+      "puskesmas": "Puskesmas Salam",
+      "kelurahan": "Cihapit",
+      "kecamatan": "Bandung Wetan"
+    },
+    {
+      "puskesmas": "Puskesmas Sarijadi",
+      "kelurahan": "Sarijadi",
+      "kecamatan": "Sukasari"
+    },
+    {
+      "puskesmas": "Puskesmas Sekejati",
+      "kelurahan": "Sekejati",
+      "kecamatan": "Buahbatu"
+    },
+    {
+      "puskesmas": "Puskesmas Sekeloa",
+      "kelurahan": "Lebak Gede",
+      "kecamatan": "Coblong"
+    },
+    {
+      "puskesmas": "Puskesmas Sindangjaya",
+      "kelurahan": "Pasir Impun",
+      "kecamatan": "Mandalajati"
+    },
+    {
+      "puskesmas": "Puskesmas Sukagalih",
+      "kelurahan": "Sukagalih",
+      "kecamatan": "Sukajadi"
+    },
+    {
+      "puskesmas": "Puskesmas Sukahaji",
+      "kelurahan": "Sukahaji",
+      "kecamatan": "Babakan Ciparay"
+    },
+    {
+      "puskesmas": "Puskesmas Sukajadi",
+      "kelurahan": "Pasteur",
+      "kecamatan": "Sukajadi"
+    },
+    {
+      "puskesmas": "Puskesmas Sukapakir",
+      "kelurahan": "Jamika",
+      "kecamatan": "Bojongloa Kaler"
+    },
+    {
+      "puskesmas": "Puskesmas Sukaraja",
+      "kelurahan": "Sukaraja",
+      "kecamatan": "Cicendo"
+    },
+    {
+      "puskesmas": "Puskesmas Sukarasa",
+      "kelurahan": "Sukarasa",
+      "kecamatan": "Sukasari"
+    },
+    {
+      "puskesmas": "Puskesmas Sukawarna",
+      "kelurahan": "Sukawarna",
+      "kecamatan": "Sukajadi"
+    },
+    {
+      "puskesmas": "Puskesmas Suryalaya",
+      "kelurahan": "Paledang",
+      "kecamatan": "Lengkong"
+    },
+    {
+      "puskesmas": "Puskesmas Talaga Bodas",
+      "kelurahan": "Burangrang",
+      "kecamatan": "Lengkong"
+    },
+    {
+      "puskesmas": "Puskesmas Taman Sari",
+      "kelurahan": "Taman Sari",
+      "kecamatan": "Bandung Wetan"
+    },
+    {
+      "puskesmas": "Puskesmas Tamblong",
+      "kelurahan": "Kebon Pisang",
+      "kecamatan": "Sumur Bandung"
+    },
+    {
+      "puskesmas": "Puskesmas Ujungberung Indah",
+      "kelurahan": "Pasir Endah",
+      "kecamatan": "Ujungberung"
+    }
+  ]
+}

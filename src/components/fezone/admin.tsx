@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
-  Activity, BarChart3, BookOpen, CheckCircle2, ClipboardList, Crown, Download, Eye, FileQuestion, FileSpreadsheet, Flame, GraduationCap, HeartPulse, ImageUp, KeyRound, LayoutDashboard, Loader2,
+  Activity, BarChart3, BookOpen, Building2, CheckCircle2, ClipboardList, Crown, Download, Eye, FileQuestion, FileSpreadsheet, Flame, GraduationCap, HeartPulse, ImageUp, KeyRound, LayoutDashboard, Loader2,
   LogOut, Pill, Puzzle, RefreshCw, School, Search, Trash2, Trophy, UserCheck, Users, Video, XCircle,
 } from "lucide-react";
 import {
@@ -23,6 +23,7 @@ import AdminEduEditor from "@/components/fezone/admin-edu-editor";
 import AdminQuizEditor from "@/components/fezone/admin-quiz-editor";
 import AdminMissionEditor from "@/components/fezone/admin-mission-editor";
 import AdminGiziTab from "@/components/fezone/admin-gizi";
+import AdminPuskesmasTab from "@/components/fezone/admin-puskesmas";
 
 // ============================================================
 // Admin Login
@@ -395,7 +396,7 @@ interface ModContent {
 
 export function AdminDashboard() {
   const { reset } = useFez();
-  const [tab, setTab] = useState<"overview" | "traffic" | "participants" | "gizi" | "duta" | "videos" | "moderation" | "konten" | "soal" | "misi" | "settings">("overview");
+  const [tab, setTab] = useState<"overview" | "traffic" | "participants" | "gizi" | "puskesmas" | "duta" | "videos" | "moderation" | "konten" | "soal" | "misi" | "settings">("overview");
   const [overview, setOverview] = useState<Overview | null>(null);
   const [rows, setRows] = useState<AdminRow[]>([]);
   const [schools, setSchools] = useState<string[]>([]);
@@ -787,6 +788,7 @@ export function AdminDashboard() {
               { k: "traffic", label: "Kunjungan Web", icon: Activity },
               { k: "participants", label: "Data Peserta", icon: Users },
               { k: "gizi", label: "Data Status Gizi", icon: HeartPulse },
+              { k: "puskesmas", label: "Data Induk", icon: Building2 },
               { k: "duta", label: "Kandidat Duta", icon: Crown },
               { k: "moderation", label: "Content Moderation", icon: ClipboardList },
               { k: "videos", label: "Penilaian Video", icon: Video },
@@ -1386,6 +1388,7 @@ export function AdminDashboard() {
 
         {/* ============ DATA STATUS GIZI (pembaruan 17) ============ */}
         {tab === "gizi" && <AdminGiziTab />}
+        {tab === "puskesmas" && <AdminPuskesmasTab />}
 
         {/* ============ DUTA CANDIDATES ============ */}
         {tab === "duta" && overview && (

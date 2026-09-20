@@ -11,13 +11,16 @@ model User {
   id           String        @id @default(cuid())
   username     String        @unique
   passwordHash String
-  role         String        @default("PARTICIPANT") // PARTICIPANT | ADMIN
+  role         String        @default("PARTICIPANT") // PARTICIPANT | ADMIN | PETUGAS (pembaruan 19)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   sessions     Session[]
   participant  Participant?
   resetTokens  PasswordResetToken[]
   nutritionAssessments NutritionAssessment[]
+  puskesmasStaff PuskesmasStaff?
+  auditLogs    AuditLog[]           @relation("AuditActor")
+  auditTargets AuditLog[]           @relation("AuditTarget")
 }
 
 // Token reset password (alur "Lupa Password" via email).
@@ -85,6 +88,7 @@ model Participant {
   missionShares    MissionShare[]
   pushSubscriptions PushSubscription[]
   reminderLogs     TtdReminderLog[]
+  hemoglobinRecords HemoglobinRecord[]
 }
 
 // ============================================================
@@ -392,4 +396,135 @@ model PageView {
   @@index([createdAt])
   @@index([path])
   @@index([visitorId, createdAt])
+}
+
+// ============================================================
+// PEMBARUAN 19 — SISTEM MONITORING PUSKESMAS
+// Data induk wilayah + akun petugas + riwayat Hb + audit.
+// Prinsip:
+// - Data induk = data RESMI (Dinkes Kota Bandung), tanpa data dummy.
+// - Setiap pengecekan Hb = baris BARU (riwayat tidak pernah ditimpa).
+// - Puskesmas satu bisa melayani BANYAK kelurahan (wilayah kerja).
+// - ID cukang lama tidak diubah; perubahan hanya menambah.
+// ============================================================
+
+// Kecamatan di Kota Bandung (30 baris, dari data resmi Dinkes/Open Data).
+model MasterKecamatan {
+  id        String   @id @default(cuid())
+  nama      String   @unique
+  isActive  Boolean  @default(true) // nonaktif = disembunyikan dari pilihan baru, data lama tetap utuh
+  createdAt DateTime @default(now())
+  kelurahan MasterKelurahan[]
+  puskesmas MasterPuskesmas[]
+}
+
+// Kelurahan di Kota Bandung (151 baris). Nama unik per kecamatan
+// (nama sama boleh ada di kecamatan berbeda).
+model MasterKelurahan {
+  id          String   @id @default(cuid())
+  nama        String
+  kecamatanId String
+  kecamatan   MasterKecamatan @relation(fields: [kecamatanId], references: [id])
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  wilayah     PuskesmasWilayah? // satu kelurahan = satu baris wilayah (FK unik)
+
+  @@unique([nama, kecamatanId])
+  @@index([kecamatanId])
+}
+
+// Data induk Puskesmas (UPT Puskesmas Dinkes Kota Bandung, 80 baris resmi).
+// ID tidak pernah dipakai ulang; menonaktifkan ≠ menghapus (jaga data historis).
+model MasterPuskesmas {
+  id          String   @id @default(cuid())
+  nama        String   @unique
+  alamat      String?
+  telp        String?
+  kecamatanId String? // kecamatan lokasi Puskesmas
+  kecamatan   MasterKecamatan? @relation(fields: [kecamatanId], references: [id])
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  staff       PuskesmasStaff[]
+  wilayah     PuskesmasWilayah[]
+}
+
+// Wilayah kerja: SATU Puskesmas melayani BANYAK kelurahan.
+// Satu kelurahan hanya boleh dipetakan ke satu Puskesmas pada satu
+// waktu (kelurahan punya satu Puskesmas rujukan utama).
+model PuskesmasWilayah {
+  id          String @id @default(cuid())
+  puskesmasId String
+  kelurahanId String @unique // 1 kelurahan = 1 Puskesmas (mapping dua arah mudah)
+  puskesmas   MasterPuskesmas @relation(fields: [puskesmasId], references: [id], onDelete: Cascade)
+  kelurahan   MasterKelurahan @relation(fields: [kelurahanId], references: [id], onDelete: Cascade)
+
+  @@index([puskesmasId])
+}
+
+// Akun petugas Puskesmas. Registrasi lewat /register-puskesmas
+// (pilih Puskesmas dari daftar resmi — tidak boleh ketik bebas),
+// lalu MENUNGGU VERIFIKASI ADMIN (status PENDING) sebelum bisa dipakai.
+model PuskesmasStaff {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  puskesmasId String
+  puskesmas   MasterPuskesmas @relation(fields: [puskesmasId], references: [id])
+  nama        String
+  jabatan     String? // contoh: Kepala UPT, Staf Ahli Gizi
+  profesi     String // Ahli Gizi | Bidan | Perawat | dll (daftar diatur admin via AppSetting)
+  status      String   @default("PENDING") // PENDING | ACTIVE | REJECTED | DISABLED
+  verifiedAt  DateTime?
+  verifiedBy  String? // userId admin yang memverifikasi
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  hbRecords   HemoglobinRecord[]
+
+  @@index([puskesmasId])
+  @@index([status])
+}
+
+// RIWAYAT hasil Hemoglobin. Setiap pemeriksaan = baris BARU;
+// riwayat lama TIDAK PERNAH ditimpa. Diinput petugas Puskesmas
+// (Tahap 4); peserta melihat hasilnya di Profil (read-only).
+// Kolom Participant.hbValue/hbCheckDate (lama) tetap berfungsi
+// sebagai "Hb terakhir" dan disinkronkan otomatis dari tabel ini.
+model HemoglobinRecord {
+  id               String   @id @default(cuid())
+  participantId    String
+  participant      Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  checkDate        DateTime // tanggal pemeriksaan
+  hbValue          Float // gram/dL
+  method           String? // metode pemeriksaan (mis. Hb meter, autos analyzer)
+  location         String? // tempat pemeriksaan (mis. di Puskesmas / sekolah)
+  examiner         String? // nama pemeriksa — otomatis = nama petugas yang login
+  notes            String? // catatan petugas
+  recordedByUserId String? // userId petugas yang menginput
+  staffId          String? // link ke akun petugas
+  staff            PuskesmasStaff? @relation(fields: [staffId], references: [id])
+  createdAt        DateTime @default(now())
+
+  @@index([participantId, checkDate])
+}
+
+// Audit log untuk aksi sensitif (pembaruan 19): login petugas/admin,
+// membuka data remaja, tambah/ubah/hapus Hb, export data.
+// Terpisah dari ActivityLog (yang terikat peserta & ikut terhapus
+// saat peserta dihapus) — audit harus bertahan meski akun dihapus.
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorUserId  String? // yang melakukan aksi (null = sistem)
+  actorRole    String? // ADMIN | PETUGAS | PARTICIPANT | SISTEM
+  action       String // LOGIN, VIEW_PARTICIPANT, HB_CREATE, HB_UPDATE, HB_DELETE, EXPORT, dll.
+  targetType   String? // jenis objek: PARTICIPANT | HEMOGLOBIN_RECORD | PUSKESMAS | dll.
+  targetUserId String? // user yang datanya diakses/diubah
+  meta         String? // detail tambahan (JSON string)
+  createdAt    DateTime @default(now())
+  actor        User?    @relation("AuditActor", fields: [actorUserId], references: [id])
+  targetUser   User?    @relation("AuditTarget", fields: [targetUserId], references: [id])
+
+  @@index([actorUserId, createdAt])
+  @@index([targetUserId, createdAt])
+  @@index([action])
 }
