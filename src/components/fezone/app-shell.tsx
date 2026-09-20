@@ -29,6 +29,10 @@ export interface DashData {
     avatar: string; profilePhotoUrl: string | null; xp: number; streakWeeks: number; preTestScore: number | null;
     postTestScore: number | null; isDutaCandidate: boolean; isDuta: boolean;
     hbValue: number | null; hbCheckDate: string | null;
+    hbKategori: string | null; hbLabel: string | null; hbPesan: string | null;
+    hbRecords: { id: string; checkDate: string; hbValue: number; method: string | null; location: string | null; examiner: string | null }[];
+    giziTerakhir: { tanggalPemeriksaan: string; imtUStatus: string; tbUStatus: string } | null;
+    ttdTerakhir: string | null;
   };
   badges: string[];
   missions: { key: string; status: string; progress: number; dataJson: string | null; score?: number | null; xpAwarded?: number; unlocked?: boolean; prevMission?: string | null }[];
@@ -126,7 +130,7 @@ export default function AppShell() {
       case "edukasi": return <EdukasiView />;
       case "missions": return <MissionCenter data={data} refresh={refresh} />;
       case "ttd": return <TTDTrackerView data={data} refresh={refresh} />;
-      case "gizi": return <NutritionView />;
+      case "gizi": return <NutritionView hbValue={data.profile.hbValue} hbLabel={data.profile.hbLabel} hbKategori={data.profile.hbKategori} />;
       case "leaderboard": return <LeaderboardView data={data} />;
       case "community": return <CommunityTab />;
       case "badges": return <BadgesView data={data} />;

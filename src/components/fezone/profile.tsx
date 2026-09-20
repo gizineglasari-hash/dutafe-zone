@@ -8,8 +8,6 @@ import { getLevel, LEVELS } from "@/lib/constants";
 import { BadgeVisual, SectionTitle, UserAvatar, XpCounter } from "@/components/fezone/ui-bits";
 import { BADGES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Download, FileDown, ImageDown, ImageUp, Loader2, LogOut, Share2, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
@@ -25,61 +23,17 @@ export default function ProfileView({ data, refresh }: { data: DashData; refresh
   const fileRef = useRef<HTMLInputElement>(null);
   const lvl = getLevel(p.xp);
 
-  // ---- Pemeriksaan Hemoglobin (pembaruan 15) ----
-  const [hbInput, setHbInput] = useState<string>(p.hbValue !== null ? String(p.hbValue).replace(".", ",") : "");
-  const [hbDate, setHbDate] = useState<string>(p.hbCheckDate ? p.hbCheckDate.slice(0, 10) : "");
-  const [hbBusy, setHbBusy] = useState(false);
-  const hbAnemia = p.hbValue !== null && p.hbValue < 12;
-
-  async function saveHb() {
-    if (hbBusy) return;
-    if (!hbInput.trim() || !hbDate) {
-      toast({ title: "Lengkapi dulu ya", description: "Isi nilai Hb dan tanggal pemeriksaannya.", variant: "destructive" });
-      return;
-    }
-    setHbBusy(true);
-    try {
-      const res = await fetch("/api/participant/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hbValue: parseFloat(hbInput.replace(",", ".")), hbCheckDate: hbDate }),
-      });
-      const d = await res.json().catch(() => ({}));
-      if (res.ok) {
-        toast({ title: "✅ Hasil pemeriksaan Hb tersimpan!", description: "Data ini juga terlihat oleh admin/pendamping programmu." });
-        await refresh();
-      } else {
-        toast({ title: "Gagal menyimpan", description: d.message || d.error || "Periksa isian, lalu coba lagi.", variant: "destructive" });
-      }
-    } catch {
-      toast({ title: "Koneksi bermasalah", description: "Internet atau server sedang tidak bisa dihubungi. Coba lagi.", variant: "destructive" });
-    } finally {
-      setHbBusy(false);
-    }
-  }
-
-  async function deleteHb() {
-    if (hbBusy) return;
-    if (!window.confirm("Hapus data pemeriksaan hemoglobin?")) return;
-    setHbBusy(true);
-    try {
-      const res = await fetch("/api/participant/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hbValue: null, hbCheckDate: null }),
-      });
-      if (res.ok) {
-        setHbInput("");
-        setHbDate("");
-        toast({ title: "Data Hb dihapus" });
-        await refresh();
-      } else {
-        toast({ title: "Gagal menghapus", variant: "destructive" });
-      }
-    } finally {
-      setHbBusy(false);
-    }
-  }
+  // ---- Pemeriksaan Hemoglobin (pembaruan 19 Tahap 4) ----
+  // Hasil Hb kini diinput oleh petugas Puskesmas; peserta HANYA
+  // MELIHAT hasil + riwayat (read-only) di kartu Pemeriksaan Kesehatan.
+  const [showRiwayatHb, setShowRiwayatHb] = useState(false);
+  const hbKategori = p.hbKategori; // "BERAT" | "SEDANG" | "RINGAN" | "NORMAL" | null
+  const kategoriCls: Record<string, string> = {
+    BERAT: "bg-red-100 text-red-700",
+    SEDANG: "bg-orange-100 text-orange-700",
+    RINGAN: "bg-amber-100 text-amber-700",
+    NORMAL: "bg-emerald-100 text-emerald-700",
+  };
 
   // Downscale gambar ke max 512px (kotak) agar ringan & konsisten
   function processImage(file: File): Promise<Blob> {
@@ -358,60 +312,98 @@ export default function ProfileView({ data, refresh }: { data: DashData; refresh
         </div>
       </div>
 
-      {/* Pemeriksaan Hemoglobin (diisi peserta — tampil juga di panel admin) */}
+      {/* Pemeriksaan Kesehatan — hasil Hb dari petugas Puskesmas (pembaruan 19 Tahap 4, read-only) */}
       <div className="rounded-3xl border-2 border-fez-ink bg-white p-5">
-        <p className="font-display text-lg font-extrabold text-fez-ink">🩸 Pemeriksaan Hemoglobin (Hb)</p>
+        <p className="font-display text-lg font-extrabold text-fez-ink">🩸 Pemeriksaan Kesehatan</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Isi hasil cek darah Hb-mu (dari Posyandu/Puskesmas/sekolah). Angka normal remaja putri biasanya ≥ 12,0 g/dL.
-          Data ini membantu pendamping program memantau kesehatanmu.
+          Hasil pemeriksaan hemoglobin (Hb) yang diinput oleh petugas Puskesmas. Kamu tidak perlu mengisi sendiri —
+          petugas yang mencatatnya setelah pemeriksaan.
         </p>
 
-        {p.hbValue !== null && (
+        {p.hbValue !== null ? (
           <div className="mt-3 flex flex-wrap items-center gap-3 rounded-2xl border-2 border-fez-ink/10 bg-rose-50/60 p-3">
             <span className="font-display text-3xl font-extrabold text-fez-rose">{String(p.hbValue).replace(".", ",")}<span className="text-sm font-extrabold text-fez-ink/50"> g/dL</span></span>
             <div className="text-xs font-bold text-fez-ink/60">
-              <p>Diperiksa: {p.hbCheckDate ? new Date(p.hbCheckDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "–"}</p>
-              <p className={hbAnemia ? "text-rose-600" : "text-emerald-600"}>
-                {hbAnemia ? "⚠️ Di bawah 12,0 — cenderung anemia, tetap rutin minum TTD & makan bergizi ya!" : "✅ Normal (≥ 12,0) — pertahankan!"}
-              </p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span>Diperiksa: {p.hbCheckDate ? new Date(p.hbCheckDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "–"}</span>
+                {hbKategori && (
+                  <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${kategoriCls[hbKategori] ?? "bg-gray-100 text-gray-600"}`}>
+                    {p.hbLabel}
+                  </span>
+                )}
+              </div>
+              {p.hbPesan && (
+                <p className={hbKategori && hbKategori !== "NORMAL" ? "text-rose-600" : "text-emerald-600"}>
+                  {hbKategori && hbKategori !== "NORMAL" ? "⚠️" : "✅"} {p.hbPesan}
+                </p>
+              )}
             </div>
+          </div>
+        ) : (
+          <div className="mt-3 rounded-2xl border-2 border-dashed border-fez-ink/15 p-4 text-center">
+            <p className="text-sm font-bold text-fez-ink/50">Belum ada hasil pemeriksaan Hb.</p>
+            <p className="mt-1 text-xs font-semibold text-fez-ink/40">
+              Hasil akan muncul di sini setelah petugas Puskesmas memeriksa &amp; mencatat darahmu.
+            </p>
           </div>
         )}
 
-        <div className="mt-3 flex flex-wrap items-end gap-2">
-          <div className="w-32">
-            <Label className="text-[11px] font-bold text-fez-ink/70">Nilai Hb (g/dL)</Label>
-            <Input
-              value={hbInput}
-              onChange={(e) => setHbInput(e.target.value.replace(/[^0-9.,]/g, ""))}
-              inputMode="decimal"
-              placeholder="cth. 11,5"
-              className="mt-1 h-10 rounded-xl border-2 border-fez-ink/15"
-            />
+        <Button
+          onClick={() => setShowRiwayatHb((v) => !v)}
+          variant="outline"
+          className="mt-3 h-9 rounded-xl border-2 border-fez-ink/15 px-3 text-xs font-extrabold text-fez-ink/70 hover:border-fez-teal hover:text-fez-teal"
+        >
+          {showRiwayatHb ? "Tutup Riwayat Hb" : `Lihat Riwayat Hb (${p.hbRecords.length})`}
+        </Button>
+        {showRiwayatHb && (
+          <div className="mt-2 space-y-1.5">
+            {p.hbRecords.length === 0 ? (
+              <p className="rounded-xl border border-fez-ink/10 bg-fez-cream/60 px-3 py-2 text-xs font-semibold italic text-fez-ink/45">
+                Belum ada riwayat pemeriksaan Hb yang tercatat.
+              </p>
+            ) : (
+              p.hbRecords.map((h) => (
+                <div key={h.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-fez-ink/10 bg-white px-3 py-2 text-xs font-bold text-fez-ink/70">
+                  <span>{new Date(h.checkDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
+                  <span className="font-extrabold text-fez-ink">{String(h.hbValue).replace(".", ",")} g/dL</span>
+                  <span className="text-fez-ink/45">{h.examiner ? `oleh ${h.examiner}` : ""}{h.location ? ` · ${h.location}` : ""}</span>
+                </div>
+              ))
+            )}
           </div>
-          <div className="w-44">
-            <Label className="text-[11px] font-bold text-fez-ink/70">Tanggal pemeriksaan</Label>
-            <Input
-              type="date"
-              value={hbDate}
-              max={new Date().toISOString().slice(0, 10)}
-              onChange={(e) => setHbDate(e.target.value)}
-              className="mt-1 h-10 rounded-xl border-2 border-fez-ink/15"
-            />
-          </div>
-          <Button onClick={saveHb} disabled={hbBusy} className="h-10 rounded-xl border-2 border-fez-ink bg-rose-500 px-4 text-xs font-extrabold text-white hover:bg-rose-600">
-            {hbBusy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-            Simpan Hasil
-          </Button>
-          {p.hbValue !== null && (
-            <Button onClick={deleteHb} disabled={hbBusy} variant="outline" className="h-10 rounded-xl border-2 border-rose-200 px-3 text-xs font-extrabold text-rose-500 hover:bg-rose-50">
-              <Trash2 className="mr-1 h-3.5 w-3.5" /> Hapus
-            </Button>
-          )}
-        </div>
+        )}
         <p className="mt-2 text-[11px] font-semibold text-fez-ink/45">
-          🔒 Hasil ini bersifat pribadi — hanya kamu dan admin/pendamping program yang bisa melihatnya.
+          🔒 Hasil ini bersifat pribadi — hanya kamu dan petugas/admin yang bisa melihatnya.
         </p>
+      </div>
+
+      {/* Ringkasan Kesehatan (pembaruan 19 Tahap 4) */}
+      <div className="rounded-3xl border-2 border-fez-ink bg-white p-5">
+        <p className="font-display text-lg font-extrabold text-fez-ink">💗 Ringkasan Kesehatan</p>
+        <p className="mt-1 text-xs text-muted-foreground">Gambaran singkat kondisi kesehatanmu untuk memantau rutinitas.</p>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border-2 border-fez-ink/10 bg-rose-50/50 p-3 text-center">
+            <p className="text-[10px] font-extrabold uppercase tracking-wide text-fez-ink/40">Hb Terakhir</p>
+            <p className="mt-1 font-display text-xl font-extrabold text-fez-ink">
+              {p.hbValue !== null ? `${String(p.hbValue).replace(".", ",")} g/dL` : "Belum cek"}
+            </p>
+            {p.hbLabel && <p className="text-[11px] font-extrabold text-fez-ink/55">{p.hbLabel}</p>}
+          </div>
+          <div className="rounded-2xl border-2 border-fez-ink/10 bg-sky-50/50 p-3 text-center">
+            <p className="text-[10px] font-extrabold uppercase tracking-wide text-fez-ink/40">TTD Minum</p>
+            <p className="mt-1 font-display text-xl font-extrabold text-fez-ink">{data.totalCheckins}x</p>
+            <p className="text-[11px] font-extrabold text-fez-ink/55">
+              {data.profile.ttdTerakhir ? `Terakhir: ${new Date(data.profile.ttdTerakhir).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}` : "Belum pernah"}
+            </p>
+          </div>
+          <div className="rounded-2xl border-2 border-fez-ink/10 bg-emerald-50/50 p-3 text-center">
+            <p className="text-[10px] font-extrabold uppercase tracking-wide text-fez-ink/40">Status Gizi (IMT/U)</p>
+            <p className="mt-1 font-display text-xl font-extrabold text-fez-ink">{p.giziTerakhir ? p.giziTerakhir.imtUStatus : "Belum cek"}</p>
+            <p className="text-[11px] font-extrabold text-fez-ink/55">
+              {p.giziTerakhir ? new Date(p.giziTerakhir.tanggalPemeriksaan).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "Cek di tab Gizi"}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Level journey */}

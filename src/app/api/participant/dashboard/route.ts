@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireParticipant } from "@/lib/auth";
 import { CORE_MISSIONS, CORE_MISSION_KEY_RE, customMissionKey } from "@/lib/constants";
 import { checkTrackerMissions, computeWeeklyStreak, syncMissionUnlocks } from "@/lib/gamification";
+import { getHbStandards, interpretHb } from "@/lib/puskesmas";
 
 export async function GET() {
   const auth = await requireParticipant();
@@ -19,6 +20,11 @@ export async function GET() {
       missionProgress: true,
       quizResults: true,
       videoSubmissions: { orderBy: { createdAt: "desc" }, take: 5 },
+      hemoglobinRecords: {
+        orderBy: [{ checkDate: "desc" }, { createdAt: "desc" }],
+        take: 20,
+      },
+      nutritionAssessments: { orderBy: { tanggalPemeriksaan: "desc" }, take: 1, select: { tanggalPemeriksaan: true, imtUStatus: true, tbUStatus: true } },
     },
   });
   if (!p) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -73,6 +79,18 @@ export async function GET() {
 
   const certPejuang = completed >= 9;
 
+  // ---- Pembaruan 19 Tahap 4: interpretasi Hb + riwayat untuk Profil ----
+  const std = await getHbStandards();
+  const hbInterpretasi = p.hbValue !== null ? interpretHb(p.hbValue, std) : null;
+  const hbRecords = p.hemoglobinRecords.map((h) => ({
+    id: h.id,
+    checkDate: h.checkDate,
+    hbValue: h.hbValue,
+    method: h.method,
+    location: h.location,
+    examiner: h.examiner,
+  }));
+
   return NextResponse.json({
     profile: {
       id: p.id,
@@ -88,6 +106,18 @@ export async function GET() {
       postTestScore: p.postTestScore,
       hbValue: p.hbValue,
       hbCheckDate: p.hbCheckDate,
+      hbKategori: hbInterpretasi?.kategori ?? null,
+      hbLabel: hbInterpretasi?.label ?? null,
+      hbPesan: hbInterpretasi?.pesan ?? null,
+      hbRecords,
+      giziTerakhir: p.nutritionAssessments[0]
+        ? {
+            tanggalPemeriksaan: p.nutritionAssessments[0].tanggalPemeriksaan,
+            imtUStatus: p.nutritionAssessments[0].imtUStatus,
+            tbUStatus: p.nutritionAssessments[0].tbUStatus,
+          }
+        : null,
+      ttdTerakhir: checkins[0]?.date ?? null,
       isDutaCandidate: p.isDutaCandidate,
       isDuta: p.isDuta,
     },

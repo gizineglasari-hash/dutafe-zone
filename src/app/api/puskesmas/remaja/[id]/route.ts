@@ -5,11 +5,15 @@ import { CORE_MISSION_KEY_RE, MISSIONS, getLevel } from "@/lib/constants";
 import { BADGES } from "@/lib/constants";
 
 // ------------------------------------------------------------
-// PETUGAS — DETAIL REMAJA (pembaruan 19 Tahap 3)
-// Read-only. Akses DITOLAK bila remaja di luar wilayah kerja
+// PETUGAS — DETAIL REMAJA (pembaruan 19 Tahap 3 & 4)
+// Tahap 3: profil read-only + guard wilayah + AuditLog
+//          (action VIEW_PARTICIPANT).
+// Tahap 4: riwayat Hb dikirim lengkap (20 terbaru) dengan
+//          catatan + info Puskesmas pemasuk, agar petugas
+//          dapat mengelola (ubah/hapus) rekaman dari
+//          Puskesmasnya sendiri di halaman detail.
+// Akses DITOLAK bila remaja di luar wilayah kerja
 // Puskesmas petugas (kecamatan sekolah ≠ kecamatan wilayah).
-// Setiap pembukaan detail tercatat di AuditLog (action
-// VIEW_PARTICIPANT) — jejak untuk laporan audit Tahap 5.
 // ------------------------------------------------------------
 
 type Params = { params: Promise<{ id: string }> };
@@ -28,7 +32,11 @@ export async function GET(req: NextRequest, { params }: Params) {
         badges: { select: { badgeKey: true, earnedAt: true } },
         missionProgress: { select: { missionKey: true, status: true, score: true, updatedAt: true } },
         ttdCheckIns: { orderBy: { date: "desc" }, take: 10, select: { date: true } },
-        hemoglobinRecords: { orderBy: { checkDate: "desc" }, take: 5 },
+        hemoglobinRecords: {
+          orderBy: { checkDate: "desc" },
+          take: 20,
+          include: { staff: { select: { puskesmasId: true, nama: true } } },
+        },
         _count: { select: { ttdCheckIns: true, hemoglobinRecords: true } },
         activityLogs: { orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true } },
       },
@@ -110,6 +118,9 @@ export async function GET(req: NextRequest, { params }: Params) {
           method: h.method,
           location: h.location,
           examiner: h.examiner,
+          notes: h.notes,
+          puskesmasId: h.staff?.puskesmasId ?? null,
+          bisaKelola: h.staff?.puskesmasId === petugas.staff.puskesmasId,
         })),
         ttdCount: p._count.ttdCheckIns,
         ttdTerakhir: p.ttdCheckIns[0]?.date ?? null,

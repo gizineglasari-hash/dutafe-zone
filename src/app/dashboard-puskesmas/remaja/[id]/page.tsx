@@ -1,24 +1,40 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "@/hooks/use-toast";
 import {
   ArrowLeft, BadgeCheck, CalendarDays, Crown, Droplets, FileCheck2,
-  GraduationCap, HeartPulse, Loader2, MapPin, Phone, ShieldAlert, Sparkles, Trophy, UserRound,
+  GraduationCap, HeartPulse, Loader2, MapPin, Pencil, Phone, Plus,
+  ShieldAlert, Sparkles, Trash2, Trophy, UserRound, X,
 } from "lucide-react";
 import { SiteCredit } from "@/components/fezone/ui-bits";
 import { BADGES } from "@/lib/constants";
 import { trackPage } from "@/lib/track";
 
 // ------------------------------------------------------------
-// /dashboard-puskesmas/remaja/[id] (pembaruan 19 Tahap 3)
-// Profil remaja versi READ-ONLY untuk petugas Puskesmas.
-// Akses diverifikasi server: remaja di luar wilayah kerja
-// ditolak 403 ("Anda tidak memiliki akses untuk melihat data
-// pengguna ini."). Setiap pembukaan tercatat di AuditLog.
+// /dashboard-puskesmas/remaja/[id] (pembaruan 19 Tahap 3 & 4)
+// Tahap 3: profil remaja untuk petugas Puskesmas. Akses
+//          diverifikasi server: remaja di luar wilayah kerja
+//          ditolak 403 ("Anda tidak memiliki akses untuk
+//          melihat data pengguna ini."). Setiap pembukaan
+//          tercatat di AuditLog.
+// Tahap 4: petugas dapat MENGINPUT hasil pemeriksaan Hb di
+//          halaman ini. Nama pemeriksa otomatis = petugas yang
+//          login. Interpretasi otomatis (standar Kemenkes:
+//          Berat <9 | Sedang 9-10,9 | Ringan 11-11,9 | Normal
+//          >=12). Rekaman Puskesmas sendiri bisa diubah/hapus.
 // ------------------------------------------------------------
+
+interface HbRecord {
+  id: string; checkDate: string; hbValue: number;
+  method: string | null; location: string | null; examiner: string | null;
+  notes: string | null; puskesmasId: string | null; bisaKelola: boolean;
+}
 
 interface DetailData {
   remaja: {
@@ -33,7 +49,7 @@ interface DetailData {
     isDutaCandidate: boolean; isDuta: boolean;
   };
   kesehatan: {
-    hbRecords: { id: string; checkDate: string; hbValue: number; method: string | null; location: string | null; examiner: string | null }[];
+    hbRecords: HbRecord[];
     ttdCount: number; ttdTerakhir: string | null; ttdRiwayat: string[];
   };
   gamifikasi: {
@@ -48,6 +64,7 @@ function tgl(d: string | null) {
   return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 }
 
+// Cermin interpretasi server (standar default Kemenkes).
 function klasifikasiHb(hb: number) {
   if (hb < 9) return { label: "Anemia Berat", cls: "bg-red-100 text-red-700" };
   if (hb < 11) return { label: "Anemia Sedang", cls: "bg-orange-100 text-orange-700" };
@@ -66,29 +83,131 @@ function Panel({ icon, title, children }: { icon: React.ReactNode; title: string
   );
 }
 
+const KOSONG_FORM = { hbValue: "", checkDate: "", method: "", location: "", notes: "" };
+
 export default function DetailRemajaPage() {
   const params = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<DetailData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // ---- Identitas petugas (nama pemeriksa otomatis) ----
+  const [petugasNama, setPetugasNama] = useState<string>("");
+
+  // ---- Form input/ubah Hb ----
+  const [form, setForm] = useState(KOSONG_FORM);
+  const [editId, setEditId] = useState<string | null>(null); // null = input baru
+  const [hbBusy, setHbBusy] = useState(false);
+  const [hapusId, setHapusId] = useState<string | null>(null);
+
+  const muatDetail = useCallback(async () => {
+    const r = await fetch(`/api/puskesmas/remaja/${params.id}`);
+    if (r.status === 401) { window.location.href = "/login-puskesmas"; return; }
+    const d = await r.json();
+    if (!r.ok) throw new Error(d?.error || "Gagal memuat detail");
+    setData(d);
+  }, [params.id]);
+
   useEffect(() => {
     document.title = "Detail Remaja — Dashboard Petugas";
     trackPage("/dashboard-puskesmas/remaja");
     (async () => {
       try {
-        const r = await fetch(`/api/puskesmas/remaja/${params.id}`);
-        if (r.status === 401) { window.location.href = "/login-puskesmas"; return; }
-        const d = await r.json();
-        if (!r.ok) { setError(d?.error || "Gagal memuat detail"); return; }
-        setData(d);
-      } catch {
-        setError("Gagal memuat detail remaja");
+        await muatDetail();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Gagal memuat detail remaja");
       } finally {
         setLoading(false);
       }
     })();
-  }, [params.id]);
+    // Nama petugas untuk label "Diperiksa oleh" (otomatis, read-only)
+    fetch("/api/puskesmas/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setPetugasNama(d?.staff?.nama || ""))
+      .catch(() => {});
+  }, [muatDetail]);
+
+  // ---- Pratinjau interpretasi langsung saat mengetik ----
+  const nilaiPreview = parseFloat(form.hbValue.replace(",", "."));
+  const previewValid = Number.isFinite(nilaiPreview) && nilaiPreview >= 3 && nilaiPreview <= 25;
+
+  function resetForm() {
+    setForm(KOSONG_FORM);
+    setEditId(null);
+  }
+
+  function mulaiEdit(h: HbRecord) {
+    setEditId(h.id);
+    setForm({
+      hbValue: String(h.hbValue).replace(".", ","),
+      checkDate: h.checkDate.slice(0, 10),
+      method: h.method || "",
+      location: h.location || "",
+      notes: h.notes || "",
+    });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function simpanHb() {
+    if (hbBusy) return;
+    if (!form.hbValue.trim() || !form.checkDate) {
+      toast({ title: "Lengkapi dulu", description: "Nilai Hb dan tanggal pemeriksaan wajib diisi.", variant: "destructive" });
+      return;
+    }
+    setHbBusy(true);
+    try {
+      const url = editId
+        ? `/api/puskesmas/remaja/${params.id}/hemoglobin/${editId}`
+        : `/api/puskesmas/remaja/${params.id}/hemoglobin`;
+      const res = await fetch(url, {
+        method: editId ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hbValue: form.hbValue.replace(",", "."),
+          checkDate: form.checkDate,
+          method: form.method || null,
+          location: form.location || null,
+          notes: form.notes || null,
+        }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast({
+          title: editId ? "✅ Rekaman diperbarui" : "✅ Hasil pemeriksaan tersimpan",
+          description: `Kategori: ${d.interpretasi?.label ?? "—"} — remaja akan diberi tahu lewat notifikasi.`,
+        });
+        resetForm();
+        await muatDetail();
+      } else {
+        toast({ title: "Gagal menyimpan", description: d.message || d.error || "Periksa isian, lalu coba lagi.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Koneksi bermasalah", description: "Internet atau server sedang tidak bisa dihubungi. Coba lagi.", variant: "destructive" });
+    } finally {
+      setHbBusy(false);
+    }
+  }
+
+  async function hapusHb(h: HbRecord) {
+    if (hapusId) return;
+    if (!window.confirm(`Hapus rekaman Hb ${h.hbValue} g/dL (${tgl(h.checkDate)})? Tindakan ini tidak bisa dibatalkan.`)) return;
+    setHapusId(h.id);
+    try {
+      const res = await fetch(`/api/puskesmas/remaja/${params.id}/hemoglobin/${h.id}`, { method: "DELETE" });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast({ title: "Rekaman dihapus", description: "Hb terakhir remaja otomatis disesuaikan." });
+        if (editId === h.id) resetForm();
+        await muatDetail();
+      } else {
+        toast({ title: "Gagal menghapus", description: d.error || "Coba lagi.", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Koneksi bermasalah", variant: "destructive" });
+    } finally {
+      setHapusId(null);
+    }
+  }
 
   if (loading) {
     return (
@@ -155,6 +274,86 @@ export default function DetailRemajaPage() {
                 </div>
               </Panel>
 
+              {/* Form input / ubah hasil Hb (Tahap 4) */}
+              <Panel icon={<Droplets className="h-4 w-4 text-rose-500" />} title={editId ? "Ubah Hasil Pemeriksaan Hb" : "Input Hasil Pemeriksaan Hb"}>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <Label className="text-[11px] font-bold text-fez-ink/70">Nilai Hb (g/dL) *</Label>
+                    <Input
+                      value={form.hbValue}
+                      onChange={(e) => setForm((f) => ({ ...f, hbValue: e.target.value.replace(/[^0-9.,]/g, "") }))}
+                      inputMode="decimal"
+                      placeholder="cth. 11,5"
+                      className="mt-1 h-10 rounded-xl border-2 border-fez-ink/15"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[11px] font-bold text-fez-ink/70">Tanggal pemeriksaan *</Label>
+                    <Input
+                      type="date"
+                      value={form.checkDate}
+                      max={new Date().toISOString().slice(0, 10)}
+                      onChange={(e) => setForm((f) => ({ ...f, checkDate: e.target.value }))}
+                      className="mt-1 h-10 rounded-xl border-2 border-fez-ink/15"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[11px] font-bold text-fez-ink/70">Metode (opsional)</Label>
+                    <Input
+                      value={form.method}
+                      onChange={(e) => setForm((f) => ({ ...f, method: e.target.value }))}
+                      placeholder="cth. Hb meter / Autos analyzer"
+                      className="mt-1 h-10 rounded-xl border-2 border-fez-ink/15"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[11px] font-bold text-fez-ink/70">Lokasi (opsional)</Label>
+                    <Input
+                      value={form.location}
+                      onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                      placeholder="cth. Di Puskesmas / di sekolah"
+                      className="mt-1 h-10 rounded-xl border-2 border-fez-ink/15"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label className="text-[11px] font-bold text-fez-ink/70">Catatan (opsional)</Label>
+                    <Input
+                      value={form.notes}
+                      onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                      placeholder="cth. Remaja tampak lelah, disarankan kontrol ulang 1 bulan"
+                      className="mt-1 h-10 rounded-xl border-2 border-fez-ink/15"
+                    />
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border-2 border-fez-ink/10 bg-fez-cream/60 px-3 py-2.5">
+                  <p className="text-[11px] font-extrabold uppercase tracking-wide text-fez-ink/40">Diperiksa oleh (otomatis)</p>
+                  <p className="text-xs font-extrabold text-fez-ink">{petugasNama || "..."}</p>
+                  <p className="text-[10px] font-semibold text-fez-ink/45">— nama kamu tercatat otomatis, tidak bisa diganti</p>
+                </div>
+                {previewValid && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2 rounded-2xl border-2 border-dashed border-fez-ink/15 px-3 py-2.5">
+                    <p className="text-[11px] font-extrabold uppercase tracking-wide text-fez-ink/40">Interpretasi otomatis</p>
+                    <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-extrabold ${klasifikasiHb(nilaiPreview).cls}`}>
+                      {klasifikasiHb(nilaiPreview).label}
+                    </span>
+                  </div>
+                )}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button onClick={simpanHb} disabled={hbBusy} className="h-10 rounded-xl border-2 border-fez-ink bg-rose-500 px-4 text-xs font-extrabold text-white hover:bg-rose-600">
+                    {hbBusy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : editId ? <Pencil className="mr-1.5 h-4 w-4" /> : <Plus className="mr-1.5 h-4 w-4" />}
+                    {editId ? "Simpan Perubahan" : "Simpan Hasil"}
+                  </Button>
+                  {editId && (
+                    <Button onClick={resetForm} disabled={hbBusy} variant="outline" className="h-10 rounded-xl border-2 border-fez-ink/20 px-4 text-xs font-extrabold text-fez-ink/60">
+                      <X className="mr-1 h-4 w-4" /> Batal ubah
+                    </Button>
+                  )}
+                </div>
+                <p className="mt-2 text-[11px] font-semibold text-fez-ink/45">
+                  Setiap pemeriksaan disimpan sebagai catatan baru (riwayat tidak tertimpa). Remaja otomatis menerima notifikasi hasil terbaru.
+                </p>
+              </Panel>
+
               {/* Kesehatan */}
               <Panel icon={<HeartPulse className="h-4 w-4 text-rose-500" />} title="Kesehatan — Hemoglobin & TTD">
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -180,20 +379,42 @@ export default function DetailRemajaPage() {
                     </p>
                   </div>
                 </div>
-                {data.kesehatan.hbRecords.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-[10px] font-extrabold uppercase tracking-wide text-fez-ink/40">Riwayat pemeriksaan tercatat ({data.kesehatan.hbRecords.length} terbaru)</p>
+                <div className="mt-3">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-fez-ink/40">
+                    Riwayat pemeriksaan Hb ({data.kesehatan.hbRecords.length} terbaru)
+                  </p>
+                  {data.kesehatan.hbRecords.length === 0 ? (
+                    <p className="mt-2 text-xs font-semibold italic text-fez-ink/45">Belum ada riwayat pemeriksaan Hb yang tercatat.</p>
+                  ) : (
                     <div className="mt-1.5 space-y-1.5">
                       {data.kesehatan.hbRecords.map((h) => (
-                        <div key={h.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-fez-ink/10 bg-white px-3 py-2 text-xs font-bold text-fez-ink/70">
-                          <span><CalendarDays className="mr-1 inline h-3.5 w-3.5 text-fez-teal" />{tgl(h.checkDate)}</span>
-                          <span className="font-extrabold text-fez-ink">{h.hbValue.toFixed(1)} g/dL</span>
-                          <span className="text-fez-ink/45">{h.method || "—"}{h.examiner ? ` · ${h.examiner}` : ""}</span>
+                        <div key={h.id} className="rounded-xl border border-fez-ink/10 bg-white px-3 py-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-fez-ink/70">
+                            <span><CalendarDays className="mr-1 inline h-3.5 w-3.5 text-fez-teal" />{tgl(h.checkDate)}</span>
+                            <span className="font-extrabold text-fez-ink">{h.hbValue.toFixed(1)} g/dL</span>
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${klasifikasiHb(h.hbValue).cls}`}>{klasifikasiHb(h.hbValue).label}</span>
+                            <span className="text-fez-ink/45">{h.method || "—"}{h.examiner ? ` · ${h.examiner}` : ""}</span>
+                            {h.bisaKelola && (
+                              <span className="flex gap-1.5">
+                                <button onClick={() => mulaiEdit(h)} disabled={hbBusy} className="rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-extrabold text-sky-600 hover:bg-sky-100">
+                                  <Pencil className="mr-0.5 inline h-3 w-3" /> Ubah
+                                </button>
+                                <button onClick={() => hapusHb(h)} disabled={hapusId === h.id} className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-[10px] font-extrabold text-rose-500 hover:bg-rose-100">
+                                  {hapusId === h.id ? <Loader2 className="inline h-3 w-3 animate-spin" /> : <><Trash2 className="mr-0.5 inline h-3 w-3" /> Hapus</>}
+                                </button>
+                              </span>
+                            )}
+                          </div>
+                          {(h.location || h.notes) && (
+                            <p className="mt-1 text-[11px] font-semibold text-fez-ink/45">
+                              {h.location ? `📍 ${h.location}` : ""}{h.location && h.notes ? " · " : ""}{h.notes ? `📝 ${h.notes}` : ""}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </Panel>
 
               {/* Gamifikasi: misi + badge */}

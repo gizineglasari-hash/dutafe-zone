@@ -9,8 +9,8 @@ export async function PATCH(req: NextRequest) {
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
-  const { avatar, hbValue, hbCheckDate } = body ?? {};
-  const data: { avatar?: string; hbValue?: number | null; hbCheckDate?: Date | null } = {};
+  const { avatar } = body ?? {};
+  const data: { avatar?: string } = {};
 
   if (avatar !== undefined) {
     if (avatar && !AVATARS.includes(avatar)) {
@@ -19,36 +19,11 @@ export async function PATCH(req: NextRequest) {
     data.avatar = avatar || auth.user.avatar || "🌸";
   }
 
-  // ---- Pemeriksaan Hemoglobin (pembaruan 15) ----
-  // Kirim { hbValue: null, hbCheckDate: null } untuk menghapus data.
-  if (hbValue !== undefined || hbCheckDate !== undefined) {
-    if (hbValue === null || hbCheckDate === null) {
-      data.hbValue = null;
-      data.hbCheckDate = null;
-    } else {
-      const value = typeof hbValue === "number" ? hbValue : parseFloat(String(hbValue).replace(",", "."));
-      if (!Number.isFinite(value) || value < 3 || value > 25) {
-        return NextResponse.json(
-          { error: "VALIDASI", message: "Nilai Hb harus angka antara 3,0 sampai 25,0 g/dL." },
-          { status: 400 }
-        );
-      }
-      const parsed = new Date(String(hbCheckDate) + "T00:00:00");
-      if (Number.isNaN(parsed.getTime())) {
-        return NextResponse.json({ error: "VALIDASI", message: "Tanggal pemeriksaan tidak valid." }, { status: 400 });
-      }
-      const today = new Date();
-      today.setHours(23, 59, 59, 999);
-      if (parsed > today) {
-        return NextResponse.json(
-          { error: "VALIDASI", message: "Tanggal pemeriksaan tidak boleh di masa depan." },
-          { status: 400 }
-        );
-      }
-      data.hbValue = Math.round(value * 10) / 10; // bulatkan ke 1 desimal
-      data.hbCheckDate = parsed;
-    }
-  }
+  // ---- Pemeriksaan Hemoglobin (pembaruan 19 Tahap 4) ----
+  // Hasil Hb TIDAK lagi diinput peserta sendiri. Hanya petugas
+  // Puskesmas yang boleh mencatat lewat endpoint khusus
+  // (/api/puskesmas/remaja/[id]/hemoglobin) — data lama dari
+  // pembaruan 15 tetap ditampilkan sebagai "Hb terakhir".
 
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "Tidak ada data yang diubah" }, { status: 400 });

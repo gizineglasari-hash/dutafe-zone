@@ -1,0 +1,133 @@
+=====================================================================
+ PEMBARUAN 19 — TAHAP 4: INPUT HASIL Hb PETUGAS + TAMPILAN REMAJA
+ FE-ZONE (Duta Remaja Putri Bebas Anemia)
+=====================================================================
+
+APA ISI PEMBARUAN INI?
+----------------------
+Tahap 4 dari fitur monitoring Puskesmas. Kini hasil pemeriksaan
+Hb (hemoglobin) diinput oleh PETUGAS PUSKESMAS, bukan lagi oleh
+remaja sendiri. Alur baru:
+
+ Petugas periksa darah remaja -> input hasil di dasbor
+   -> sistem menafsirkan otomatis (Kemenkes)
+   -> remaja menerima NOTIFIKASI
+   -> remaja melihat hasil + riwayat di Profil (hanya baca)
+
+ 1. SISI PETUGAS (halaman detail remaja di dasbor):
+    - Panel baru "Input Hasil Pemeriksaan Hb": nilai Hb,
+      tanggal, metode, lokasi, catatan.
+    - Nama pemeriksa OTOMATIS = nama petugas yang login
+      (tidak bisa diganti / diketik bebas).
+    - Interpretasi otomatis sesuai standar Kemenkes/WHO
+      remaja putri:
+        Normal          >= 12,0 g/dL
+        Anemia Ringan   11,0 - 11,9
+        Anemia Sedang    9,0 - 10,9
+        Anemia Berat     < 9,0
+    - Setiap pemeriksaan = catatan BARU (riwayat tidak
+      pernah tertimpa). Kolom "Hb terakhir" peserta otomatis
+      mengikuti catatan dengan tanggal terbaru.
+    - Riwayat Hb di halaman detail kini menampilkan 20
+      pemeriksaan terbaru + kategori + catatan.
+    - Tombol UBAH / HAPUS hanya muncul untuk rekaman yang
+      diinput oleh Puskesmas sendiri (Puskesmas lain tidak
+      bisa mengubahnya). "Hb terakhir" dihitung ulang
+      otomatis setelah ubah/hapus.
+    - Semua aksi (input/ubah/hapus) tercatat di AuditLog
+      (HB_CREATE / HB_UPDATE / HB_DELETE) — bekal laporan
+      audit di Tahap 5.
+
+ 2. NOTIFIKASI REMAJA:
+    - Setelah petugas menyimpan/mengubah hasil, remaja yang
+      mengaktifkan pengingat (push notification) menerima:
+      "Hasil pemeriksaan kesehatan kamu telah diperbarui
+       oleh petugas Puskesmas."
+    - Jika remaja belum mengaktifkan push, hasil tetap muncul
+      normal di Profil.
+
+ 3. SISI REMAJA (Profil):
+    - Kartu lama "Pemeriksaan Hemoglobin (Hb)" yang dulu bisa
+      diisi sendiri diganti kartu baru "Pemeriksaan Kesehatan"
+      (HANYA BACA): angka Hb + label kategori + tanggal +
+      saran kesehatan singkat.
+    - Tombol "Lihat Riwayat Hb" membuka daftar seluruh
+      pemeriksaan (tanggal, angka, nama pemeriksa, lokasi).
+    - Kartu baru "Ringkasan Kesehatan": Hb terakhir, jumlah
+      TTD diminum + tanggal terakhir, status gizi terakhir.
+    - Data Hb lama yang dulu diisi sendiri oleh remaja tetap
+      tampil sebagai "Hb terakhir" sampai petugas mencatat
+      hasil baru.
+    - Tombol simpan/hapus Hb dihapus dari Profil (remaja
+      tidak bisa lagi mengubah data Hb — keamanan data
+      kesehatan lebih terjaga).
+
+ 4. PESAN GIZI (tab Cek Status Gizi):
+    - Kartu baru "Pesan Gizi Untukmu" di paling atas, isi
+      berubah otomatis mengikuti 3 kondisi Hb terakhir:
+        Belum cek Hb  -> ajakan cek Hb + tips umum
+        Anemia        -> menu kaya zat besi + aturan TTD
+        Normal        -> pujian + cara mempertahankan
+
+ TIDAK BERUBAH
+ -------------
+ Semua fitur lama tetap berjalan: misi 1-9, XP, badge,
+ leaderboard, TTD tracker, cek status gizi (hasil IMT),
+ komunitas, sertifikat, duta, registrasi & login petugas,
+ verifikasi admin, dasbor statistik Tahap 3. Struktur
+ database TIDAK berubah (tabel riwayat Hb sudah dibuat di
+ Tahap 1), jadi tidak perlu jalankan migrasi apa pun.
+
+ KEPATUTAN WILAYAH & KEAMANAN
+ ---------------------------
+ - Petugas hanya bisa menginput Hb remaja yang sekolahnya
+   di kecamatan wilayah kerja Puskesmas (guard sama dengan
+   Tahap 3; pelanggaran = ditolak 403).
+ - Endpoint Hb menolak nilai di luar 3,0-25,0 g/dL dan
+   tanggal masa depan.
+ - Peserta tidak lagi punya jalur apa pun untuk mengubah
+   Hb dari sisi klien (dihapus dari API profil).
+
+ DAFTAR FILE YANG DIGANTI / DITAMBAH (11 file)
+ ---------------------------------------------
+ DIMODIFIKASI:
+ 1. src/lib/puskesmas.ts
+ 2. src/app/api/puskesmas/remaja/[id]/route.ts
+ 3. src/app/api/participant/dashboard/route.ts
+ 4. src/app/api/participant/profile/route.ts
+ 5. src/app/dashboard-puskesmas/remaja/[id]/page.tsx
+ 6. src/components/fezone/app-shell.tsx
+ 7. src/components/fezone/profile.tsx
+ 8. src/components/fezone/nutrition.tsx
+ BARU:
+ 9. src/app/api/puskesmas/remaja/[id]/hemoglobin/route.ts
+ 10. src/app/api/puskesmas/remaja/[id]/hemoglobin/[recordId]/route.ts
+ 11. PETUNJUK-PEMBARUAN-19-TAHAP4.txt (file ini)
+
+ CARA UJI COBA (SETELAH DEPLOY SELESAI)
+ --------------------------------------
+ A. Uji sisi petugas:
+    1. Login di /login-puskesmas -> tab Data Remaja -> DETAIL
+       salah satu remaja.
+    2. Isi "Input Hasil Pemeriksaan Hb": nilai 11,5 + tanggal
+       hari ini -> Simpan Hasil.
+    3. Pastikan muncul label "Anemia Ringan", riwayat bertambah,
+       dan kartu "Hb terakhir" ikut berubah.
+    4. Coba tombol UBAH dan HAPUS pada rekaman itu (boleh).
+ B. Uji sisi remaja (akun remaja di sekolah wilayah tsb.):
+    1. Buka Profil -> kartu "Pemeriksaan Kesehatan" menampilkan
+       hasil tanpa tombol isi sendiri.
+    2. Klik "Lihat Riwayat Hb" -> daftar riwayat muncul.
+    3. Lihat kartu "Ringkasan Kesehatan" di bawahnya.
+    4. Buka tab "Cek Status Gizi" -> kartu "Pesan Gizi Untukmu"
+       sesuai kondisi Hb (anemia/normal/belum cek).
+    5. (Opsional) Jika pernah aktifkan pengingat, notifikasi
+       "Hasil pemeriksaan kesehatan kamu telah diperbarui..."
+       muncul di HP.
+
+ CATATAN TEKNIS (opsional, untuk admin)
+ --------------------------------------
+ Ambang interpretasi bisa diubah admin lewat tabel AppSetting
+ key "hb_standards" (JSON):
+   {"anemiaBelow":12,"beratBelow":9,"sedangBelow":11}
+ Jika tidak diisi, dipakai standar bawaan Kemenkes di atas.

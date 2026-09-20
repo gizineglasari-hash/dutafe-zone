@@ -140,7 +140,37 @@ const ZONES_IMT: [number, number, string][] = [[-4, -3, "#e11d48"], [-3, -2, "#f
 
 // ============================================================
 
-export default function NutritionView() {
+// -------------------------------------------------------
+// Pesan Gizi — personalisasi 3 kondisi berdasarkan Hb
+// terakhir yang diinput petugas Puskesmas (pembaruan 19
+// Tahap 4): Belum Cek | Anemia | Normal.
+// -------------------------------------------------------
+function pesanGiziHb(hbKategori: string | null | undefined, hbValue: number | null | undefined, hbLabel: string | null | undefined): { emoji: string; judul: string; isi: string; warna: string } {
+  if (hbValue === null || hbValue === undefined || !hbKategori) {
+    return {
+      emoji: "🔍",
+      judul: "Yuk cek Hb-mu dulu!",
+      isi: "Belum ada hasil pemeriksaan Hb. Datangi Posyandu/Puskesmas atau sekolahmu saat ada pemeriksaan — hasilnya otomatis muncul di sini setelah petugas mencatatnya. Sementara itu, tetap makan bergizi & minum TTD ya!",
+      warna: "from-sky-50 to-indigo-50",
+    };
+  }
+  if (hbKategori !== "NORMAL") {
+    return {
+      emoji: "🩸",
+      judul: "Perbanyak zat besi, ya!",
+      isi: "Hasil Hb terakhirmu masih di bawah standar (Kategori: " + (hbLabel || "Anemia") + "). Rutin minum 1 TTD seminggu, perbanyak makanan kaya zat besi (hati ayam, daging merah, bayam, kacang-kacangan) + buah kaya vitamin C (jeruk, pepaya, jambu biji) supaya penyerapan zat besi makin maksimal. Hindari teh/kopi saat makan ya!",
+      warna: "from-rose-50 to-orange-50",
+    };
+  }
+  return {
+    emoji: "🌟",
+    judul: "Kamu hebat, pertahankan!",
+    isi: "Hb-mu normal — tubuhmu cukup kaya zat besi. Tetap rutin minum 1 TTD seminggu sampai 3 bulan setelah selesai, makan menu bergizi seimbang, dan tetap aktif bergerak. Ini kunci supaya kamu tetap bertenaga dan fokus belajar!",
+    warna: "from-emerald-50 to-teal-50",
+  };
+}
+
+export default function NutritionView({ hbValue, hbLabel, hbKategori }: { hbValue?: number | null; hbLabel?: string | null; hbKategori?: string | null }) {
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -281,6 +311,35 @@ export default function NutritionView() {
           Setiap pemeriksaan disimpan sebagai <b>catatan baru</b>, jadi riwayat pertumbuhanmu utuh.
         </p>
       </motion.div>
+
+      {/* ============ PESAN GIZI (pembaruan 19 Tahap 4) ============ */}
+      {(() => {
+        const pg = pesanGiziHb(hbKategori ?? (hbValue != null ? "NORMAL" : null), hbValue, hbLabel);
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+            className={`rounded-[2rem] border-2 border-fez-ink bg-gradient-to-br ${pg.warna} p-5 shadow-[4px_4px_0_0_#4a1d33]`}
+          >
+            <div className="flex items-start gap-4">
+              <span className="flex h-12 w-12 shrink-0 rotate-[-4deg] items-center justify-center rounded-2xl border-2 border-fez-ink bg-white text-2xl sticker-sm">{pg.emoji}</span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-display text-lg font-extrabold text-fez-ink">Pesan Gizi Untukmu</h2>
+                  {hbValue != null && hbKategori && (
+                    <span className="rounded-full border border-fez-ink/15 bg-white/80 px-2.5 py-0.5 text-[11px] font-extrabold text-fez-ink/70">
+                      Hb {String(hbValue).replace(".", ",")} g/dL · {hbKategori === "NORMAL" ? "Normal" : (hbLabel || "Anemia")}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-sm font-semibold leading-relaxed text-fez-ink/75">{pg.isi}</p>
+                <p className="mt-2 text-[11px] font-semibold text-fez-ink/45">
+                  Pesan ini menyesuaikan otomatis dengan hasil Hb terakhirmu yang diinput petugas Puskesmas.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        );
+      })()}
 
       {/* ============ FORMULIR ============ */}
       {formOpen && (
