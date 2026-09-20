@@ -1,0 +1,111 @@
+=====================================================================
+ PEMBARUAN 19 — TAHAP 3: DASBOR PETUGAS (STATISTIK + DATA REMAJA)
+ FE-ZONE (Duta Remaja Putri Bebas Anemia)
+=====================================================================
+
+APA ISI PEMBARUAN INI?
+----------------------
+Tahap 3 dari fitur monitoring Puskesmas. Setelah login di
+/login-puskesmas, petugas kini punya dasbor penuh dengan 2 tab:
+
+ TAB 1 — RINGKASAN
+ 1. Header wilayah: nama Puskesmas + jumlah kelurahan +
+    daftar kecamatan wilayah kerja
+ 2. Filter waktu: 7 hari | 30 hari | 90 hari | Semua
+    (mempengaruhi kartu "Remaja Baru" & "Remaja Aktif")
+ 3. 8 KARTU STATISTIK:
+    - Total Remaja            (wilayah kerja)
+    - Remaja Baru             (mengikuti filter waktu)
+    - Remaja Aktif            (pernah beraktivitas dalam periode)
+    - Rata-rata XP
+    - Sudah Cek Hb
+    - Anemia (Hb < 12)
+    - Minum TTD               (pernah check-in minimal 1x)
+    - Lulus 9 Misi Inti       (M1-M9 selesai semua)
+ 4. 4 GRAFIK:
+    - Donut Status Anemia (Anemia / Normal / Belum Cek)
+    - Bar Klasifikasi Hemoglobin standar Kemenkes
+      (Berat <9 | Sedang 9-10,9 | Ringan 11-11,9 | Normal >=12)
+    - Bar Remaja per Kecamatan Sekolah
+    - Area Tren Pendaftaran 6 bulan terakhir
+
+ TAB 2 — DATA REMAJA
+ 1. Tabel remaja HANYA dari wilayah kerja Puskesmas
+    (keamanan dijaga di server, bukan cuma di layar)
+ 2. Pencarian: nama, username, sekolah, NIK
+ 3. 7 FILTER: Jenjang (SMP/SMA) | Sekolah | Kecamatan |
+    Status Hb (Anemia/Normal/Belum) | TTD (Sudah/Belum) |
+    Level XP (1-5) | Status Duta
+ 4. Tombol "Bersihkan filter" + paginasi (20 baris/halaman)
+ 5. Tombol DETAIL membuka profil read-only remaja:
+    identitas, Hb terakhir + klasifikasi, riwayat pemeriksaan,
+    TTD, perjalanan 9 misi, lencana, nilai pre/post test,
+    streak, XP/level. Petugas HANYA MELIHAT — tidak bisa
+    mengubah data (tombol tulis tidak ada).
+ 6. Setiap pembukaan profil remaja tercatat di AuditLog
+    (aksi VIEW_PARTICIPANT) — bekal jejak audit Tahap 5.
+
+ ATURAN WILAYAH (PENTING)
+ ------------------------
+ Remaja masuk dalam wilayah Puskesmas bila KECAMATAN SEKOLAH-
+ nya sama dengan salah satu kecamatan wilayah kerja Puskesmas
+ (kelurahan yang dipetakan admin di tab Data Induk).
+ Contoh: Puskesmas Babatan memegang Kel. Kebon Jeruk (Kec.
+ Andir) -> seluruh remaja yang sekolahnya di Kec. Andir
+ tampil di dasbor petugas Babatan.
+ Pemetaan alamat domisili remaja menyusul di Tahap 5, agar
+ pencocokan makin presisi.
+
+ Fitur lama TIDAK berubah: misi, XP, badge, leaderboard, TTD,
+ gizi, komunitas, NIK, registrasi & login petugas, Manajemen
+ Petugas admin — semuanya utuh.
+
+=====================================================================
+ CARA PASANG (ikut urutan, jangan terbalik)
+=====================================================================
+
+LANGKAH 1 — Extract paket
+  Extract "pembaruan-19-tahap3.zip". Di dalamnya ada folder src/.
+
+LANGKAH 2 — Salin ke folder proyek
+  Salin SEMUA isi hasil extract ke folder proyek Fe-Zone Anda
+  (folder "dutafe-zone"), timpa file lama bila ditanya.
+  Daftar file yang ikut:
+    src/app/api/puskesmas/stats/route.ts        (BARU)
+    src/app/api/puskesmas/remaja/route.ts       (BARU)
+    src/app/api/puskesmas/remaja/[id]/route.ts  (BARU)
+    src/app/dashboard-puskesmas/page.tsx        (diperbarui)
+    src/app/dashboard-puskesmas/remaja/[id]/page.tsx (BARU)
+    src/components/fezone/puskesmas-overview.tsx (BARU)
+    src/components/fezone/puskesmas-remaja.tsx   (BARU)
+
+LANGKAH 3 — Upload ke GitHub
+  - Buka github.com -> repo dutafe-zone Anda
+  - Klik "Add file" -> "Upload files"
+  - Seret SEMUA file/folder hasil salinan di Langkah 2
+    (ikuti struktur folder yang sama!)
+  - Commit message boleh: "pembaruan 19 tahap 3"
+  - Klik "Commit changes"
+  - Tunggu Vercel selesai deploy (±2-3 menit)
+
+LANGKAH 4 — Verifikasi
+  1. Buka https://dutafe-zone.vercel.app/login-puskesmas
+     -> login dengan akun petugas yang sudah disetujui admin
+  2. Dasbor menampilkan tab "Ringkasan" & "Data Remaja"
+  3. Ringkasan: 8 kartu statistik + 4 grafik + filter waktu
+     (bila wilayah Anda belum punya remaja, angka = 0 — wajar)
+  4. Data Remaja: cari + 7 filter + tombol Detail
+  5. Klik Detail -> profil read-only remaja terbuka
+  6. Masih dipastikan: remaja di LUAR wilayah kerja tidak bisa
+     dibuka (muncul pesan akses ditolak)
+  7. Cek fitur lama: login peserta, misi, leaderboard normal
+
+CATATAN AMAN
+------------
+- Tidak ada perubahan database di Tahap 3 (tabel & data tetap)
+- Tidak perlu jalankan SQL atau seed apapun
+- Data uji TIDAK ikut — paket hanya berisi kode
+
+Tahap 4 ⬜ Input hasil Hb oleh petugas + pesan gizi otomatis
+         + tampil di sisi remaja
+=====================================================================
