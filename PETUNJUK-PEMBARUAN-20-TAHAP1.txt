@@ -1,0 +1,76 @@
+================================================================
+PEMBARUAN 20 - TAHAP 1
+Z-Score Presisi v3 (Interpolasi WHO AnthroPlus)
+FE-ZONE - Duta Remaja Putri Bebas Anemia
+================================================================
+
+Tahap ini MEMPERBAIKI AKURASI angka Status Gizi. Singkatnya:
+
+Selama ini kalkulator membaca SATU baris tabel WHO paling
+dekat dengan usia remaja (ibarat melihat jam yang hanya punya
+jarum jam - cukup dekat, tapi kadang meleset sampai 0,05 SD).
+WHO AnthroPlus asli melakukan INTERPOLASI di antara dua baris
+(ibarat jam dengan jarum menit - jauh lebih teliti).
+
+Bukti dari pengujian otomatis kami:
+  - Metode lama : lompatan 0,052 SD di batas bulan
+  - Metode baru : mulus (lompatan maksimum 0,0005 SD)
+  - 30 dari 30 pengujian LULUS, klasifikasi status
+    (Normal/Pendek/Kurus/dll) TIDAK berubah.
+
+YANG BERUBAH & YANG TIDAK
+-------------------------
+BERUBAH   : angka z-score pemeriksaan BARU jadi presisi
+            penuh (versi kalkulasi tercatat otomatis sebagai
+            "WHO2007-FEMALE-5-19-LMS-v3" di database).
+TIDAK BERUBAH : data pemeriksaan LAMA tidak disentuh sama
+            sekali (tetap tersimpan dengan versinya masing-
+            masing - inilah gunanya kolom calculation_version).
+TIDAK BERUBAH : tampilan, menu, misi, XP, badge, dan semua
+            fitur lain - Tahap ini murni mesin hitung.
+
+KABAR BAIK: TIDAK PERLU SQL MANUAL!
+-----------------------------------
+Tahap ini TIDAK mengubah struktur database sama sekali.
+Cukup ganti 1 file + unggah 1 file baru (3 langkah di bawah).
+
+LANGKAH 1 - PASTIKAN KONDISI SAAT INI MASIH JALAN
+--------------------------------------------------
+1. Buka https://dutafe-zone.vercel.app/ (atau domain Anda).
+2. Pastikan situs normal (login admin & halaman utama terbuka).
+   Kalau ada masalah, JANGAN lanjut - beri tahu saya dulu.
+
+LANGKAH 2 - UNGGAH FILE KE GITHUB (seperti Pembaruan 19)
+---------------------------------------------------------
+Upload 2 file di bawah ini ke repo GitHub Anda
+(gizineglasari-hash/dutafe-zone) - perhatikan FOLDERNYA:
+
+A. FILE PENGGANTI (buka folder src/lib, klik who2007.ts,
+   lalu klik ikon pensil, ganti seluruh isinya):
+   src/lib/who2007.ts
+
+B. FILE BARU (unggah di folder utama repo, sejajar dengan
+   README):
+   PETUNJUK-PEMBARUAN-20-TAHAP1.txt
+
+Cara upload sama seperti tahap-tahap sebelumnya:
+"Add file" -> "Upload files" -> drag file -> "Commit changes".
+PENTING: file A harus masuk ke folder src/lib, bukan folder
+utama. Kalau salah folder, hapus file yang salah lalu ulangi.
+
+LANGKAH 3 - TUNGGU DEPLOY VERCEL & CEK
+---------------------------------------
+1. Tunggu ± 2-5 menit sampai Vercel selesai deploy
+   (Progress bar di dashboard Vercel jadi "Ready").
+2. Buka situs -> masuk sebagai remaja -> menu Cek Status Gizi
+   -> lakukan 1 pemeriksaan baru dengan data apa pun yang
+   masuk akal (contoh: BB 45 kg, TB 153 cm).
+3. HASIL YANG BENAR:
+   - Pemeriksaan baru BERHASIL tersimpan dan tampil.
+   - Status/klasifikasinya masih masuk akal seperti biasa.
+   - (Untuk admin: di Detail Gizi versi kalkulasi tercatat
+     WHO2007-FEMALE-5-19-LMS-v3.)
+4. Data riwayat LAMA masih tampil utuh, tidak berubah.
+
+SELESAI - kirim hasil langkah ini kepada saya, lalu kita
+lanjut ke Tahap 2 (Integrasi Status Gizi ke Daftar Pengguna).

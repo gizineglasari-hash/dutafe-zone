@@ -5,12 +5,20 @@
 //   z = ((y / M)^L − 1) / (L × S)          (rumus LMS)
 //   percentile = distribusi normal kumulatif Φ(z) × 100
 // Usia dihitung PERSIS per hari (bukan selisih tahun saja),
-// lalu dikonversi ke "bulan LMS" = Math.round(hari / 30.4375) —
-// DIBULATKAN KE BULAN TERDEKAT, sesuai perilaku software WHO
-// AnthroPlus/AnthroCal (terverifikasi empiris: kasus usia
-// 157,963 bulan → AnthroPlus memakai baris bulan 158).
-// v1 (lama) memakai floor → hasil beda ±0,01–0,05 SD vs
-// AnthroPlus; diperbaiki di v2 tanpa mengubah tabel LMS.
+// lalu dikonversi ke bulan eksak = hari / 30,4375 (TANPA
+// pembulatan). Nilai L, M, S di-INTERPOLASI linear antara dua
+// baris bulan tabel yang mengapit usia tersebut — persis
+// perilaku interpolasi makro igrowup WHO AnthroPlus. Pada
+// usia bulan BULAT hasilnya identik dengan pembacaan baris
+// tunggal (kompatibel dengan record v1/v2 yang lama).
+// Di luar ±3 SD dipakai koreksi resmi WHO (igrowup): lebar SD
+// lokal antara garis +2..+3 SD (atau −3..−2 SD), bukan
+// ekstrapolasi LMS mentah.
+// v1 (lama) = floor bulan; v2 = round bulan; keduanya membaca
+// SATU baris tabel (z "berundak" antar bulan, selisih hingga
+// ±0,05 SD dari kurva kontinu AnthroPlus). v3 menghilangkan
+// undakan itu dengan interpolasi — inilah akar kasus delta
+// 0,05 SD pada TB/U yang dilaporkan di audit Pembaruan 18.
 // ------------------------------------------------------------
 // Klasifikasi (WHO 2007):
 //   TB/U  : < −3 Sangat Pendek · −3..−2 Pendek · ≥ −2 Normal
@@ -23,12 +31,17 @@ export const REFERENCE_STANDARD = "WHO Growth Reference 2007";
 export const REFERENCE_VERSION = "Tabel expanded LMS resmi WHO (hfa/bmi z-score, 61–228 bulan), metode WHO AnthroPlus";
 /**
  * Versi algoritma kalkulator (spek bagian 22-23):
- * - v1 = floor(hari/30,4375)  → versi lama, beda ±0,01-0,05 SD dari AnthroPlus
- * - v2 = round(hari/30,4375)  → cocok WHO AnthroPlus/AnthroCal (|Δ| ≤ 0,01 SD)
+ * - v1 = floor(hari/30,4375) + 1 baris tabel → versi awal
+ * - v2 = round(hari/30,4375) + 1 baris tabel → |Δ| ≤ ±0,05 SD
+ *        vs kurva kontinu AnthroPlus (akar kasus delta TB/U)
+ * - v3 = usia eksak + interpolasi linear LMS antar baris +
+ *        koreksi resmi WHO di luar ±3 SD → identik metode
+ *        WHO AnthroPlus (igrowup). Pembaruan 20 Tahap 1.
  * Setiap record baru menyimpan versi ini ke kolom calculation_version
  * agar admin tahu algoritma apa yang dipakai saat pemeriksaan.
+ * Record lama (v1/v2) TIDAK diubah — kolom ini nullable & per baris.
  */
-export const CALCULATION_VERSION = "WHO2007-FEMALE-5-19-LMS-v2";
+export const CALCULATION_VERSION = "WHO2007-FEMALE-5-19-LMS-v3";
 export const DAYS_PER_MONTH_LMS = 30.4375;
 export const MIN_MONTH_LMS = 61; // 5 tahun
 export const MAX_MONTH_LMS = 228; // 19 tahun
@@ -109,11 +122,57 @@ function lmsLookup(table: LmsTable, month: number): [number, number, number] {
   return [found[1], found[2], found[3]];
 }
 
-/** z-score LMS sesuai WHO AnthroPlus. */
+/** z-score LMS baris tunggal (bulan bulat) — dipakai v1/v2, disimpan demi kompatibilitas. */
 export function zScore(table: LmsTable, monthsLms: number, y: number): number {
   const [L, M, S] = lmsLookup(table, monthsLms);
   if (Math.abs(L) < 1e-6) return Math.log(y / M) / S;
   return (Math.pow(y / M, L) - 1) / (L * S);
+}
+
+/**
+ * Pemetaan LMS pada usia EKSAK (pecahan bulan): interpolasi linear
+ * antara dua baris bulan yang mengapit — persis perilaku makro
+ * igrowup WHO AnthroPlus. Pada usia bulan bulat hasilnya identik
+ * dengan lmsLookup (kompatibel penuh dengan data lama v1/v2).
+ */
+export function lmsLookupExact(table: LmsTable, monthExact: number): [number, number, number] {
+  const m = Math.min(MAX_MONTH_LMS, Math.max(MIN_MONTH_LMS, monthExact));
+  const lo = Math.floor(m);
+  const hi = Math.min(MAX_MONTH_LMS, lo + 1);
+  const loLms = lmsLookup(table, lo);
+  if (hi === lo) return loLms;
+  const hiLms = lmsLookup(table, hi);
+  const w = m - lo; // bobot interpolasi 0..1
+  return [
+    loLms[0] + (hiLms[0] - loLms[0]) * w,
+    loLms[1] + (hiLms[1] - loLms[1]) * w,
+    loLms[2] + (hiLms[2] - loLms[2]) * w,
+  ];
+}
+
+/**
+ * z-score metode AnthroPlus PENUH (v3):
+ * 1. LMS diinterpolasi pada usia eksak (bukan dibulatkan).
+ * 2. Rentang −3..+3 SD memakai rumus LMS standar.
+ * 3. Di luar ±3 SD memakai koreksi resmi WHO (manual AnthroPlus
+ *    / makro igrowup): z = ±3 + (y − M±3SD) / (lebar SD LOKAL
+ *    antara garis +2..+3 SD atau −3..−2 SD).
+ */
+export function zScoreExact(table: LmsTable, monthsExact: number, y: number): number {
+  const lms = lmsLookupExact(table, monthsExact);
+  const [L, M, S] = lms;
+  const raw = Math.abs(L) < 1e-6 ? Math.log(y / M) / S : (Math.pow(y / M, L) - 1) / (L * S);
+  if (raw > 3) {
+    const m2 = lmsValueAtZ(lms, 2);
+    const m3 = lmsValueAtZ(lms, 3);
+    if (m2 != null && m3 != null && m3 > m2) return 3 + (y - m3) / (m3 - m2);
+  }
+  if (raw < -3) {
+    const m2 = lmsValueAtZ(lms, -2);
+    const m3 = lmsValueAtZ(lms, -3);
+    if (m2 != null && m3 != null && m2 > m3) return -3 + (y - m3) / (m2 - m3);
+  }
+  return raw;
 }
 
 /** Fungsi error Abramowitz–Stegun (galat ~1.5e-7) → CDF normal. */
@@ -188,7 +247,7 @@ export interface AssessmentResult {
     monthsLmsExact: number; // hari / 30,4375 sebelum dibulatkan
     monthsLms: number; // bulan tabel LMS yang dipakai
     bmiRaw: number; // IMT presisi penuh sebelum tampil dibulatkan
-    tbU_L: number;
+    tbU_L: number; // L,M,S hasil interpolasi pada usia eksak (v3)
     tbU_M: number;
     tbU_S: number;
     imtU_L: number;
@@ -379,10 +438,12 @@ export function assess(input: AssessmentInput): AssessmentResult | { error: stri
     return { error: "Kombinasi berat & tinggi badan tidak masuk akal untuk remaja. Periksa kembali angkanya (perhatikan satuan: kg dan cm)." };
   }
 
-  const tbLms = lmsLookup(heightTable(sex), age.monthsLms);
-  const bmiLms = lmsLookup(bmiTable(sex), age.monthsLms);
-  const tbURaw = zScore(heightTable(sex), age.monthsLms, heightCm);
-  const imtURaw = zScore(bmiTable(sex), age.monthsLms, imt);
+  // v3: usia eksak + interpolasi LMS (identik WHO AnthroPlus)
+  const monthsExact = age.totalDays / DAYS_PER_MONTH_LMS;
+  const tbLms = lmsLookupExact(heightTable(sex), monthsExact);
+  const bmiLms = lmsLookupExact(bmiTable(sex), monthsExact);
+  const tbURaw = zScoreExact(heightTable(sex), monthsExact, heightCm);
+  const imtURaw = zScoreExact(bmiTable(sex), monthsExact, imt);
   const tbU = classifyTbU(tbURaw);
   const imtU = classifyImtU(imtURaw);
 
