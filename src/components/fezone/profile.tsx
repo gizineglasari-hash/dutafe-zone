@@ -8,7 +8,7 @@ import { getLevel, LEVELS } from "@/lib/constants";
 import { BadgeVisual, SectionTitle, UserAvatar, XpCounter } from "@/components/fezone/ui-bits";
 import { BADGES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
-import { Download, FileDown, ImageDown, ImageUp, Loader2, LogOut, Share2, Sparkles, Trash2 } from "lucide-react";
+import { Download, FileDown, ImageDown, ImageUp, Loader2, LogOut, MapPin, Share2, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 const AVATARS = ["🌸", "🌟", "🦋", "🌺", "⚡", "🍀", "💖", "🌞", "🌙", "🐉", "🎀", "🦸‍♀️"];
@@ -34,6 +34,81 @@ export default function ProfileView({ data, refresh }: { data: DashData; refresh
     RINGAN: "bg-amber-100 text-amber-700",
     NORMAL: "bg-emerald-100 text-emerald-700",
   };
+
+  // ---- Wilayah Domisili (pembaruan 19 Tahap 5) ----
+  // Remaja memilih kecamatan -> kelurahan dari daftar RESMI Dinkes;
+  // sistem otomatis menunjukkan Puskesmas rujukan dari pemetaan wilayah.
+  const [domKec, setDomKec] = useState(p.domisiliKecamatan || "");
+  const [domKel, setDomKel] = useState(p.domisiliKelurahan || "");
+  const [opsiKec, setOpsiKec] = useState<string[]>([]);
+  const [opsiKel, setOpsiKel] = useState<{ nama: string; puskesmas: string | null }[]>([]);
+  const [domBusy, setDomBusy] = useState(false);
+  const [domLoading, setDomLoading] = useState(true);
+  const rujukanTerpilih = opsiKel.find((k) => k.nama === domKel)?.puskesmas ?? null;
+
+  // Muat daftar kecamatan saat kartu dibuka; bila sudah punya domisili,
+  // muat juga daftar kelurahan kecamatan itu.
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch("/api/wilayah");
+        if (r.ok) {
+          const d = await r.json();
+          setOpsiKec(d.kecamatan || []);
+          if (p.domisiliKecamatan) {
+            const r2 = await fetch(`/api/wilayah?kecamatan=${encodeURIComponent(p.domisiliKecamatan)}`);
+            if (r2.ok) {
+              const d2 = await r2.json();
+              setOpsiKel(d2.kelurahan || []);
+            }
+          }
+        }
+      } finally {
+        setDomLoading(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function gantiKecamatan(nama: string) {
+    setDomKec(nama);
+    setDomKel("");
+    setOpsiKel([]);
+    if (!nama) return;
+    const r = await fetch(`/api/wilayah?kecamatan=${encodeURIComponent(nama)}`);
+    if (r.ok) {
+      const d = await r.json();
+      setOpsiKel(d.kelurahan || []);
+    }
+  }
+
+  async function simpanDomisili() {
+    setDomBusy(true);
+    try {
+      const r = await fetch("/api/participant/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domisiliKecamatan: domKec || null,
+          domisiliKelurahan: domKel || null,
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        toast({ title: "Gagal menyimpan", description: d.error, variant: "destructive" });
+        return;
+      }
+      toast({
+        title: "✅ Wilayah domisili tersimpan!",
+        description: d.puskesmasRujukan
+          ? `Puskesmas rujukanmu: ${d.puskesmasRujukan}`
+          : "Kelurahanmu belum terpetakan ke Puskesmas — petugas tetap bisa menemukanmu lewat kecamatan sekolah.",
+      });
+      refresh();
+    } finally {
+      setDomBusy(false);
+    }
+  }
 
   // Downscale gambar ke max 512px (kotak) agar ringan & konsisten
   function processImage(file: File): Promise<Blob> {
@@ -310,6 +385,69 @@ export default function ProfileView({ data, refresh }: { data: DashData; refresh
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Wilayah Domisili — cascade kecamatan -> kelurahan -> Puskesmas rujukan (pembaruan 19 Tahap 5) */}
+      <div className="rounded-3xl border-2 border-fez-ink bg-white p-5">
+        <p className="flex items-center gap-2 font-display text-lg font-extrabold text-fez-ink">
+          <MapPin className="h-5 w-5 text-fez-teal" /> Wilayah Domisili
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Pilih tempat tinggalmu agar Puskesmas di wilayahmu bisa memantau program TTD & anemia untukmu.
+          Daftar memakai data resmi Kota Bandung — kalau kelurahanmu sudah dipetakan, Puskesmas rujukanmu muncul otomatis.
+        </p>
+        {domLoading ? (
+          <p className="mt-3 flex items-center gap-2 text-xs font-bold text-fez-ink/50">
+            <Loader2 className="h-4 w-4 animate-spin" /> Memuat daftar wilayah...
+          </p>
+        ) : (
+          <>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <select
+                value={domKec}
+                onChange={(e) => gantiKecamatan(e.target.value)}
+                className="rounded-xl border-2 border-fez-ink/15 bg-fez-cream/60 px-3 py-2.5 text-sm font-bold text-fez-ink focus:border-fez-teal focus:outline-none"
+              >
+                <option value="">— Pilih Kecamatan —</option>
+                {opsiKec.map((k) => <option key={k} value={k}>{k}</option>)}
+              </select>
+              <select
+                value={domKel}
+                onChange={(e) => setDomKel(e.target.value)}
+                disabled={!domKec}
+                className="rounded-xl border-2 border-fez-ink/15 bg-fez-cream/60 px-3 py-2.5 text-sm font-bold text-fez-ink focus:border-fez-teal focus:outline-none disabled:opacity-50"
+              >
+                <option value="">— Pilih Kelurahan —</option>
+                {opsiKel.map((k) => <option key={k.nama} value={k.nama}>{k.nama}</option>)}
+              </select>
+            </div>
+            {domKec && domKel && (
+              <div className={`mt-3 rounded-2xl border-2 p-3 text-xs font-bold ${rujukanTerpilih ? "border-teal-200 bg-teal-50/70 text-teal-800" : "border-amber-200 bg-amber-50/70 text-amber-800"}`}>
+                {rujukanTerpilih
+                  ? <>🏥 Puskesmas rujukanmu: <span className="font-extrabold">{rujukanTerpilih}</span></>
+                  : <>INFO: Kelurahan ini belum dipetakan ke Puskesmas. Kamu tetap bisa lanjut — petugas menemukanmu lewat kecamatan sekolah.</>}
+              </div>
+            )}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Button
+                onClick={simpanDomisili}
+                disabled={domBusy}
+                className="h-10 rounded-2xl border-2 border-fez-ink bg-fez-teal px-4 text-sm font-extrabold text-white shadow-[3px_3px_0_0_#4a1d33]"
+              >
+                {domBusy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <MapPin className="mr-1.5 h-4 w-4" />}
+                Simpan Domisili
+              </Button>
+              {(domKec || domKel) && (
+                <button
+                  onClick={() => { setDomKec(""); setDomKel(""); setOpsiKel([]); }}
+                  className="rounded-full bg-fez-cream px-3 py-1.5 text-[11px] font-extrabold text-fez-ink/60 hover:bg-fez-cream/70"
+                >
+                  Bersihkan pilihan
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Pemeriksaan Kesehatan — hasil Hb dari petugas Puskesmas (pembaruan 19 Tahap 4, read-only) */}

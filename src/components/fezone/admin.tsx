@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
-  Activity, BarChart3, BookOpen, Building2, CheckCircle2, ClipboardList, Crown, Download, Eye, FileQuestion, FileSpreadsheet, Flame, GraduationCap, HeartPulse, ImageUp, KeyRound, LayoutDashboard, Loader2,
-  LogOut, Pill, Puzzle, RefreshCw, School, Search, Trash2, Trophy, UserCheck, UserCog, Users, Video, XCircle,
+  Activity, BarChart3, BookOpen, Building2, CheckCircle2, ClipboardList, Crown, Download, Eye, FileQuestion, FileSpreadsheet, FileText, Flame, GraduationCap, HeartPulse, ImageUp, KeyRound, LayoutDashboard, Loader2,
+  LogOut, Pill, Puzzle, RefreshCw, School, Search, ShieldCheck, Trash2, Trophy, UserCheck, UserCog, Users, Video, XCircle,
 } from "lucide-react";
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -25,6 +25,7 @@ import AdminMissionEditor from "@/components/fezone/admin-mission-editor";
 import AdminGiziTab from "@/components/fezone/admin-gizi";
 import AdminPuskesmasTab from "@/components/fezone/admin-puskesmas";
 import AdminPetugasTab from "@/components/fezone/admin-petugas";
+import AdminAuditTab from "@/components/fezone/admin-audit";
 
 // ============================================================
 // Admin Login
@@ -193,6 +194,34 @@ async function exportExcel(rows: AdminRow[]): Promise<void> {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Data Peserta");
   XLSX.writeFile(wb, `FE-ZONE-Data-Peserta-${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+// CSV (pembaruan 19 Tahap 5) — pemisah titik-koma + BOM agar rapi dibuka di Excel Indonesia
+async function exportCsv(rows: AdminRow[]): Promise<void> {
+  const XLSX = await import("xlsx");
+  const ws = XLSX.utils.aoa_to_sheet([EXPORT_HEADERS, ...toExportRows(rows)]);
+  const csv = XLSX.utils.sheet_to_csv(ws, { FS: ";" });
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `FE-ZONE-Data-Peserta-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Catat aksi export admin ke Log Audit (pembaruan 19 Tahap 5).
+// Fire-and-forget: kegagalan audit tidak memblokir export.
+async function auditExportAdmin(format: string, jumlah: number): Promise<void> {
+  try {
+    await fetch("/api/admin/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ auditOnly: true, format, jumlah }),
+    });
+  } catch {
+    // diamkan — audit tidak boleh memblokir
+  }
 }
 
 async function exportPdf(rows: AdminRow[]): Promise<void> {
@@ -397,7 +426,7 @@ interface ModContent {
 
 export function AdminDashboard() {
   const { reset } = useFez();
-  const [tab, setTab] = useState<"overview" | "traffic" | "participants" | "gizi" | "puskesmas" | "petugas" | "duta" | "videos" | "moderation" | "konten" | "soal" | "misi" | "settings">("overview");
+  const [tab, setTab] = useState<"overview" | "traffic" | "participants" | "gizi" | "puskesmas" | "petugas" | "audit" | "duta" | "videos" | "moderation" | "konten" | "soal" | "misi" | "settings">("overview");
   const [petugasPending, setPetugasPending] = useState(0);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [rows, setRows] = useState<AdminRow[]>([]);
@@ -419,7 +448,7 @@ export function AdminDashboard() {
   const [dinkesLogoUrl, setDinkesLogoUrl] = useState<string | null>(null);
   const [approveXp, setApproveXp] = useState<{ id: string; peer: boolean; value: string } | null>(null);
   const [heroBusy, setHeroBusy] = useState(false);
-  const [exporting, setExporting] = useState<"pdf" | "excel" | null>(null);
+  const [exporting, setExporting] = useState<"pdf" | "excel" | "csv" | null>(null);
   const [resetTarget, setResetTarget] = useState<AdminRow | null>(null);
   const [resetPass, setResetPass] = useState("");
   const [resetting, setResetting] = useState(false);
@@ -548,7 +577,7 @@ export function AdminDashboard() {
     }
   }
 
-  async function handleExport(kind: "pdf" | "excel") {
+  async function handleExport(kind: "pdf" | "excel" | "csv") {
     if (rows.length === 0) {
       toast({ title: "Belum ada data peserta", variant: "destructive" });
       return;
@@ -556,8 +585,10 @@ export function AdminDashboard() {
     setExporting(kind);
     try {
       if (kind === "pdf") await exportPdf(rows);
+      else if (kind === "csv") await exportCsv(rows);
       else await exportExcel(rows);
-      toast({ title: kind === "pdf" ? "PDF berhasil diunduh 📄" : "Excel berhasil diunduh 📊" });
+      await auditExportAdmin(kind, rows.length);
+      toast({ title: kind === "pdf" ? "PDF berhasil diunduh 📄" : kind === "csv" ? "CSV berhasil diunduh 📑" : "Excel berhasil diunduh 📊" });
     } catch {
       toast({ title: "Gagal mengekspor, coba lagi", variant: "destructive" });
     } finally {
@@ -806,6 +837,7 @@ export function AdminDashboard() {
               { k: "gizi", label: "Data Status Gizi", icon: HeartPulse },
               { k: "puskesmas", label: "Data Induk", icon: Building2 },
               { k: "petugas", label: "Manajemen Petugas", icon: UserCog },
+              { k: "audit", label: "Log Audit", icon: ShieldCheck },
               { k: "duta", label: "Kandidat Duta", icon: Crown },
               { k: "moderation", label: "Content Moderation", icon: ClipboardList },
               { k: "videos", label: "Penilaian Video", icon: Video },
@@ -1239,6 +1271,15 @@ export function AdminDashboard() {
                 <Button
                   variant="outline"
                   disabled={exporting !== null || rows.length === 0}
+                  onClick={() => handleExport("csv")}
+                  className="h-9 rounded-xl border-2 border-[#3d1526]/20 px-3 text-xs font-extrabold"
+                >
+                  {exporting === "csv" ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <FileText className="mr-1.5 h-3.5 w-3.5" />}
+                  CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={exporting !== null || rows.length === 0}
                   onClick={() => handleExport("pdf")}
                   className="h-9 rounded-xl border-2 border-[#3d1526]/20 px-3 text-xs font-extrabold"
                 >
@@ -1414,6 +1455,7 @@ export function AdminDashboard() {
 
         {/* ============ MANAJEMEN PETUGAS (pembaruan 19) ============ */}
         {tab === "petugas" && <AdminPetugasTab onChanged={muatJumlahPetugas} />}
+        {tab === "audit" && <AdminAuditTab />}
 
         {/* ============ DUTA CANDIDATES ============ */}
         {tab === "duta" && overview && (

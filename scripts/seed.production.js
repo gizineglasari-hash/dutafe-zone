@@ -335,9 +335,16 @@ async function main() {
   // besar/kecil campuran (mis. "Admin@Fezone.id" dari env versi lama).
   // Tanpa langkah ini akun itu tidak pernah ketemu oleh route login dan
   // login admin selalu gagal. Normalisasi menjadi huruf kecil.
-  const caseMatch = await db.user.findFirst({
-    where: { username: { equals: username, mode: "insensitive" } },
-  });
+  // Catatan: `mode: "insensitive"` tidak didukung SQLite (dev lokal) —
+  // dibungkus try/catch agar seed tetap jalan di semua database.
+  let caseMatch = null;
+  try {
+    caseMatch = await db.user.findFirst({
+      where: { username: { equals: username, mode: "insensitive" } },
+    });
+  } catch {
+    caseMatch = null; // SQLite lokal: lewati normalisasi case
+  }
   if (caseMatch && caseMatch.role === "ADMIN" && caseMatch.username !== username) {
     await db.user.update({ where: { id: caseMatch.id }, data: { username } });
     console.log(`[seed] username admin dinormalkan: "${caseMatch.username}" -> "${username}"`);

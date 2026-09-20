@@ -31,6 +31,7 @@ export interface DashData {
     hbValue: number | null; hbCheckDate: string | null;
     hbKategori: string | null; hbLabel: string | null; hbPesan: string | null;
     hbRecords: { id: string; checkDate: string; hbValue: number; method: string | null; location: string | null; examiner: string | null }[];
+    domisiliKecamatan: string | null; domisiliKelurahan: string | null; puskesmasRujukan: string | null;
     giziTerakhir: { tanggalPemeriksaan: string; imtUStatus: string; tbUStatus: string } | null;
     ttdTerakhir: string | null;
   };

@@ -73,6 +73,12 @@ model Participant {
   isDuta          Boolean  @default(false)
   jenisKelamin    String?  // "L" | "P" — diingat dari fitur Cek Status Gizi (pembaruan 17)
   tanggalLahir    DateTime? // diingat dari fitur Cek Status Gizi agar isi formulir otomatis
+  // Wilayah domisili remaja (pembaruan 19 Tahap 5). Disimpan sebagai NAMA
+  // (bukan id) agar konsisten dgn schoolDistrict & tetap valid bila data
+  // induk diubah. Bila kelurahan domisili terpetakan ke sebuah Puskesmas,
+  // remaja otomatis ikut wilayah kerja Puskesmas itu.
+  domisiliKecamatan String? // nama kecamatan domisili (dari MasterKecamatan)
+  domisiliKelurahan String? // nama kelurahan domisili (dari MasterKelurahan)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

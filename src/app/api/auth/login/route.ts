@@ -42,6 +42,21 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Audit login admin (pembaruan 19 Tahap 5 — jejak aksi sensitif)
+    if (user.role === "ADMIN") {
+      await db.auditLog
+        .create({
+          data: {
+            actorUserId: user.id,
+            actorRole: "ADMIN",
+            action: "LOGIN_ADMIN",
+            targetType: "USER",
+            targetUserId: user.id,
+          },
+        })
+        .catch(() => {});
+    }
+
     return NextResponse.json({
       ok: true,
       user: {

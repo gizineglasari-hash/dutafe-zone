@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { requireParticipant } from "@/lib/auth";
 import { CORE_MISSIONS, CORE_MISSION_KEY_RE, customMissionKey } from "@/lib/constants";
 import { checkTrackerMissions, computeWeeklyStreak, syncMissionUnlocks } from "@/lib/gamification";
-import { getHbStandards, interpretHb } from "@/lib/puskesmas";
+import { getHbStandards, interpretHb, getPuskesmasRujukan } from "@/lib/puskesmas";
 
 export async function GET() {
   const auth = await requireParticipant();
@@ -91,6 +91,10 @@ export async function GET() {
     examiner: h.examiner,
   }));
 
+  // ---- Pembaruan 19 Tahap 5: Puskesmas rujukan sesuai domisili ----
+  const puskesmasRujukan =
+    p.domisiliKelurahan ? await getPuskesmasRujukan(p.domisiliKelurahan, p.domisiliKecamatan) : null;
+
   return NextResponse.json({
     profile: {
       id: p.id,
@@ -110,6 +114,9 @@ export async function GET() {
       hbLabel: hbInterpretasi?.label ?? null,
       hbPesan: hbInterpretasi?.pesan ?? null,
       hbRecords,
+      domisiliKecamatan: p.domisiliKecamatan,
+      domisiliKelurahan: p.domisiliKelurahan,
+      puskesmasRujukan,
       giziTerakhir: p.nutritionAssessments[0]
         ? {
             tanggalPemeriksaan: p.nutritionAssessments[0].tanggalPemeriksaan,

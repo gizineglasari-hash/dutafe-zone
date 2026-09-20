@@ -3,18 +3,21 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Building2, LayoutDashboard, Loader2, LogOut, Users } from "lucide-react";
+import { Building2, ClipboardList, LayoutDashboard, Loader2, LogOut, Users } from "lucide-react";
 import { SiteCredit } from "@/components/fezone/ui-bits";
 import { trackPage } from "@/lib/track";
 import PuskesmasOverview from "@/components/fezone/puskesmas-overview";
 import PuskesmasRemaja from "@/components/fezone/puskesmas-remaja";
+import PuskesmasRekap from "@/components/fezone/puskesmas-rekap";
 
 // ------------------------------------------------------------
-// /dashboard-puskesmas (pembaruan 19 Tahap 3)
-// Dasbor petugas dengan 2 tab:
-//   - Ringkasan : 8 kartu statistik + 4 grafik + filter waktu
-//   - Data Remaja : tabel wilayah (cari/7 filter/paginasi) ->
-//     detail read-only /dashboard-puskesmas/remaja/[id]
+// /dashboard-puskesmas (pembaruan 19 Tahap 3 & 5)
+// Dasbor petugas dengan 3 tab:
+//   - Ringkasan    : 8 kartu statistik + 4 grafik + filter waktu
+//   - Data Remaja  : tabel wilayah (cari/7 filter/paginasi) ->
+//                    detail read-only /dashboard-puskesmas/remaja/[id]
+//   - Rekap & Export (Tahap 5): rekap seluruh wilayah + unduh
+//                    Excel / CSV / PDF (teraudit, tanpa NIK/telepon)
 // Sesi + status ACTIVE selalu diverifikasi server lewat
 // /api/puskesmas/me.
 // ------------------------------------------------------------
@@ -27,7 +30,7 @@ interface MeStaff {
   wilayah: { kelurahan: { nama: string; kecamatan: { nama: string } | null } }[];
 }
 
-type Tab = "ringkasan" | "remaja";
+type Tab = "ringkasan" | "remaja" | "rekap";
 
 export default function DashboardPuskesmasPage() {
   const [loading, setLoading] = useState(true);
@@ -127,11 +130,19 @@ export default function DashboardPuskesmasPage() {
                 >
                   <Users className="h-4 w-4" /> Data Remaja
                 </button>
+                <button
+                  onClick={() => setTab("rekap")}
+                  className={`inline-flex items-center gap-1.5 rounded-2xl border-2 border-fez-ink px-4 py-2 text-sm font-extrabold transition-all ${
+                    tab === "rekap" ? "bg-fez-ink text-white shadow-[4px_4px_0_0_#4a1d33]" : "bg-white text-fez-ink/60 hover:bg-fez-cream"
+                  }`}
+                >
+                  <ClipboardList className="h-4 w-4" /> Rekap &amp; Export
+                </button>
               </div>
 
               {/* Konten tab */}
               <div className="mt-4">
-                {tab === "ringkasan" ? <PuskesmasOverview puskesmasNama={staff.puskesmas.nama} /> : <PuskesmasRemaja />}
+                {tab === "ringkasan" ? <PuskesmasOverview puskesmasNama={staff.puskesmas.nama} /> : tab === "remaja" ? <PuskesmasRemaja /> : <PuskesmasRekap />}
               </div>
             </>
           ) : null}

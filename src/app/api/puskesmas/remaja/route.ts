@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requirePetugas } from "@/lib/auth";
 import { CORE_MISSION_KEY_RE, getLevel } from "@/lib/constants";
+import { getWilayahScope, wilayahWhere } from "@/lib/puskesmas";
 
 // ------------------------------------------------------------
-// PETUGAS — DAFTAR REMAJA WILAYAH (pembaruan 19 Tahap 3)
-// HANYA remaja yang kecamatan sekolahnya termasuk kecamatan
-// wilayah kerja Puskesmas petugas. Pencarian + 7 filter +
-// paginasi server-side. Read-only: petugas tidak bisa
-// mengubah/menghapus data dari endpoint ini.
+// PETUGAS — DAFTAR REMAJA WILAYAH (pembaruan 19 Tahap 3 & 5)
+// Tahap 3: kecamatan sekolah remaja = kecamatan wilayah kerja.
+// Tahap 5: DITAMBAH kelurahan domisili yang terpetakan ke
+//          Puskesmas petugas (remaja mengisi domisili di Profil).
+// Pencarian + 7 filter + paginasi server-side. Read-only.
 // Filter: jenjang | sekolah | kecamatan | hb | ttd | lvl | duta
 // ------------------------------------------------------------
 
@@ -29,13 +30,9 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
     const pageSize = Math.min(50, Math.max(5, parseInt(searchParams.get("pageSize") || "20", 10) || 20));
 
-    // ---- Wilayah kerja ----
-    const kecamatanSet = new Set<string>();
-    for (const w of petugas.staff.puskesmas.wilayah) {
-      const kec = w.kelurahan.kecamatan?.nama;
-      if (kec) kecamatanSet.add(kec);
-    }
-    if (kecamatanSet.size === 0) {
+    // ---- Wilayah kerja (Tahap 5: kecamatan + kelurahan terpetakan) ----
+    const scope = await getWilayahScope(petugas.staff.puskesmasId);
+    if (scope.kecamatanNames.length === 0 && scope.kelurahanNames.length === 0) {
       return NextResponse.json({
         remaja: [], total: 0, page, pageSize, totalPages: 0,
         wilayah: { kecamatan: [] },
@@ -43,9 +40,9 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ---- Ambil remaja dalam wilayah ----
+    // ---- Ambil remaja dalam wilayah (sekolah ATAU domisili) ----
     const participants = await db.participant.findMany({
-      where: { schoolDistrict: { in: Array.from(kecamatanSet) } },
+      where: wilayahWhere(scope),
       include: {
         user: { select: { username: true, createdAt: true } },
         badges: { select: { badgeKey: true } },
@@ -123,7 +120,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       remaja, total, page, pageSize, totalPages,
-      wilayah: { kecamatan: Array.from(kecamatanSet).sort() },
+      wilayah: { kecamatan: scope.kecamatanNames.sort() },
       opsiSekolah,
     });
   } catch (e) {

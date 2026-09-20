@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import {
   ArrowLeft, BadgeCheck, CalendarDays, Crown, Droplets, FileCheck2,
-  GraduationCap, HeartPulse, Loader2, MapPin, Pencil, Phone, Plus,
+  GraduationCap, HeartPulse, Home, Loader2, MapPin, Pencil, Phone, Plus,
   ShieldAlert, Sparkles, Trash2, Trophy, UserRound, X,
 } from "lucide-react";
 import { SiteCredit } from "@/components/fezone/ui-bits";
@@ -41,6 +41,7 @@ interface DetailData {
     id: string; name: string; avatar: string; profilePhotoUrl: string | null;
     age: number; educationLevel: string; school: string; schoolCity: string | null;
     schoolDistrict: string | null; schoolType: string | null; phone: string | null;
+    domisiliKecamatan: string | null; domisiliKelurahan: string | null;
     nik: string | null; username: string; joinedAt: string;
     xp: number; level: number; levelName: string; levelIcon: string;
     streakWeeks: number; lastCheckIn: string | null;
@@ -261,6 +262,7 @@ export default function DetailRemajaPage() {
                     <div className="mt-2 space-y-1 text-xs font-semibold text-fez-ink/65">
                       <p className="flex items-center gap-1.5"><GraduationCap className="h-3.5 w-3.5 text-fez-teal" /> {data.remaja.school}{data.remaja.schoolType ? ` (${data.remaja.schoolType})` : ""}{data.remaja.schoolCity ? ` — ${data.remaja.schoolCity}` : ""}</p>
                       {data.remaja.schoolDistrict && <p className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-fez-teal" /> Kec. {data.remaja.schoolDistrict}</p>}
+                      {data.remaja.domisiliKelurahan && <p className="flex items-center gap-1.5"><Home className="h-3.5 w-3.5 text-fez-rose" /> Domisili: {data.remaja.domisiliKelurahan}, Kec. {data.remaja.domisiliKecamatan}</p>}
                       {data.remaja.phone && <p className="flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 text-fez-teal" /> {data.remaja.phone}</p>}
                       {data.remaja.nik && <p className="flex items-center gap-1.5"><BadgeCheck className="h-3.5 w-3.5 text-fez-teal" /> NIK: {data.remaja.nik}</p>}
                     </div>

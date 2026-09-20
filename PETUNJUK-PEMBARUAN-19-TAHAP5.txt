@@ -1,0 +1,159 @@
+================================================================
+PEMBARUAN 19 - TAHAP 5 (TAHAP TERAKHIR)
+Rekap & Export + Log Audit + Wilayah Domisili Remaja
+FE-ZONE - Duta Remaja Putri Bebas Anemia
+================================================================
+
+Selamat! Tahap 5 adalah tahap TERAKHIR dari Pembaruan 19.
+
+ISI TAHAP 5
+-----------
+1. TAB BARU "Rekap & Export" di Dashboard Petugas:
+   - Rekap SELURUH remaja wilayah (6 kartu ringkasan + tabel).
+   - Filter yang sama dengan tab Data Remaja (cari + 7 filter).
+   - Tombol unduh: Excel (.xlsx), CSV (.csv), PDF (.pdf).
+   - Aman: kolom NIK & telepon TIDAK ikut diekspor petugas
+     (hanya Admin yang boleh), dan setiap export TERCATAT
+     di Log Audit.
+2. WILAYAH DOMISILI di Profil remaja:
+   - Remaja memilih Kecamatan lalu Kelurahan (daftar resmi
+     Dinkes Kota Bandung - tidak bisa ketik bebas).
+   - Sistem OTOMATIS menunjukkan "Puskesmas rujukan" bila
+     kelurahan itu sudah dipetakan ke sebuah Puskesmas.
+   - Remaja yang domisilinya masuk wilayah kerja Puskesmas
+     otomatis muncul di dashboard petugas Puskesmas itu
+     (sebelumnya hanya lewat kecamatan sekolah).
+3. TAB BARU "Log Audit" di Panel Admin:
+   - Jejak semua aksi sensitif: login petugas/admin, buka
+     data remaja, input/ubah/hapus Hb, export data.
+   - Bisa difilter per aksi / peran / tanggal / kata kunci.
+   - Log TIDAK BISA diubah atau dihapus dari aplikasi.
+4. Tombol CSV baru di Data Peserta Admin + export admin
+   (Excel/PDF/CSV) kini ikut tercatat di Log Audit dengan
+   kolom LENGKAP (termasuk NIK & telepon - hak Admin).
+
+KABAR BAIK: TIDAK PERLU SQL MANUAL!
+-----------------------------------
+Kolom database baru (domisiliKecamatan & domisiliKelurahan di
+tabel Participant) ditambahkan OTOMATIS oleh proses build
+Vercel (seed sudah diperbarui). Jadi cukup ikuti 3 langkah
+di bawah - tidak ada yang perlu diklik di Supabase.
+
+LANGKAH 1 - PASTIKAN HASIL TAHAP 4 MASIH JALAN
+----------------------------------------------
+1. Buka https://dutafe-zone.vercel.app/ (atau domain Anda).
+2. Pastikan login petugas & input Hb masih normal.
+   Kalau ada masalah, JANGAN lanjut - beri tahu saya dulu.
+
+LANGKAH 2 - UNGGAH FILE KE GITHUB (seperti Tahap 4)
+---------------------------------------------------
+Upload SEMUA file di bawah ini ke repo GitHub Anda
+(gizineglasari-hash/dutafe-zone) - perhatikan FOLDERNYA,
+ada file baru dan file pengganti:
+
+A. FILE PENGGANTI (ubah file yang sudah ada):
+   prisma/schema.prisma
+   scripts/seed-puskesmas.js
+   scripts/seed.production.js
+   src/app/api/auth/login/route.ts
+   src/app/api/participant/dashboard/route.ts
+   src/app/api/participant/profile/route.ts
+   src/app/api/puskesmas/remaja/route.ts
+   src/app/api/puskesmas/remaja/[id]/route.ts
+   src/app/api/puskesmas/remaja/[id]/hemoglobin/route.ts
+   src/app/api/puskesmas/remaja/[id]/hemoglobin/[recordId]/route.ts
+   src/app/api/puskesmas/stats/route.ts
+   src/app/dashboard-puskesmas/page.tsx
+   src/app/dashboard-puskesmas/remaja/[id]/page.tsx
+   src/components/fezone/admin.tsx
+   src/components/fezone/app-shell.tsx
+   src/components/fezone/profile.tsx
+   src/lib/puskesmas.ts
+
+B. FILE BARU (tambah file baru):
+   src/app/api/admin/audit/route.ts
+   src/app/api/admin/export/route.ts
+   src/app/api/puskesmas/export/route.ts
+   src/app/api/puskesmas/rekap/route.ts
+   src/app/api/wilayah/route.ts
+   src/components/fezone/admin-audit.tsx
+   src/components/fezone/puskesmas-rekap.tsx
+   src/lib/puskesmas-rekap.ts
+
+CARA UPLOAD (ulangi per file):
+   1. Buka repo di GitHub -> Add file -> Create new file
+      (atau buka file lama -> ikon pensil -> Edit).
+   2. Untuk file baru: ketik NAMA FOLDER + "/" lalu nama file,
+      contoh:  src/app/api/wilayah/route.ts
+      Untuk file pengganti: salin SELURUH isi file dari zip,
+      hapus isi lama, tempel isi baru.
+   3. Commit changes (satu commit untuk semua juga boleh).
+   4. Vercel otomatis membangun ulang (tunggu 3-6 menit).
+
+CATATAN PENTING:
+- Jangan ubah nama file atau foldernya.
+- File prisma/schema.prisma HANYA bertambah 2 baris definisi
+  kolom - pastikan menimpa seluruh isi dengan versi baru.
+- Kalau build gagal (halaman merah di Vercel), lihat bagian
+  "JIKA TERJADI ERROR" di bawah.
+
+LANGKAH 3 - UJI HASILNYA (ceklis 5 menit)
+-----------------------------------------
+A. SEBAGAI PETUGAS:
+   1. Login di /login-puskesmas.
+   2. Ada 3 tab sekarang: Ringkasan | Data Remaja |
+      REKAP & EXPORT (baru).
+   3. Buka Rekap & Export -> ada 6 kartu angka + tabel +
+      3 tombol warna (Excel/CSV/PDF).
+   4. Klik Excel -> file .xlsx terunduh. Buka: kolomnya
+      TIDAK ada NIK/telepon.
+   5. Buka detail seorang remaja -> jika remaja mengisi
+      domisili, ada baris "Domisili: <kelurahan>, Kec. <kec>".
+B. SEBAGAI REMAJA:
+   1. Login peserta -> tab Profil.
+   2. Ada kartu baru "Wilayah Domisili".
+   3. Pilih Kecamatan -> pilih Kelurahan -> muncul kotak
+      hijau "Puskesmas rujukanmu: ..." (bila kelurahan
+      terpetakan) -> klik Simpan Domisili.
+   4. Hasil Hb di "Pemeriksaan Kesehatan" (Tahap 4) tetap ada.
+C. SEBAGAI ADMIN:
+   1. Login admin -> tab "Log Audit" (baru, di sebelah
+      Manajemen Petugas).
+   2. Terlihat jejak: Login Petugas, Buka Data Remaja,
+      Input Hb, Export Data.
+   3. Klik satu baris -> modal detail (meta lengkap).
+   4. Tab Data Peserta -> tombol CSV baru di samping PDF.
+
+JIKA TERJADI ERROR
+------------------
+ERROR: Build Vercel gagal / halaman merah setelah deploy.
+PENYEBAB: Ada file yang belum terupload atau salah folder
+(terutama 8 file baru di bagian B).
+SOLUSI: Cek daftar file di commit GitHub vs daftar di atas.
+File yang paling sering terlewat: src/lib/puskesmas-rekap.ts
+dan src/components/fezone/puskesmas-rekap.tsx (sama-sama WAJIB).
+
+ERROR: Klik Rekap & Export muncul layar kosong / error.
+PENYEBAB: Build belum selesai atau file API rekap belum
+terupload.
+SOLUSI: Tunggu build selesai (label "Ready" di Vercel),
+lalu hard refresh (Ctrl+Shift+R). Bila masih error, pastikan
+src/app/api/puskesmas/rekap/route.ts ada di GitHub.
+
+ERROR: Kolom domisili tidak tersimpan (muncul "tidak valid").
+PENYEBAB: Kolom database belum dibuat (build seed gagal jalan).
+SOLUSI (CADANGAN - hanya bila perlu): Buka Supabase -> SQL
+Editor, jalankan 2 baris ini lalu coba simpan lagi:
+  ALTER TABLE "Participant" ADD COLUMN IF NOT EXISTS "domisiliKecamatan" TEXT;
+  ALTER TABLE "Participant" ADD COLUMN IF NOT EXISTS "domisiliKelurahan" TEXT;
+
+APAKAH FITUR LAMA MASIH AMAN?
+-----------------------------
+Ya. Semua fitur lama tidak berubah: misi 1-9, XP, badge,
+leaderboard, TTD tracker, Cek Status Gizi, kuis, Duta
+Challenge, notifikasi, dashboard peserta. Perubahan hanya
+menambah, tidak menghapus. Riwayat Hb (Tahap 4) tetap utuh.
+
+Setelah Anda uji dan semua normal, kabari saya. Saya akan
+membuat LAPORAN AKHIR Pembaruan 19 (10 bagian) sebagai dokumen
+penutup seluruh rangkaian pembaruan ini.

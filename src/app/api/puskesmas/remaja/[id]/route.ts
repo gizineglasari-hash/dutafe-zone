@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requirePetugas } from "@/lib/auth";
 import { CORE_MISSION_KEY_RE, MISSIONS, getLevel } from "@/lib/constants";
 import { BADGES } from "@/lib/constants";
+import { getWilayahScope, dalamWilayah } from "@/lib/puskesmas";
 
 // ------------------------------------------------------------
 // PETUGAS — DETAIL REMAJA (pembaruan 19 Tahap 3 & 4)
@@ -43,13 +44,10 @@ export async function GET(req: NextRequest, { params }: Params) {
     });
     if (!p) return NextResponse.json({ error: "Peserta tidak ditemukan" }, { status: 404 });
 
-    // ---- Guard wilayah: kecamatan sekolah harus termasuk wilayah kerja ----
-    const kecamatanSet = new Set<string>();
-    for (const w of petugas.staff.puskesmas.wilayah) {
-      const kec = w.kelurahan.kecamatan?.nama;
-      if (kec) kecamatanSet.add(kec);
-    }
-    if (!p.schoolDistrict || !kecamatanSet.has(p.schoolDistrict)) {
+    // ---- Guard wilayah (Tahap 5): kecamatan sekolah ATAU kelurahan
+    //      domisili harus termasuk wilayah kerja Puskesmas ----
+    const scope = await getWilayahScope(petugas.staff.puskesmasId);
+    if (!dalamWilayah(scope, p)) {
       return NextResponse.json(
         { error: "Anda tidak memiliki akses untuk melihat data pengguna ini." },
         { status: 403 }
@@ -95,6 +93,8 @@ export async function GET(req: NextRequest, { params }: Params) {
         schoolType: p.schoolType,
         phone: p.phone,
         nik: p.nik,
+        domisiliKecamatan: p.domisiliKecamatan,
+        domisiliKelurahan: p.domisiliKelurahan,
         username: p.user.username,
         joinedAt: p.user.createdAt,
         xp: p.xp,

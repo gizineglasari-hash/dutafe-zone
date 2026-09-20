@@ -217,6 +217,16 @@ async function seedPuskesmas(db) {
     )
     .catch((e) => console.warn("[seed-p19] index audit-3:", e?.message || e));
 
+  // Kolom wilayah domisili remaja (Tahap 5). ADD COLUMN IF NOT EXISTS —
+  // aman berulang: saat build Vercel berjalan, kolom otomatis ditambahkan
+  // ke Supabase bila belum ada (tanpa SQL manual).
+  await db
+    .$executeRawUnsafe(`ALTER TABLE "Participant" ADD COLUMN IF NOT EXISTS "domisiliKecamatan" TEXT;`)
+    .catch((e) => console.warn("[seed-p19] kolom domisiliKecamatan:", e?.message || e));
+  await db
+    .$executeRawUnsafe(`ALTER TABLE "Participant" ADD COLUMN IF NOT EXISTS "domisiliKelurahan" TEXT;`)
+    .catch((e) => console.warn("[seed-p19] kolom domisiliKelurahan:", e?.message || e));
+
   // ------------------------------------------------------------
   // 2) DATA INDUK RESMI (insert-only, tidak pernah menimpa)
   // ------------------------------------------------------------

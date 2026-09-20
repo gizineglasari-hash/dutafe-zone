@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requirePetugas } from "@/lib/auth";
-import { getHbStandards, interpretHb, syncParticipantHb } from "@/lib/puskesmas";
+import { getHbStandards, interpretHb, syncParticipantHb, getWilayahScope, dalamWilayah } from "@/lib/puskesmas";
 import { sendPushToParticipant } from "@/lib/push";
 
 // ------------------------------------------------------------
@@ -34,18 +34,15 @@ async function guard(reqCtx: { params: Promise<{ id: string; recordId: string }>
 
   const p = await db.participant.findUnique({
     where: { id },
-    select: { id: true, userId: true, name: true, schoolDistrict: true },
+    select: { id: true, userId: true, name: true, schoolDistrict: true, domisiliKecamatan: true, domisiliKelurahan: true },
   });
   if (!p) {
     return { error: NextResponse.json({ error: "Peserta tidak ditemukan" }, { status: 404 }) } as const;
   }
 
-  const kecamatanSet = new Set<string>();
-  for (const w of petugas.staff.puskesmas.wilayah) {
-    const kec = w.kelurahan.kecamatan?.nama;
-    if (kec) kecamatanSet.add(kec);
-  }
-  if (!p.schoolDistrict || !kecamatanSet.has(p.schoolDistrict)) {
+  // Tahap 5: kecamatan sekolah ATAU kelurahan domisili terpetakan
+  const scope = await getWilayahScope(petugas.staff.puskesmasId);
+  if (!dalamWilayah(scope, p)) {
     return {
       error: NextResponse.json(
         { error: "Anda tidak memiliki akses untuk melihat data pengguna ini." },

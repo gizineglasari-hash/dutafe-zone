@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requirePetugas } from "@/lib/auth";
 import { CORE_MISSION_KEY_RE } from "@/lib/constants";
+import { getWilayahScope, wilayahWhere } from "@/lib/puskesmas";
 
 // ------------------------------------------------------------
-// PETUGAS — STATISTIK DASBOR (pembaruan 19 Tahap 3)
-// Data remaja HANYA dari wilayah kerja Puskesmas petugas
-// (kecamatan sekolah remaja = kecamatan wilayah kerja).
+// PETUGAS — STATISTIK DASBOR (pembaruan 19 Tahap 3 & 5)
+// Data remaja HANYA dari wilayah kerja Puskesmas petugas:
+// kecamatan sekolah (Tahap 3) ATAU kelurahan domisili yang
+// terpetakan ke Puskesmas (Tahap 5).
 // 8 kartu statistik + 4 grafik + filter waktu (periode).
 // Semua agregasi dihitung di server, zona waktu Asia/Jakarta.
 // ------------------------------------------------------------
@@ -42,13 +44,9 @@ export async function GET(req: NextRequest) {
     const periode = searchParams.get("periode") || "30";
     const batas = periodStart(periode);
 
-    // ---- Wilayah kerja petugas (kecamatan dari kelurahan terpetakan) ----
-    const kecamatanSet = new Set<string>();
-    for (const w of petugas.staff.puskesmas.wilayah) {
-      const kec = w.kelurahan.kecamatan?.nama;
-      if (kec) kecamatanSet.add(kec);
-    }
-    if (kecamatanSet.size === 0) {
+    // ---- Wilayah kerja petugas (Tahap 5: kecamatan + kelurahan) ----
+    const scope = await getWilayahScope(petugas.staff.puskesmasId);
+    if (scope.kecamatanNames.length === 0 && scope.kelurahanNames.length === 0) {
       // Wilayah belum dipetakan — kembalikan nol agar UI tetap rapi
       return NextResponse.json({
         wilayah: { kecamatan: [], kelurahan: petugas.staff.puskesmas.wilayah.length },
@@ -71,9 +69,9 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ---- Ambil remaja dalam wilayah (kecamatan sekolah) ----
+    // ---- Ambil remaja dalam wilayah (sekolah ATAU domisili) ----
     const participants = await db.participant.findMany({
-      where: { schoolDistrict: { in: Array.from(kecamatanSet) } },
+      where: wilayahWhere(scope),
       select: {
         userId: true, xp: true, hbValue: true, schoolDistrict: true,
         educationLevel: true, user: { select: { createdAt: true } },
@@ -149,7 +147,7 @@ export async function GET(req: NextRequest) {
     const trenPendaftaran = bulanList.map((b) => ({ bulan: b.label, jumlah: bulanCount.get(b.key) ?? 0 }));
 
     return NextResponse.json({
-      wilayah: { kecamatan: Array.from(kecamatanSet).sort(), kelurahan: petugas.staff.puskesmas.wilayah.length },
+      wilayah: { kecamatan: scope.kecamatanNames.sort(), kelurahan: petugas.staff.puskesmas.wilayah.length },
       periode,
       kartu: { totalRemaja, remajaBaru, remajaAktif, sudahCekHb, anemia, minumTtd, lulusMisiInti, rataXp },
       grafik: {
