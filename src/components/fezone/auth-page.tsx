@@ -423,6 +423,19 @@ export default function AuthPage() {
                 Lupa password?
               </a>
             )}
+
+            <div className="border-t-2 border-dashed border-fez-ink/10 pt-3 text-center">
+              <p className="text-[11px] font-bold leading-relaxed text-fez-ink/45">
+                Anda tenaga kesehatan di Puskesmas?{" "}
+                <a href="/login-puskesmas" className="text-fez-teal/80 underline-offset-2 hover:text-fez-teal hover:underline">
+                  Login Petugas di sini
+                </a>
+                {" · "}
+                <a href="/register-puskesmas" className="text-fez-teal/80 underline-offset-2 hover:text-fez-teal hover:underline">
+                  Daftar
+                </a>
+              </p>
+            </div>
           </form>
         </div>
       </motion.div>

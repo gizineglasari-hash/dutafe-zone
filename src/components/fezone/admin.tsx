@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
   Activity, BarChart3, BookOpen, Building2, CheckCircle2, ClipboardList, Crown, Download, Eye, FileQuestion, FileSpreadsheet, Flame, GraduationCap, HeartPulse, ImageUp, KeyRound, LayoutDashboard, Loader2,
-  LogOut, Pill, Puzzle, RefreshCw, School, Search, Trash2, Trophy, UserCheck, Users, Video, XCircle,
+  LogOut, Pill, Puzzle, RefreshCw, School, Search, Trash2, Trophy, UserCheck, UserCog, Users, Video, XCircle,
 } from "lucide-react";
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -24,6 +24,7 @@ import AdminQuizEditor from "@/components/fezone/admin-quiz-editor";
 import AdminMissionEditor from "@/components/fezone/admin-mission-editor";
 import AdminGiziTab from "@/components/fezone/admin-gizi";
 import AdminPuskesmasTab from "@/components/fezone/admin-puskesmas";
+import AdminPetugasTab from "@/components/fezone/admin-petugas";
 
 // ============================================================
 // Admin Login
@@ -396,7 +397,8 @@ interface ModContent {
 
 export function AdminDashboard() {
   const { reset } = useFez();
-  const [tab, setTab] = useState<"overview" | "traffic" | "participants" | "gizi" | "puskesmas" | "duta" | "videos" | "moderation" | "konten" | "soal" | "misi" | "settings">("overview");
+  const [tab, setTab] = useState<"overview" | "traffic" | "participants" | "gizi" | "puskesmas" | "petugas" | "duta" | "videos" | "moderation" | "konten" | "soal" | "misi" | "settings">("overview");
+  const [petugasPending, setPetugasPending] = useState(0);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [rows, setRows] = useState<AdminRow[]>([]);
   const [schools, setSchools] = useState<string[]>([]);
@@ -470,6 +472,20 @@ export function AdminDashboard() {
   useEffect(() => {
     if (tab === "traffic") loadTraffic();
   }, [tab, loadTraffic]);
+
+  // Badge jumlah pendaftar petugas yang menunggu verifikasi (pembaruan 19)
+  const muatJumlahPetugas = useCallback(() => {
+    fetch("/api/admin/petugas?stats=1")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.stats) setPetugasPending(d.stats.PENDING ?? 0);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    muatJumlahPetugas();
+  }, [muatJumlahPetugas, tab]);
 
   function applyTrafficPreset(p: TrafficPreset) {
     setTrafficPreset(p);
@@ -789,6 +805,7 @@ export function AdminDashboard() {
               { k: "participants", label: "Data Peserta", icon: Users },
               { k: "gizi", label: "Data Status Gizi", icon: HeartPulse },
               { k: "puskesmas", label: "Data Induk", icon: Building2 },
+              { k: "petugas", label: "Manajemen Petugas", icon: UserCog },
               { k: "duta", label: "Kandidat Duta", icon: Crown },
               { k: "moderation", label: "Content Moderation", icon: ClipboardList },
               { k: "videos", label: "Penilaian Video", icon: Video },
@@ -805,6 +822,11 @@ export function AdminDashboard() {
                 }`}
               >
                 <t.icon className="h-3.5 w-3.5" /> {t.label}
+              {t.k === "petugas" && petugasPending > 0 && (
+                <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-extrabold text-white">
+                  {petugasPending}
+                </span>
+              )}
               </button>
             ))}
             <button onClick={logout} className="ml-2 rounded-xl px-3 py-2 text-xs font-bold text-white/60 hover:text-white">
@@ -1389,6 +1411,9 @@ export function AdminDashboard() {
         {/* ============ DATA STATUS GIZI (pembaruan 17) ============ */}
         {tab === "gizi" && <AdminGiziTab />}
         {tab === "puskesmas" && <AdminPuskesmasTab />}
+
+        {/* ============ MANAJEMEN PETUGAS (pembaruan 19) ============ */}
+        {tab === "petugas" && <AdminPetugasTab onChanged={muatJumlahPetugas} />}
 
         {/* ============ DUTA CANDIDATES ============ */}
         {tab === "duta" && overview && (

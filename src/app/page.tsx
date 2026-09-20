@@ -44,6 +44,9 @@ export default function Home() {
               useFez.getState().setView("admin");
             } else if (d.user.role === "PARTICIPANT" && view !== "app") {
               useFez.getState().setView("app");
+            } else if (d.user.role === "PETUGAS") {
+              // Petugas memakai dashboard terpisah (pembaruan 19)
+              window.location.href = "/dashboard-puskesmas";
             }
           } else {
             // sesi habis → kembali ke landing

@@ -1,0 +1,100 @@
+=====================================================================
+ PEMBARUAN 19 — TAHAP 2: AKUN PETUGAS PUSKESMAS + VERIFIKASI ADMIN
+ FE-ZONE (Duta Remaja Putri Bebas Anemia)
+=====================================================================
+
+APA ISI PEMBARUAN INI?
+----------------------
+Tahap 2 dari fitur monitoring Puskesmas. Sekarang tenaga kesehatan
+Puskesmas bisa:
+ 1. Mendaftar sendiri di halaman baru /register-puskesmas
+    - Memilih Puskesmas dari DAFTAR RESMI 80 Puskesmas Kota Bandung
+      (tidak bisa mengetik bebas -> data selalu akurat)
+    - Wilayah kerja tampil otomatis (hanya-baca) sesuai Puskesmas
+    - Mengisi jabatan + profesi (Ahli Gizi, Bidan, Perawat, dll.)
+    - Setelah mendaftar: status "Menunggu Verifikasi Admin"
+ 2. Login khusus di halaman baru /login-puskesmas
+    - Akun yang belum disetujui / ditolak / dinonaktifkan TIDAK
+      bisa masuk, dan diberi pesan alasan yang jelas
+ 3. Melihat /dashboard-puskesmas (versi awal)
+    - Menampilkan identitas petugas, Puskesmas, dan wilayah kerja
+    - Statistik remaja + input Hb menyusul di Tahap 3-4
+ 4. Admin mendapat tab baru "Manajemen Petugas" (dengan badge merah
+    jumlah pendaftar yang menunggu verifikasi), berisi 9 operasi:
+    Setujui | Tolak (+alasan) | Nonaktifkan (+alasan) |
+    Aktifkan kembali | Pindah Puskesmas | Ubah data |
+    Reset password | Hapus | Detail (+jejak aktivitas)
+
+SEMUA aksi sensitif tercatat di AuditLog (siap untuk audit trail
+Tahap 5). Fitur lama TIDAK berubah: misi, XP, TTD, gizi, leaderboard,
+komunitas, NIK, Data Induk Puskesmas — semuanya utuh.
+
+=====================================================================
+ CARA PASANG (ikut urutan, jangan terbalik)
+=====================================================================
+
+LANGKAH 1 — Extract paket
+  Extract "pembaruan-19-tahap2.zip". Di dalamnya ada folder:
+    prisma/, scripts/, src/
+
+LANGKAH 2 — Salin ke folder proyek
+  Salin SEMUA isi hasil extract ke folder proyek Fe-Zone Anda
+  (folder "dutafe-zone"), Timpa file lama bila ditanya.
+  Daftar file yang ikut:
+    prisma/schema.prisma                       (diperbarui)
+    scripts/seed-puskesmas.js                  (diperbarui)
+    src/lib/auth.ts                            (diperbarui)
+    src/lib/puskesmas.ts                       (BARU)
+    src/app/page.tsx                           (diperbarui)
+    src/app/api/puskesmas/directory/route.ts   (BARU)
+    src/app/api/puskesmas/me/route.ts          (BARU)
+    src/app/api/auth/register-puskesmas/route.ts (BARU)
+    src/app/api/auth/login-puskesmas/route.ts  (BARU)
+    src/app/api/admin/petugas/route.ts         (BARU)
+    src/app/api/admin/petugas/[id]/route.ts    (BARU)
+    src/app/register-puskesmas/page.tsx        (BARU)
+    src/app/login-puskesmas/page.tsx           (BARU)
+    src/app/dashboard-puskesmas/page.tsx       (BARU)
+    src/components/fezone/admin-petugas.tsx    (BARU)
+    src/components/fezone/admin.tsx            (diperbarui)
+    src/components/fezone/auth-page.tsx        (diperbarui)
+
+LANGKAH 3 — Upload ke GitHub
+  Buka GitHub Desktop / halaman GitHub repo, commit lalu push
+  (atau upload file satu per satu seperti biasa).
+  Vercel akan otomatis build & deploy (2-4 menit).
+
+  CATATAN PENTING — TIDAK PERLU SQL MANUAL:
+  Perubahan database (kolom catatanAdmin) dilakukan OTOMATIS oleh
+  seed script saat build berjalan (perintah ALTER TABLE ... IF NOT
+  EXISTS yang aman dijalankan berulang). Data yang sudah ada tidak
+  tersentuh.
+
+LANGKAH 4 — Verifikasi setelah deploy (ceklist)
+  [ ] Buka https://dutafe-zone.vercel.app/register-puskesmas
+      -> halaman "Daftar Petugas Puskesmas" muncul
+  [ ] Ketik nama Puskesmas yang TIDAK ada (mis. "xyz123")
+      -> muncul: "Puskesmas tidak ditemukan dalam daftar.
+         Silakan hubungi Admin."
+  [ ] Pilih Puskesmas (mis. ketik "Babatan") -> kartu hijau berisi
+      nama + wilayah kerja otomatis + tombol Ganti
+  [ ] Lengkapi form -> DAFTAR SEKARANG
+      -> layar "Pendaftaran Terkirim! 🎉 Menunggu Verifikasi Admin"
+  [ ] Buka /login-puskesmas, coba login akun tadi
+      -> pesan kuning "Akun Anda masih menunggu verifikasi Admin"
+  [ ] Login ADMIN -> tab "Manajemen Petugas" (ada badge merah 1)
+      -> baris akun tadi -> klik "Setujui"
+      -> status berubah "Aktif"
+  [ ] Coba login petugas lagi -> masuk ke /dashboard-puskesmas
+      -> sambutan nama petugas + kartu Puskesmas + wilayah kerja
+  [ ] Cek fitur lama: login peserta & admin biasa tetap normal
+
+=====================================================================
+ BAGAN TAHAPAN PEMBARUAN 19
+=====================================================================
+ Tahap 1 ✅ Database & Data Induk Puskesmas (80 Puskesmas resmi)
+ Tahap 2 ✅ Registrasi + Login Petugas + Verifikasi Admin  <-- SEKARANG
+ Tahap 3 ⬜ Dashboard petugas: statistik + data remaja per wilayah
+ Tahap 4 ⬜ Input hasil Hb + pesan gizi otomatis + notifikasi remaja
+ Tahap 5 ⬜ Rekap & ekspor laporan + audit trail lengkap
+=====================================================================

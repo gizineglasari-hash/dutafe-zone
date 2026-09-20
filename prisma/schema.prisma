@@ -475,6 +475,7 @@ model PuskesmasStaff {
   jabatan     String? // contoh: Kepala UPT, Staf Ahli Gizi
   profesi     String // Ahli Gizi | Bidan | Perawat | dll (daftar diatur admin via AppSetting)
   status      String   @default("PENDING") // PENDING | ACTIVE | REJECTED | DISABLED
+  catatanAdmin String? // alasan tolak/nonaktif dari admin (ditampilkan ke petugas)
   verifiedAt  DateTime?
   verifiedBy  String? // userId admin yang memverifikasi
   createdAt   DateTime @default(now())

@@ -122,3 +122,65 @@ export async function requireAdmin(): Promise<AuthUser | null> {
   if (!user || user.role !== "ADMIN") return null;
   return user;
 }
+
+// ------------------------------------------------------------
+// Petugas Puskesmas (pembaruan 19).
+// Hanya akun dengan role PETUGAS dan staf berstatus ACTIVE
+// yang boleh melewati. Pola keamanan sama dengan route lain:
+// otorisasi selalu diperiksa di server pada setiap API route.
+// ------------------------------------------------------------
+export async function requirePetugas(): Promise<{
+  user: AuthUser;
+  staff: {
+    id: string;
+    nama: string;
+    jabatan: string | null;
+    profesi: string;
+    puskesmasId: string;
+    puskesmas: {
+      id: string;
+      nama: string;
+      alamat: string | null;
+      telp: string | null;
+      wilayah: { kelurahan: { nama: string; kecamatan: { nama: string } | null } }[];
+    };
+  };
+} | null> {
+  const user = await getSessionUser();
+  if (!user || user.role !== "PETUGAS") return null;
+  const staff = await db.puskesmasStaff.findUnique({
+    where: { userId: user.id },
+    include: {
+      puskesmas: {
+        include: {
+          wilayah: {
+            include: { kelurahan: { include: { kecamatan: true } } },
+          },
+        },
+      },
+    },
+  });
+  if (!staff || staff.status !== "ACTIVE") return null;
+  return {
+    user,
+    staff: {
+      id: staff.id,
+      nama: staff.nama,
+      jabatan: staff.jabatan,
+      profesi: staff.profesi,
+      puskesmasId: staff.puskesmasId,
+      puskesmas: {
+        id: staff.puskesmas.id,
+        nama: staff.puskesmas.nama,
+        alamat: staff.puskesmas.alamat,
+        telp: staff.puskesmas.telp,
+        wilayah: staff.puskesmas.wilayah.map((w) => ({
+          kelurahan: {
+            nama: w.kelurahan.nama,
+            kecamatan: w.kelurahan.kecamatan ? { nama: w.kelurahan.kecamatan.nama } : null,
+          },
+        })),
+      },
+    },
+  };
+}

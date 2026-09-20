@@ -134,6 +134,13 @@ async function seedPuskesmas(db) {
       );`
     )
     .catch((e) => console.warn("[seed-p19] tabel PuskesmasStaff:", e?.message || e));
+  // Kolom tambahan Tahap 2: catatanAdmin (alasan tolak/nonaktif, tampil ke petugas).
+  // ADD COLUMN IF NOT EXISTS — aman dijalankan berulang & di DB yang sudah berjalan.
+  await db
+    .$executeRawUnsafe(
+      `ALTER TABLE "PuskesmasStaff" ADD COLUMN IF NOT EXISTS "catatanAdmin" TEXT;`
+    )
+    .catch((e) => console.warn("[seed-p19] kolom catatanAdmin:", e?.message || e));
   await db
     .$executeRawUnsafe(
       `CREATE INDEX IF NOT EXISTS "PuskesmasStaff_puskesmasId_idx" ON "PuskesmasStaff"("puskesmasId");`
