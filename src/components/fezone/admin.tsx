@@ -1327,7 +1327,7 @@ export function AdminDashboard() {
                         </span>
                       </td>
                       <td className="px-3 py-2.5 font-semibold text-[#3d1526]/70">{r.phone ?? "–"}</td>
-                      <td className="px-3 py-2.5 font-mono text-[11px] font-semibold text-[#3d1526]/70">{r.nik ?? "–"}</td>
+                      <td className="px-3 py-2.5 font-semibold text-[#3d1526]/70">{r.nik ?? "–"}</td>
                       <td className="px-3 py-2.5 font-display font-extrabold text-rose-600">{r.xp.toLocaleString("id-ID")}</td>
                       <td className="px-3 py-2.5">{r.levelIcon} Lv{r.level}</td>
                       <td className="px-3 py-2.5">{r.missionsCompleted}/9</td>

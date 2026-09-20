@@ -1,0 +1,59 @@
+================================================================
+PERBAIKAN KECIL PEMBARUAN 18 — GAYA TULISAN NIK
+FE-ZONE — Duta Remaja Putri Bebas Anemia
+================================================================
+
+MASALAH:
+Di halaman Admin > Data Peserta, angka NIK ditulis dengan jenis
+huruf yang berbeda (font "mesin ketik"/mono) dibanding kolom lain
+seperti Telepon, sehingga terlihat tidak seragam.
+
+PERBAIKAN:
+Jenis huruf NIK disamakan persis dengan kolom Telepon.
+Tidak ada fungsi, data, atau kolom lain yang berubah.
+
+FILE YANG DIPERBAIKI (1 file saja):
+  src/components/fezone/admin.tsx
+
+================================================================
+CARA PASANG (5 menit)
+================================================================
+
+1. Ekstrak zip ini di komputersu. Kamu akan mendapat folder "src"
+   dan file catatan ini.
+
+2. Buka folder proyek lokal:
+   D:\Data C\Documents\Website Fe-Zone\Fe-zone\dutafe-zone
+
+3. Salin (copy-paste, timpa/replace) folder "src" dari hasil
+   ekstrakan ke folder proyek. File yang tertimpa adalah:
+   src\components\fezone\admin.tsx
+   (Folder src disatukan — jangan hapus isi src yang lama.)
+
+4. Buka github.com > repo dutafe-zone > Add file > Upload files,
+   lalu unggah file:
+   src/components/fezone/admin.tsx
+   (Klik masuk ke folder src > components > fezone dulu, atau
+   drag file-nya — GitHub otomatis mengenali jalurnya asal kamu
+   mengunggah lewat "Upload files" dari halaman utama repo dan
+   memastikan nama jalur berakhir dengan
+   src/components/fezone/admin.tsx)
+
+   Tulis pesan commit: "perbaikan gaya NIK"
+   lalu klik "Commit changes".
+
+5. Tunggu 1-3 menit sampai Vercel selesai deploy otomatis
+   ( sama seperti biasa ).
+
+================================================================
+CARA MEMASTIKAN BERHASIL
+================================================================
+- Buka dutafe-zone.vercel.app > login Admin > Data Peserta.
+- Angka NIK kini tampil dengan jenis huruf yang SAMA dengan
+  kolom Telepon (tidak lagi tampak seperti mesin ketik).
+- Segarkan halaman dengan Ctrl+Shift+R bila tampilan lama
+  masih muncul (cache browser).
+
+Catatan: file ini hanya mengubah TAMPILAN, bukan cara kerja.
+Semua fitur Pembaruan 18 lainnya tidak tersentuh.
+================================================================
