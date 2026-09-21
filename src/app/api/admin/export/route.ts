@@ -34,7 +34,9 @@ export async function POST(req: NextRequest) {
             meta: JSON.stringify({
               format: fmt,
               jumlah: Number(body.jumlah) || 0,
-              cakupan: "data-peserta (saringan aktif)",
+              // cakupan opsional (pembaruan 20 T3): export riwayat gizi
+              // satu peserta memakai cakupan spesifik miliknya
+              cakupan: typeof body?.cakupan === "string" && body.cakupan.trim() ? body.cakupan.trim() : "data-peserta (saringan aktif)",
             }),
           },
         })

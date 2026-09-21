@@ -25,6 +25,7 @@ import AdminMissionEditor from "@/components/fezone/admin-mission-editor";
 import AdminPuskesmasTab from "@/components/fezone/admin-puskesmas";
 import AdminPetugasTab from "@/components/fezone/admin-petugas";
 import AdminAuditTab from "@/components/fezone/admin-audit";
+import GrowthChart from "@/components/fezone/growth-chart"; // pembaruan 20 T3
 
 // ============================================================
 // Admin Login
@@ -273,12 +274,12 @@ async function exportCsv(rows: AdminRow[]): Promise<void> {
 
 // Catat aksi export admin ke Log Audit (pembaruan 19 Tahap 5).
 // Fire-and-forget: kegagalan audit tidak memblokir export.
-async function auditExportAdmin(format: string, jumlah: number): Promise<void> {
+async function auditExportAdmin(format: string, jumlah: number, cakupan = "data-peserta (saringan aktif)"): Promise<void> {
   try {
     await fetch("/api/admin/export", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ auditOnly: true, format, jumlah }),
+      body: JSON.stringify({ auditOnly: true, format, jumlah, cakupan }),
     });
   } catch {
     // diamkan — audit tidak boleh memblokir
@@ -310,6 +311,69 @@ async function exportPdf(rows: AdminRow[]): Promise<void> {
     margin: { left: 30, right: 30 },
   });
   doc.save(`FE-ZONE-Data-Peserta-${new Date().toISOString().slice(0, 10)}.pdf`);
+}
+
+// ============================================================
+// Ekspor Riwayat Status Gizi SATU peserta (pembaruan 20 Tahap 3)
+// Kolom = tabel riwayat pada modal Detail; urutan sama dengan
+// tampilan (terbaru → terlama); tercatat di Log Audit.
+// ============================================================
+const RIWAYAT_HEADERS = [
+  "No", "Tanggal", "Usia Saat Ukur", "BB (kg)", "TB (cm)", "IMT (kg/m²)",
+  "TB/U (SD)", "Status TB/U", "IMT/U (SD)", "Status IMT/U", "Versi Kalkulasi",
+];
+
+function riwayatExportRows(d: GiziDetailData): (string | number)[][] {
+  return d.rows.map((r, i) => [
+    i + 1,
+    fmtDateId(r.tanggalPemeriksaan),
+    r.usiaLabel,
+    fmtDec(r.beratBadanKg, 1),
+    fmtDec(r.tinggiBadanCm, 1),
+    fmtDec(r.imt, 2),
+    fmtSD(r.tbUZscore),
+    r.tbUStatus,
+    fmtSD(r.imtUZscore),
+    r.imtUStatus,
+    r.calculationVersion ?? "data lama (sebelum versi)",
+  ]);
+}
+
+async function exportRiwayatExcel(d: GiziDetailData): Promise<void> {
+  const XLSX = await import("xlsx");
+  const ws = XLSX.utils.aoa_to_sheet([RIWAYAT_HEADERS, ...riwayatExportRows(d)]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Riwayat Gizi");
+  XLSX.writeFile(wb, `FE-ZONE-Riwayat-Gizi-${d.participant.username}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  auditExportAdmin("xlsx", d.rows.length, "riwayat status gizi satu peserta");
+}
+
+async function exportRiwayatPdf(d: GiziDetailData): Promise<void> {
+  const { default: JsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
+  const doc = new JsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  doc.text(`FE-ZONE — Riwayat Status Gizi: ${d.participant.name}`, 40, 38);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(110);
+  doc.text(
+    `${d.participant.school}  ·  ${d.rows.length} pengukuran  ·  Dicetak: ${new Date().toLocaleString("id-ID")}  ·  Standar: WHO Growth Reference 2007`,
+    40, 54
+  );
+  doc.setTextColor(0);
+  autoTable(doc, {
+    head: [RIWAYAT_HEADERS],
+    body: riwayatExportRows(d),
+    startY: 66,
+    styles: { fontSize: 8, cellPadding: 3, overflow: "linebreak" },
+    headStyles: { fillColor: [225, 29, 72], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [253, 242, 248] },
+    margin: { left: 30, right: 30 },
+  });
+  doc.save(`FE-ZONE-Riwayat-Gizi-${d.participant.username}-${new Date().toISOString().slice(0, 10)}.pdf`);
+  auditExportAdmin("pdf", d.rows.length, "riwayat status gizi satu peserta");
 }
 
 // ============================================================
@@ -1787,7 +1851,29 @@ export function AdminDashboard() {
                           {giziDetail.participant.jenisKelamin ? ` · ${giziDetail.participant.jenisKelamin === "P" ? "Perempuan" : "Laki-laki"}` : ""}
                         </p>
                       </div>
-                      <Button variant="outline" onClick={() => setGiziDetail(null)} className="h-9 rounded-xl border-2 border-[#3d1526]/15 px-3 text-xs font-extrabold">✕ Tutup</Button>
+                      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                        {terbaru && (
+                          <>
+                            <Button
+                              variant="outline"
+                              onClick={() => exportRiwayatExcel(giziDetail)}
+                              title="Unduh riwayat status gizi ini sebagai Excel"
+                              className="h-9 rounded-xl border-2 border-[#3d1526]/15 px-3 text-xs font-extrabold"
+                            >
+                              ⬇ Excel
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => exportRiwayatPdf(giziDetail)}
+                              title="Unduh riwayat status gizi ini sebagai PDF"
+                              className="h-9 rounded-xl border-2 border-[#3d1526]/15 px-3 text-xs font-extrabold"
+                            >
+                              ⬇ PDF
+                            </Button>
+                          </>
+                        )}
+                        <Button variant="outline" onClick={() => setGiziDetail(null)} className="h-9 rounded-xl border-2 border-[#3d1526]/15 px-3 text-xs font-extrabold">✕ Tutup</Button>
+                      </div>
                     </div>
 
                     {terbaru ? (
@@ -1831,6 +1917,11 @@ export function AdminDashboard() {
                           </div>
                         )}
 
+                        {/* Grafik Pertumbuhan WHO (pembaruan 20 T3) */}
+                        <div className="mt-3">
+                          <GrowthChart participant={giziDetail.participant} rows={giziDetail.rows} />
+                        </div>
+
                         {/* Riwayat pengukuran */}
                         <div className="mt-3">
                           <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#3d1526]/50">Riwayat Pengukuran (terbaru → terlama)</p>
@@ -1868,7 +1959,9 @@ export function AdminDashboard() {
                     )}
 
                     <p className="mt-4 rounded-xl bg-[#faf0e8] p-3 text-[10px] font-bold text-[#3d1526]/45">
-                      Sumber data: tabel pemeriksaan status gizi yang sama dipakai admin, petugas Puskesmas & remaja (satu sumber, tanpa duplikasi). Grafik pertumbuhan WHO akan ditambahkan pada tahap berikutnya.
+                      Sumber data: tabel pemeriksaan status gizi yang sama dipakai admin, petugas Puskesmas &amp; remaja (satu sumber,
+                      tanpa duplikasi). Grafik pertumbuhan WHO di atas memakai kurva referensi −3 s.d. +3 SD dari tabel LMS resmi
+                      WHO 2007 — tabel &amp; rumus yang sama dengan kalkulator Status Gizi; BB/U otomatis mengikuti batas usia resmi WHO (5–10 tahun).
                     </p>
                   </div>
                 </div>

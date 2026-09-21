@@ -1,0 +1,62 @@
+============================================================
+PETUNJUK PEMBARUAN 20 — TAHAP 3
+GRAFIK PERTUMBUHAN WHO (BB/U · TB/U · IMT/U) + EXPORT RIWAYAT
+============================================================
+Total 5 file: 1 file BARU + 4 file DIGANTI.
+Semua isi file ada di link yang saya kirim di chat.
+
+------------------------------------------------------------
+LANGKAH 1 — GANTI 4 file lama
+------------------------------------------------------------
+Cara: buka file di GitHub → klik ikon pensil (Edit) → hapus
+seluruh isi lama → tempel seluruh isi baru → "Commit changes".
+
+1. src/lib/who2007-data.ts
+   → isi dari link "File 1 — who2007-data.ts"
+2. src/lib/who2007.ts
+   → isi dari link "File 2 — who2007.ts"
+3. src/components/fezone/admin.tsx
+   → isi dari link "File 4 — admin.tsx"
+4. src/app/api/admin/export/route.ts
+   → isi dari link "File 5 — route.ts (api/admin/export)"
+
+------------------------------------------------------------
+LANGKAH 2 — TAMBAH 1 file BARU
+------------------------------------------------------------
+Cara: di halaman utama repo → tombol "Add file" → "Create new
+file" → pada kotak nama file ketik path lengkap:
+   src/components/fezone/growth-chart.tsx
+lalu tempel isi dari link "File 3 — growth-chart.tsx (BARU)"
+→ "Commit changes".
+
+(Hati-hati: nama foldernya "fezone", bukan "fe-zone".)
+
+------------------------------------------------------------
+LANGKAH 3 — TUNGGU DEPLOY & UJI
+------------------------------------------------------------
+Tunggu ± 2–3 menit sampai Vercel selesai deploy, lalu:
+
+1. Buka https://dutafe-zone.vercel.app → login ADMIN.
+2. Menu "Daftar Pengguna" → cari peserta yang sudah punya data
+   status gizi → tekan tombol [Detail] (ikon hati).
+3. Di dalam modal muncul kartu BARU "GRAFIK PERTUMBUHAN WHO"
+   dengan 3 tombol indikator di kanan atas: BB/U · TB/U · IMT/U.
+   - TB/U dan IMT/U: tampil 7 garis referensi (−3 SD s.d. +3 SD)
+     + garis/titik rose = jejak pengukuran remaja. Arahkan kursor
+     ke titik → muncul tanggal, usia saat ukur, nilai, dan SD.
+   - BB/U: jika remaja sudah lewat 10 tahun, muncul kotak
+     penjelasan — INI MEMANG BENAR dan sesuai aturan WHO
+     (referensi BB/U hanya ada untuk usia 5–10 tahun).
+   - Grafik hanya digambar dari data pengukuran asli (tanpa
+     data dummy); tidak ada data lama yang diubah/dihapus.
+4. Tombol [⬇ Excel] dan [⬇ PDF] di pojok kanan atas modal →
+   mengunduh riwayat status gizi peserta tersebut (tercatat
+   otomatis di Log Audit admin).
+5. Pastikan halaman tabel daftar pengguna, filter, search,
+   sorting, dan fitur lain masih normal seperti sebelumnya.
+
+Jika ada langkah yang gagal atau tampilan aneh, kirim pesan
+kesalahannya ke saya.
+Kirim hasil langkah ini kepada saya. Jangan lanjut ke langkah
+berikutnya sebelum saya konfirmasi.
+============================================================

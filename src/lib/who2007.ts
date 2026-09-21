@@ -25,7 +25,7 @@
 //   IMT/U : < −3 Sangat Kurus · −3..−2 Kurus · −2..+1 Normal
 //           · +1..+2 Gizi Lebih · > +2 Obesitas
 // ============================================================
-import { BFA_GIRLS, BFA_BOYS, HFA_GIRLS, HFA_BOYS, type LmsTable } from "./who2007-data";
+import { BFA_GIRLS, BFA_BOYS, HFA_GIRLS, HFA_BOYS, WFA_GIRLS, WFA_BOYS, type LmsTable } from "./who2007-data";
 
 export const REFERENCE_STANDARD = "WHO Growth Reference 2007";
 export const REFERENCE_VERSION = "Tabel expanded LMS resmi WHO (hfa/bmi z-score, 61–228 bulan), metode WHO AnthroPlus";
@@ -45,6 +45,10 @@ export const CALCULATION_VERSION = "WHO2007-FEMALE-5-19-LMS-v3";
 export const DAYS_PER_MONTH_LMS = 30.4375;
 export const MIN_MONTH_LMS = 61; // 5 tahun
 export const MAX_MONTH_LMS = 228; // 19 tahun
+// BB/U (weight-for-age) hanya tersedia 5–10 tahun menurut WHO 2007 —
+// di atas usia itu indikator berat badan resmi adalah IMT/U.
+export const MIN_MONTH_WFA = 61; // 5 tahun
+export const MAX_MONTH_WFA = 120; // 10 tahun
 
 export type Sex = "L" | "P";
 
@@ -222,6 +226,21 @@ export function classifyImtU(z: number): StatusResult {
   return { z, percentile, status: "Obesitas", color: "red" };
 }
 
+/**
+ * Klasifikasi BB/U resmi WHO 2007 (weight-for-age 5–10 th, cutoff
+ * baku: <−3 sangat kurang · −3..−2 kurang · −2..+1 normal ·
+ * +1..+2 risiko lebih · >+2 lebih) — dipakai tooltip grafik
+ * pertumbuhan. Bukan pengganti TB/U & IMT/U pada kalkulator.
+ */
+export function classifyBbU(z: number): StatusResult {
+  const percentile = percentileFromZ(z);
+  if (z < -3) return { z, percentile, status: "BB Sangat Kurang", color: "red" };
+  if (z < -2) return { z, percentile, status: "BB Kurang", color: "orange" };
+  if (z <= 1) return { z, percentile, status: "BB Normal", color: "green" };
+  if (z <= 2) return { z, percentile, status: "Risiko BB Lebih", color: "yellow" };
+  return { z, percentile, status: "BB Lebih", color: "red" };
+}
+
 export interface AssessmentInput {
   sex: Sex;
   dobISO: string;
@@ -270,6 +289,10 @@ export function heightTable(sex: Sex): LmsTable {
 }
 export function bmiTable(sex: Sex): LmsTable {
   return sex === "L" ? BFA_BOYS : BFA_GIRLS;
+}
+/** Tabel BB/U 5–10 tahun (WHO 2007). Selalu tersedia untuk L & P. */
+export function wfaTable(sex: Sex): LmsTable {
+  return sex === "L" ? WFA_BOYS : WFA_GIRLS;
 }
 
 // ---------------- PERKIRAAN BB SESUAI TINGGI BADAN ----------------
