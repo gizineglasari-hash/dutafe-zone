@@ -1529,6 +1529,351 @@
       "puskesmas": "Puskesmas Ujungberung Indah",
       "kelurahan": "Pasir Endah",
       "kecamatan": "Ujungberung"
+    },
+    {
+      "puskesmas": "Puskesmas Sukajadi",
+      "kelurahan": "Sukabungah",
+      "kecamatan": "Sukajadi"
+    },
+    {
+      "puskesmas": "Puskesmas Sukagalih",
+      "kelurahan": "Cipedes",
+      "kecamatan": "Sukajadi"
+    },
+    {
+      "puskesmas": "Puskesmas Pasirkaliki",
+      "kelurahan": "Pasirkaliki",
+      "kecamatan": "Cicendo"
+    },
+    {
+      "puskesmas": "Puskesmas Pasirkaliki",
+      "kelurahan": "Pajajaran",
+      "kecamatan": "Cicendo"
+    },
+    {
+      "puskesmas": "Puskesmas Pasirkaliki",
+      "kelurahan": "Pamoyanan",
+      "kecamatan": "Cicendo"
+    },
+    {
+      "puskesmas": "Puskesmas Pasirkaliki",
+      "kelurahan": "Arjuna",
+      "kecamatan": "Cicendo"
+    },
+    {
+      "puskesmas": "Puskesmas Garuda",
+      "kelurahan": "Maleber",
+      "kecamatan": "Andir"
+    },
+    {
+      "puskesmas": "Puskesmas Garuda",
+      "kelurahan": "Dungus Cariang",
+      "kecamatan": "Andir"
+    },
+    {
+      "puskesmas": "Puskesmas Garuda",
+      "kelurahan": "Garuda",
+      "kecamatan": "Andir"
+    },
+    {
+      "puskesmas": "Puskesmas Babatan",
+      "kelurahan": "Ciroyom",
+      "kecamatan": "Andir"
+    },
+    {
+      "puskesmas": "Puskesmas Ciumbuleuit",
+      "kelurahan": "Ciumbuleuit",
+      "kecamatan": "Cidadap"
+    },
+    {
+      "puskesmas": "Puskesmas Dago",
+      "kelurahan": "Dago",
+      "kecamatan": "Coblong"
+    },
+    {
+      "puskesmas": "Puskesmas Dago",
+      "kelurahan": "Cipaganti",
+      "kecamatan": "Coblong"
+    },
+    {
+      "puskesmas": "Puskesmas Salam",
+      "kelurahan": "Citarum",
+      "kecamatan": "Bandung Wetan"
+    },
+    {
+      "puskesmas": "Puskesmas Tamblong",
+      "kelurahan": "Braga",
+      "kecamatan": "Sumur Bandung"
+    },
+    {
+      "puskesmas": "Puskesmas Tamblong",
+      "kelurahan": "Merdeka",
+      "kecamatan": "Sumur Bandung"
+    },
+    {
+      "puskesmas": "Puskesmas Neglasari",
+      "kelurahan": "Neglasari",
+      "kecamatan": "Cibeunying Kaler"
+    },
+    {
+      "puskesmas": "Puskesmas Neglasari",
+      "kelurahan": "Cihaurgeulis",
+      "kecamatan": "Cibeunying Kaler"
+    },
+    {
+      "puskesmas": "Puskesmas Padasuka",
+      "kelurahan": "Padasuka",
+      "kecamatan": "Cibeunying Kidul"
+    },
+    {
+      "puskesmas": "Puskesmas Padasuka",
+      "kelurahan": "Sukamaju",
+      "kecamatan": "Cibeunying Kidul"
+    },
+    {
+      "puskesmas": "Puskesmas Padasuka",
+      "kelurahan": "Cikutra",
+      "kecamatan": "Cibeunying Kidul"
+    },
+    {
+      "puskesmas": "Puskesmas Pasirlayung",
+      "kelurahan": "Pasirlayung",
+      "kecamatan": "Cibeunying Kidul"
+    },
+    {
+      "puskesmas": "Puskesmas Babakan Sari",
+      "kelurahan": "Babakan Sari",
+      "kecamatan": "Kiaracondong"
+    },
+    {
+      "puskesmas": "Puskesmas Babakan Sari",
+      "kelurahan": "Kebun Jayanti",
+      "kecamatan": "Kiaracondong"
+    },
+    {
+      "puskesmas": "Puskesmas Babakan Sari",
+      "kelurahan": "Sukapura",
+      "kecamatan": "Kiaracondong"
+    },
+    {
+      "puskesmas": "Puskesmas Babakan Surabaya",
+      "kelurahan": "Babakan Surabaya",
+      "kecamatan": "Kiaracondong"
+    },
+    {
+      "puskesmas": "Puskesmas Ibrahim Adjie",
+      "kelurahan": "Kebon Waru",
+      "kecamatan": "Batununggal"
+    },
+    {
+      "puskesmas": "Puskesmas Gumuruh",
+      "kelurahan": "Gumuruh",
+      "kecamatan": "Batununggal"
+    },
+    {
+      "puskesmas": "Puskesmas Gumuruh",
+      "kelurahan": "Binong",
+      "kecamatan": "Batununggal"
+    },
+    {
+      "puskesmas": "Puskesmas Ahmad Yani",
+      "kelurahan": "Samoja",
+      "kecamatan": "Batununggal"
+    },
+    {
+      "puskesmas": "Puskesmas Talaga Bodas",
+      "kelurahan": "Malabar",
+      "kecamatan": "Lengkong"
+    },
+    {
+      "puskesmas": "Puskesmas Talaga Bodas",
+      "kelurahan": "Cikawao",
+      "kecamatan": "Lengkong"
+    },
+    {
+      "puskesmas": "Puskesmas Cijagra Lama",
+      "kelurahan": "Lingkar Selatan",
+      "kecamatan": "Lengkong"
+    },
+    {
+      "puskesmas": "Puskesmas Pasundan",
+      "kelurahan": "Balong Gede",
+      "kecamatan": "Regol"
+    },
+    {
+      "puskesmas": "Puskesmas Moch. Ramdan",
+      "kelurahan": "Ciateul",
+      "kecamatan": "Regol"
+    },
+    {
+      "puskesmas": "Puskesmas Moch. Ramdan",
+      "kelurahan": "Ciseureuh",
+      "kecamatan": "Regol"
+    },
+    {
+      "puskesmas": "Puskesmas Pasirluyu",
+      "kelurahan": "Pasirluyu",
+      "kecamatan": "Regol"
+    },
+    {
+      "puskesmas": "Puskesmas Pagarsih",
+      "kelurahan": "Karang Anyar",
+      "kecamatan": "Astana Anyar"
+    },
+    {
+      "puskesmas": "Puskesmas Pelindung Hewan",
+      "kelurahan": "Karasak",
+      "kecamatan": "Astana Anyar"
+    },
+    {
+      "puskesmas": "Puskesmas Citarip",
+      "kelurahan": "Suka Asih",
+      "kecamatan": "Bojongloa Kaler"
+    },
+    {
+      "puskesmas": "Puskesmas Babakan Tarogong",
+      "kelurahan": "Babakan Tarogong",
+      "kecamatan": "Bojongloa Kaler"
+    },
+    {
+      "puskesmas": "Puskesmas Kopo",
+      "kelurahan": "Kebon Lega",
+      "kecamatan": "Bojongloa Kidul"
+    },
+    {
+      "puskesmas": "Puskesmas Kopo",
+      "kelurahan": "Cibaduyut",
+      "kecamatan": "Bojongloa Kidul"
+    },
+    {
+      "puskesmas": "Puskesmas Cibaduyut Wetan",
+      "kelurahan": "Cibaduyut Wetan",
+      "kecamatan": "Bojongloa Kidul"
+    },
+    {
+      "puskesmas": "Puskesmas Caringin",
+      "kelurahan": "Margahayu Utara",
+      "kecamatan": "Babakan Ciparay"
+    },
+    {
+      "puskesmas": "Puskesmas Cibolerang",
+      "kelurahan": "Margasuka",
+      "kecamatan": "Babakan Ciparay"
+    },
+    {
+      "puskesmas": "Puskesmas Sukahaji",
+      "kelurahan": "Babakan",
+      "kecamatan": "Babakan Ciparay"
+    },
+    {
+      "puskesmas": "Puskesmas Cibuntu",
+      "kelurahan": "Caringin",
+      "kecamatan": "Bandung Kulon"
+    },
+    {
+      "puskesmas": "Puskesmas Cibuntu",
+      "kelurahan": "Warung Muncang",
+      "kecamatan": "Bandung Kulon"
+    },
+    {
+      "puskesmas": "Puskesmas Cigondewah",
+      "kelurahan": "Cigondewah Rahayu",
+      "kecamatan": "Bandung Kulon"
+    },
+    {
+      "puskesmas": "Puskesmas Cigondewah",
+      "kelurahan": "Cigondewah Kidul",
+      "kecamatan": "Bandung Kulon"
+    },
+    {
+      "puskesmas": "Puskesmas Antapani",
+      "kelurahan": "Antapani Kulon",
+      "kecamatan": "Antapani"
+    },
+    {
+      "puskesmas": "Puskesmas Sindangjaya",
+      "kelurahan": "Sindang Jaya",
+      "kecamatan": "Mandalajati"
+    },
+    {
+      "puskesmas": "Puskesmas Arcamanik",
+      "kelurahan": "Cisaranten Bina Harapan",
+      "kecamatan": "Arcamanik"
+    },
+    {
+      "puskesmas": "Puskesmas Rusunawa",
+      "kelurahan": "Cisaranten Kulon",
+      "kecamatan": "Arcamanik"
+    },
+    {
+      "puskesmas": "Puskesmas Ujungberung Indah",
+      "kelurahan": "Cigending",
+      "kecamatan": "Ujungberung"
+    },
+    {
+      "puskesmas": "Puskesmas Ujungberung Indah",
+      "kelurahan": "Pasir Wangi",
+      "kecamatan": "Ujungberung"
+    },
+    {
+      "puskesmas": "Puskesmas Pasirjati",
+      "kelurahan": "Pasanggrahan",
+      "kecamatan": "Ujungberung"
+    },
+    {
+      "puskesmas": "Puskesmas Cinambo",
+      "kelurahan": "Cisaranten Wetan",
+      "kecamatan": "Cinambo"
+    },
+    {
+      "puskesmas": "Puskesmas Cinambo",
+      "kelurahan": "Pakemitan",
+      "kecamatan": "Cinambo"
+    },
+    {
+      "puskesmas": "Puskesmas Cinambo",
+      "kelurahan": "Babakan Penghulu",
+      "kecamatan": "Cinambo"
+    },
+    {
+      "puskesmas": "Puskesmas Cipadung",
+      "kelurahan": "Cipadung",
+      "kecamatan": "Cibiru"
+    },
+    {
+      "puskesmas": "Puskesmas Panghegar",
+      "kelurahan": "Cipadung Kulon",
+      "kecamatan": "Panyileukan"
+    },
+    {
+      "puskesmas": "Puskesmas Panghegar",
+      "kelurahan": "Cipadung Wetan",
+      "kecamatan": "Panyileukan"
+    },
+    {
+      "puskesmas": "Puskesmas Cempaka Arum",
+      "kelurahan": "Rancanumpang",
+      "kecamatan": "Gedebage"
+    },
+    {
+      "puskesmas": "Puskesmas Cipamokolan",
+      "kelurahan": "Manjahlega",
+      "kecamatan": "Rancasari"
+    },
+    {
+      "puskesmas": "Puskesmas Margahayu Raya",
+      "kelurahan": "Cijaura",
+      "kecamatan": "Buahbatu"
+    },
+    {
+      "puskesmas": "Puskesmas Sekejati",
+      "kelurahan": "Jatisari",
+      "kecamatan": "Buahbatu"
+    },
+    {
+      "puskesmas": "Puskesmas Kujangsari",
+      "kelurahan": "Batununggal",
+      "kecamatan": "Bandung Kidul"
     }
   ]
 }
