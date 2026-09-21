@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Activity, BarChart3, Droplets, FlaskConical, HeartPulse, Loader2, MapPin, RefreshCw, Scale, Users,
+  Activity, BarChart3, Building2, Droplets, FileSpreadsheet, FileText, FlaskConical, HeartPulse, Loader2, MapPin, RefreshCw, Scale, Users,
 } from "lucide-react";
 import {
   Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, Pie, PieChart,
@@ -27,6 +27,23 @@ interface WilayahItem {
   remaja: number; cekHb: number; anemia: number; prevalensiPct: number | null;
 }
 interface GiziItem { status: string; nilai: number }
+
+// Laporan Bulanan per Puskesmas (pembaruan 20 Tahap 5)
+interface MonthlyPuskesmas {
+  id: string; nama: string; isActive: boolean; kelurahanCount: number;
+  remajaWilayah: number; pemeriksaan: number; anemia: number;
+  prevalensiPct: number | null; rataHb: number | null; checkinTtd: number;
+}
+interface MonthlyData {
+  bulan: string; bulanLabel: string;
+  tersedia: { key: string; label: string }[];
+  ringkasan: {
+    puskesmasTotal: number; puskesmasAktif: number; puskesmasAdaAktivitas: number;
+    remajaWilayah: number; pemeriksaan: number; anemia: number;
+    prevalensiPct: number | null; rataHb: number | null; checkinTtd: number;
+  };
+  perPuskesmas: MonthlyPuskesmas[];
+}
 
 interface HealthData {
   standards: { anemiaBelow: number; beratBelow: number; sedangBelow: number };
@@ -81,6 +98,10 @@ export default function HealthAnalytics() {
   const [data, setData] = useState<HealthData | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [monthly, setMonthly] = useState<MonthlyData | null>(null);
+  const [bulanKey, setBulanKey] = useState<string>("");
+  const [monthlyBusy, setMonthlyBusy] = useState(false);
+  const [exportBusy, setExportBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setBusy(true);
@@ -103,6 +124,121 @@ export default function HealthAnalytics() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // ---------- Laporan Bulanan per Puskesmas (pembaruan 20 T5) ----------
+  const loadMonthly = useCallback(async (bulan?: string) => {
+    setMonthlyBusy(true);
+    try {
+      const res = await fetch(`/api/admin/health-analytics/monthly${bulan ? `?bulan=${encodeURIComponent(bulan)}` : ""}`, { cache: "no-store" });
+      const d = await res.json();
+      if (res.ok) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setMonthly(d);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setBulanKey(d.bulan);
+      }
+    } catch {
+      // diamkan — panel utama tetap tampil
+    } finally {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMonthlyBusy(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadMonthly();
+  }, [loadMonthly]);
+
+  async function auditExportLaporan(format: string) {
+    try {
+      await fetch("/api/admin/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ auditOnly: true, format, jumlah: monthly?.perPuskesmas.length ?? 0, cakupan: `laporan bulanan puskesmas (${monthly?.bulan ?? "-"})` }),
+      });
+    } catch {
+      // audit tidak boleh memblokir
+    }
+  }
+
+  async function exportLaporanExcel() {
+    if (!monthly) return;
+    setExportBusy("xlsx");
+    try {
+      const XLSX = await import("xlsx");
+      const headers = ["No", "Puskesmas", "Kelurahan di Wilayah", "Remaja Wilayah", "Cek Hb (bulan ini)", "Anemia", "Prevalensi (%)", "Rata Hb (g/dL)", "Check-in TTD", "Status"];
+      const rowsExport = monthly.perPuskesmas.map((r, i) => [
+        i + 1,
+        r.nama,
+        r.kelurahanCount,
+        r.remajaWilayah,
+        r.pemeriksaan,
+        r.pemeriksaan > 0 ? r.anemia : "-",
+        r.prevalensiPct === null ? "-" : r.prevalensiPct,
+        r.rataHb === null ? "-" : r.rataHb,
+        r.checkinTtd,
+        r.pemeriksaan > 0 ? "Ada aktivitas" : "Belum ada pemeriksaan",
+      ]);
+      const ws = XLSX.utils.aoa_to_sheet([
+        [`FE-ZONE — Laporan Bulanan Puskesmas — ${monthly.bulanLabel}`],
+        [`Dibuat: ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} · Sumber: data asli aplikasi FE-ZONE`],
+        [],
+        headers,
+        ...rowsExport,
+      ]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Laporan Bulanan");
+      XLSX.writeFile(wb, `FE-ZONE-Laporan-Bulanan-Puskesmas-${monthly.bulan}.xlsx`);
+      await auditExportLaporan("xlsx");
+    } catch {
+      // diamkan
+    } finally {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setExportBusy(null);
+    }
+  }
+
+  async function exportLaporanPdf() {
+    if (!monthly) return;
+    setExportBusy("pdf");
+    try {
+      const { default: JsPDF } = await import("jspdf");
+      const { default: autoTable } = await import("jspdf-autotable");
+      const doc = new JsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(15);
+      doc.text(`FE-ZONE — Laporan Bulanan Puskesmas — ${monthly.bulanLabel}`, 40, 38);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(`Dibuat: ${new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} · Total ${monthly.perPuskesmas.length} baris (termasuk remaja di luar wilayah Puskesmas)`, 40, 52);
+      autoTable(doc, {
+        startY: 64,
+        head: [["No", "Puskesmas", "Kelurahan", "Remaja Wilayah", "Cek Hb", "Anemia", "Prevalensi", "Rata Hb", "TTD", "Status"]],
+        body: monthly.perPuskesmas.map((r, i) => [
+          i + 1,
+          r.nama,
+          r.kelurahanCount,
+          r.remajaWilayah,
+          r.pemeriksaan,
+          r.pemeriksaan > 0 ? r.anemia : "-",
+          r.prevalensiPct === null ? "-" : `${r.prevalensiPct}%`,
+          r.rataHb === null ? "-" : `${r.rataHb}`,
+          r.checkinTtd,
+          r.pemeriksaan > 0 ? "Ada aktivitas" : "Belum ada pemeriksaan",
+        ]),
+        styles: { fontSize: 8, cellPadding: 3 },
+        headStyles: { fillColor: [61, 21, 38] },
+        alternateRowStyles: { fillColor: [250, 240, 232] },
+      });
+      doc.save(`FE-ZONE-Laporan-Bulanan-Puskesmas-${monthly.bulan}.pdf`);
+      await auditExportLaporan("pdf");
+    } catch {
+      // diamkan
+    } finally {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setExportBusy(null);
+    }
+  }
 
   if (busy && !data) {
     return (
@@ -353,6 +489,121 @@ export default function HealthAnalytics() {
           )}
         </ChartCard>
       </div>
+
+      {/* ===== Laporan Bulanan per Puskesmas (pembaruan 20 Tahap 5) ===== */}
+      <ChartCard
+        title="Laporan Bulanan per Puskesmas"
+        subtitle="Aktivitas pemeriksaan Hb & check-in TTD per wilayah kerja Puskesmas pada satu bulan (WIB) — bisa diunduh"
+      >
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <Building2 className="h-4 w-4 text-rose-500" />
+          <select
+            value={bulanKey}
+            onChange={(e) => loadMonthly(e.target.value)}
+            disabled={monthlyBusy || !monthly}
+            className="rounded-xl border-2 border-[#3d1526]/15 bg-white px-3 py-1.5 text-xs font-extrabold text-[#3d1526] focus:outline-none"
+          >
+            {(monthly?.tersedia ?? []).map((b) => (
+              <option key={b.key} value={b.key}>{b.label}</option>
+            ))}
+          </select>
+          {monthlyBusy && <Loader2 className="h-4 w-4 animate-spin text-[#3d1526]/50" />}
+          <div className="ml-auto flex gap-2">
+            <button
+              onClick={exportLaporanExcel}
+              disabled={!monthly || exportBusy !== null}
+              className="flex items-center gap-1 rounded-xl border-2 border-[#3d1526]/15 bg-white px-3 py-1.5 text-xs font-extrabold text-[#3d1526] hover:bg-emerald-50 disabled:opacity-50"
+            >
+              {exportBusy === "xlsx" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileSpreadsheet className="h-3.5 w-3.5" />} Excel
+            </button>
+            <button
+              onClick={exportLaporanPdf}
+              disabled={!monthly || exportBusy !== null}
+              className="flex items-center gap-1 rounded-xl border-2 border-[#3d1526]/15 bg-white px-3 py-1.5 text-xs font-extrabold text-[#3d1526] hover:bg-rose-50 disabled:opacity-50"
+            >
+              {exportBusy === "pdf" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />} PDF
+            </button>
+          </div>
+        </div>
+
+        {monthly ? (
+          <>
+            <div className="mb-3 grid grid-cols-2 gap-2 md:grid-cols-5">
+              <div className="rounded-xl bg-[#faf0e8] p-2 text-center">
+                <p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">Puskesmas Aktif</p>
+                <p className="font-display text-lg font-extrabold text-[#3d1526]">{monthly.ringkasan.puskesmasAktif}</p>
+                <p className="text-[10px] text-[#3d1526]/40">{monthly.ringkasan.puskesmasAdaAktivitas} ada pemeriksaan</p>
+              </div>
+              <div className="rounded-xl bg-[#faf0e8] p-2 text-center">
+                <p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">Remaja Wilayah</p>
+                <p className="font-display text-lg font-extrabold text-[#3d1526]">{monthly.ringkasan.remajaWilayah}</p>
+              </div>
+              <div className="rounded-xl bg-[#faf0e8] p-2 text-center">
+                <p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">Cek Hb Bulan Ini</p>
+                <p className="font-display text-lg font-extrabold text-[#3d1526]">{monthly.ringkasan.pemeriksaan}</p>
+              </div>
+              <div className="rounded-xl bg-[#faf0e8] p-2 text-center">
+                <p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">Anemia Ditemukan</p>
+                <p className="font-display text-lg font-extrabold text-rose-600">{monthly.ringkasan.anemia}</p>
+                <p className="text-[10px] text-[#3d1526]/40">{monthly.ringkasan.prevalensiPct === null ? "belum ada data" : `${monthly.ringkasan.prevalensiPct}% dari pemeriksaan`}</p>
+              </div>
+              <div className="rounded-xl bg-[#faf0e8] p-2 text-center">
+                <p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">Check-in TTD</p>
+                <p className="font-display text-lg font-extrabold text-[#3d1526]">{monthly.ringkasan.checkinTtd}</p>
+              </div>
+            </div>
+
+            <div className="thin-scroll max-h-[420px] overflow-auto rounded-2xl border border-[#3d1526]/10">
+              <table className="w-full text-left text-xs">
+                <thead className="sticky top-0 bg-white shadow-[0_1px_0_#3d15261a]">
+                  <tr className="text-[10px] uppercase tracking-wide text-[#3d1526]/50">
+                    <th className="px-3 py-2">Puskesmas</th>
+                    <th className="px-3 py-2 text-center">Kelurahan</th>
+                    <th className="px-3 py-2 text-center">Remaja Wilayah</th>
+                    <th className="px-3 py-2 text-center">Cek Hb</th>
+                    <th className="px-3 py-2 text-center">Anemia</th>
+                    <th className="px-3 py-2 text-center">Prevalensi</th>
+                    <th className="px-3 py-2 text-center">Rata Hb</th>
+                    <th className="px-3 py-2 text-center">TTD</th>
+                    <th className="px-3 py-2">Cakupan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthly.perPuskesmas.map((r) => (
+                    <tr key={r.id} className={`border-t border-[#3d1526]/5 ${r.id === "LUAR" ? "bg-[#faf5f0]/60" : ""}`}>
+                      <td className="px-3 py-2 font-bold text-[#3d1526]">
+                        {r.nama}
+                        {!r.isActive && <span className="ml-1 rounded-full bg-neutral-200 px-1.5 py-0.5 text-[9px] font-extrabold text-neutral-500">nonaktif</span>}
+                      </td>
+                      <td className="px-3 py-2 text-center">{r.kelurahanCount || "—"}</td>
+                      <td className="px-3 py-2 text-center">{r.remajaWilayah}</td>
+                      <td className="px-3 py-2 text-center font-extrabold text-[#3d1526]">{r.pemeriksaan}</td>
+                      <td className="px-3 py-2 text-center font-extrabold text-rose-600">{r.pemeriksaan > 0 ? r.anemia : "—"}</td>
+                      <td className="px-3 py-2 text-center">{r.prevalensiPct === null ? "—" : `${r.prevalensiPct}%`}</td>
+                      <td className="px-3 py-2 text-center">{r.rataHb === null ? "—" : `${r.rataHb} g/dL`}</td>
+                      <td className="px-3 py-2 text-center">{r.checkinTtd}</td>
+                      <td className="px-3 py-2">
+                        {r.pemeriksaan > 0 ? (
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold text-emerald-700">ada aktivitas</span>
+                        ) : (
+                          <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-extrabold text-neutral-500">belum ada pemeriksaan</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-[10px] text-[#3d1526]/40">
+              Remaja dipetakan ke Puskesmas lewat kelurahan domisili (data induk Pembaruan 19); baris terakhir menghitung remaja yang domisilinya belum terpetakan.
+            </p>
+          </>
+        ) : (
+          <div className="flex h-24 items-center justify-center text-sm text-[#3d1526]/40">
+            {monthlyBusy ? "Memuat laporan…" : "Laporan belum tersedia."}
+          </div>
+        )}
+      </ChartCard>
 
       <p className="flex items-center gap-1.5 text-[11px] text-[#3d1526]/40">
         <BarChart3 className="h-3.5 w-3.5" />
