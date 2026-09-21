@@ -26,6 +26,8 @@ import AdminPuskesmasTab from "@/components/fezone/admin-puskesmas";
 import AdminPetugasTab from "@/components/fezone/admin-petugas";
 import AdminAuditTab from "@/components/fezone/admin-audit";
 import GrowthChart from "@/components/fezone/growth-chart"; // pembaruan 20 T3
+import HealthAnalytics from "@/components/fezone/health-analytics"; // pembaruan 20 T4
+import HbChart from "@/components/fezone/hb-chart"; // pembaruan 20 T5
 
 // ============================================================
 // Admin Login
@@ -551,7 +553,7 @@ interface ModContent {
 
 export function AdminDashboard() {
   const { reset } = useFez();
-  const [tab, setTab] = useState<"overview" | "traffic" | "participants" | "puskesmas" | "petugas" | "audit" | "duta" | "videos" | "moderation" | "konten" | "soal" | "misi" | "settings">("overview");
+  const [tab, setTab] = useState<"overview" | "traffic" | "health" | "participants" | "puskesmas" | "petugas" | "audit" | "duta" | "videos" | "moderation" | "konten" | "soal" | "misi" | "settings">("overview");
   const [petugasPending, setPetugasPending] = useState(0);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [rows, setRows] = useState<AdminRow[]>([]);
@@ -568,6 +570,7 @@ export function AdminDashboard() {
   const [pageSizeGizi, setPageSizeGizi] = useState(20);
   const [giziDetail, setGiziDetail] = useState<GiziDetailData | null>(null);
   const [giziDetailLoading, setGiziDetailLoading] = useState(false);
+  const [giziDetailPid, setGiziDetailPid] = useState<string | null>(null); // pembaruan 20 T5 — utk grafik Hb
   const [grades, setGrades] = useState<Record<string, { grade: string; note: string }>>({});
   const [winners, setWinners] = useState(1);
   // PEMBARUAN 18 — picker Kandidat Duta manual
@@ -777,6 +780,7 @@ export function AdminDashboard() {
   async function openGiziDetail(r: AdminRow) {
     setGiziDetailLoading(true);
     setGiziDetail(null);
+    setGiziDetailPid(r.id); // pembaruan 20 T5 — id remaja utk grafik Hb
     try {
       const res = await fetch(`/api/admin/participants/${r.id}/nutrition`);
       if (res.ok) {
@@ -1047,6 +1051,7 @@ export function AdminDashboard() {
             {([
               { k: "overview", label: "Ringkasan", icon: LayoutDashboard },
               { k: "traffic", label: "Kunjungan Web", icon: Activity },
+              { k: "health", label: "Analitik Kesehatan", icon: HeartPulse },
               { k: "participants", label: "Daftar Pengguna", icon: Users },
               { k: "puskesmas", label: "Data Induk", icon: Building2 },
               { k: "petugas", label: "Manajemen Petugas", icon: UserCog },
@@ -1922,6 +1927,13 @@ export function AdminDashboard() {
                           <GrowthChart participant={giziDetail.participant} rows={giziDetail.rows} />
                         </div>
 
+                        {/* Grafik Hemoglobin (pembaruan 20 T5) */}
+                        {giziDetailPid && (
+                          <div className="mt-3">
+                            <HbChart participantId={giziDetailPid} />
+                          </div>
+                        )}
+
                         {/* Riwayat pengukuran */}
                         <div className="mt-3">
                           <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#3d1526]/50">Riwayat Pengukuran (terbaru → terlama)</p>
@@ -1970,6 +1982,7 @@ export function AdminDashboard() {
           </div>
         )}
 
+        {tab === "health" && <HealthAnalytics />}
         {tab === "puskesmas" && <AdminPuskesmasTab />}
 
         {/* ============ MANAJEMEN PETUGAS (pembaruan 19) ============ */}
