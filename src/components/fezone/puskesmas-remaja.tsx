@@ -29,6 +29,11 @@ interface RemajaRow {
   hbValue: number | null;
   isDuta: boolean;
   isDutaCandidate: boolean;
+  // Pembaruan 20 T2 — Status Gizi TERAKHIR (satu sumber data dgn admin & remaja)
+  gizi?: {
+    tanggalPemeriksaan: string; bb: number; tb: number; imt: number;
+    tbUStatus: string; imtUStatus: string;
+  } | null;
 }
 
 interface ListData {
@@ -78,6 +83,22 @@ function BadgeHb({ hb }: { hb: number | null }) {
   if (hb < 11) return <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[11px] font-extrabold text-orange-700">{hb.toFixed(1)} · Sedang</span>;
   if (hb < 12) return <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-extrabold text-amber-700">{hb.toFixed(1)} · Ringan</span>;
   return <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-extrabold text-emerald-700">{hb.toFixed(1)} · Normal</span>;
+}
+
+// Pembaruan 20 T2 — badge status gizi lembut (tidak menstigma)
+const GIZI_BADGE_CLS: Record<string, string> = {
+  Normal: "bg-emerald-100 text-emerald-700",
+  Pendek: "bg-amber-100 text-amber-700",
+  "Sangat Pendek": "bg-rose-100 text-rose-700",
+  Kurus: "bg-orange-100 text-orange-700",
+  "Sangat Kurus": "bg-rose-100 text-rose-700",
+  "Gizi Lebih": "bg-amber-100 text-amber-700",
+  Obesitas: "bg-rose-100 text-rose-700",
+};
+
+function BadgeGizi({ status }: { status?: string | null }) {
+  if (!status) return <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-extrabold text-slate-500">Belum cek</span>;
+  return <span className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold ${GIZI_BADGE_CLS[status] ?? "bg-slate-100 text-slate-600"}`}>{status}</span>;
 }
 
 export default function PuskesmasRemaja() {
@@ -220,6 +241,7 @@ export default function PuskesmasRemaja() {
                     <th className="px-4 py-3">Sekolah</th>
                     <th className="px-4 py-3">Level / XP</th>
                     <th className="px-4 py-3">Hb</th>
+                    <th className="px-4 py-3">Status Gizi</th>
                     <th className="px-4 py-3">TTD</th>
                     <th className="px-4 py-3">Misi</th>
                     <th className="px-4 py-3"></th>
@@ -241,6 +263,19 @@ export default function PuskesmasRemaja() {
                         <p className="text-[11px] font-semibold text-fez-ink/45">{r.xp.toLocaleString("id-ID")} XP</p>
                       </td>
                       <td className="px-4 py-3"><BadgeHb hb={r.hbValue} /></td>
+                      <td className="px-4 py-3">
+                        {r.gizi ? (
+                          <div>
+                            <p className="text-[11px] font-extrabold text-fez-ink/75">{r.gizi.bb.toLocaleString("id-ID")} kg · {r.gizi.tb.toLocaleString("id-ID")} cm · IMT {r.gizi.imt.toLocaleString("id-ID", { maximumFractionDigits: 2 })}</p>
+                            <div className="mt-0.5 flex flex-wrap gap-1">
+                              <BadgeGizi status={r.gizi.tbUStatus} />
+                              <BadgeGizi status={r.gizi.imtUStatus} />
+                            </div>
+                          </div>
+                        ) : (
+                          <BadgeGizi status={null} />
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-xs font-extrabold text-fez-ink/70">{r.ttdCount > 0 ? `✅ ${r.ttdCount}×` : "—"}</td>
                       <td className="px-4 py-3 text-xs font-extrabold text-fez-ink/70">{r.missionsCompleted}/9</td>
                       <td className="px-4 py-3">
@@ -275,6 +310,15 @@ export default function PuskesmasRemaja() {
                   <span>💊 TTD {r.ttdCount > 0 ? `${r.ttdCount}×` : "—"}</span>
                   <span>🎯 Misi {r.missionsCompleted}/9</span>
                 </div>
+                {r.gizi ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] font-extrabold text-fez-ink/60">🩺 {r.gizi.bb.toLocaleString("id-ID")} kg · {r.gizi.tb.toLocaleString("id-ID")} cm</span>
+                    <BadgeGizi status={r.gizi.tbUStatus} />
+                    <BadgeGizi status={r.gizi.imtUStatus} />
+                  </div>
+                ) : (
+                  <p className="mt-2 text-[11px] font-bold text-fez-ink/40">🩺 Status gizi: belum ada data</p>
+                )}
               </a>
             ))}
           </div>

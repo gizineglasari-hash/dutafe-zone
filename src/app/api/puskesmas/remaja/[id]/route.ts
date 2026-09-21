@@ -13,6 +13,9 @@ import { getWilayahScope, dalamWilayah } from "@/lib/puskesmas";
 //          catatan + info Puskesmas pemasuk, agar petugas
 //          dapat mengelola (ubah/hapus) rekaman dari
 //          Puskesmasnya sendiri di halaman detail.
+// Pembaruan 20 T2: riwayat Cek Status Gizi (input mandiri
+//          remaja) ikut dikirim — SATU sumber data yang sama
+//          dengan milik admin & remaja (nutrition_assessments).
 // Akses DITOLAK bila remaja di luar wilayah kerja
 // Puskesmas petugas (kecamatan sekolah ≠ kecamatan wilayah).
 // ------------------------------------------------------------
@@ -37,6 +40,10 @@ export async function GET(req: NextRequest, { params }: Params) {
           orderBy: { checkDate: "desc" },
           take: 20,
           include: { staff: { select: { puskesmasId: true, nama: true } } },
+        },
+        nutritionAssessments: {
+          orderBy: [{ tanggalPemeriksaan: "desc" }, { createdAt: "desc" }],
+          take: 20,
         },
         _count: { select: { ttdCheckIns: true, hemoglobinRecords: true } },
         activityLogs: { orderBy: { createdAt: "desc" }, take: 1, select: { createdAt: true } },
@@ -125,6 +132,33 @@ export async function GET(req: NextRequest, { params }: Params) {
         ttdCount: p._count.ttdCheckIns,
         ttdTerakhir: p.ttdCheckIns[0]?.date ?? null,
         ttdRiwayat: p.ttdCheckIns.map((t) => t.date),
+      },
+      statusGizi: {
+        terakhir: p.nutritionAssessments[0]
+          ? {
+              tanggalPemeriksaan: p.nutritionAssessments[0].tanggalPemeriksaan,
+              usiaLabel: `${p.nutritionAssessments[0].usiaTahun} tahun ${p.nutritionAssessments[0].usiaBulan} bulan ${p.nutritionAssessments[0].usiaHari} hari`,
+              beratBadanKg: Number(p.nutritionAssessments[0].beratBadanKg),
+              tinggiBadanCm: Number(p.nutritionAssessments[0].tinggiBadanCm),
+              imt: Number(p.nutritionAssessments[0].imt),
+              tbUZscore: Number(p.nutritionAssessments[0].tbUZscore),
+              tbUStatus: p.nutritionAssessments[0].tbUStatus,
+              imtUZscore: Number(p.nutritionAssessments[0].imtUZscore),
+              imtUStatus: p.nutritionAssessments[0].imtUStatus,
+            }
+          : null,
+        riwayat: p.nutritionAssessments.map((g) => ({
+          id: g.id,
+          tanggalPemeriksaan: g.tanggalPemeriksaan,
+          usiaLabel: `${g.usiaTahun} tahun ${g.usiaBulan} bulan ${g.usiaHari} hari`,
+          beratBadanKg: Number(g.beratBadanKg),
+          tinggiBadanCm: Number(g.tinggiBadanCm),
+          imt: Number(g.imt),
+          tbUZscore: Number(g.tbUZscore),
+          tbUStatus: g.tbUStatus,
+          imtUZscore: Number(g.imtUZscore),
+          imtUStatus: g.imtUStatus,
+        })),
       },
       gamifikasi: {
         badges: p.badges.map((b) => ({ key: b.badgeKey, earnedAt: b.earnedAt })),

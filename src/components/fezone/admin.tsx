@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useFez } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import {
-  Activity, BarChart3, BookOpen, Building2, CheckCircle2, ClipboardList, Crown, Download, Eye, FileQuestion, FileSpreadsheet, FileText, Flame, GraduationCap, HeartPulse, ImageUp, KeyRound, LayoutDashboard, Loader2,
+  Activity, ArrowDown, ArrowUpDown, ArrowUp, BarChart3, BookOpen, Building2, CheckCircle2, ClipboardList, Crown, Download, Eye, FileQuestion, FileSpreadsheet, FileText, Flame, GraduationCap, HeartPulse, ImageUp, KeyRound, LayoutDashboard, Loader2,
   LogOut, Pill, Puzzle, RefreshCw, School, Search, ShieldCheck, Trash2, Trophy, UserCheck, UserCog, Users, Video, XCircle,
 } from "lucide-react";
 import {
@@ -22,7 +22,6 @@ import AdminPushCard from "@/components/fezone/admin-push-card";
 import AdminEduEditor from "@/components/fezone/admin-edu-editor";
 import AdminQuizEditor from "@/components/fezone/admin-quiz-editor";
 import AdminMissionEditor from "@/components/fezone/admin-mission-editor";
-import AdminGiziTab from "@/components/fezone/admin-gizi";
 import AdminPuskesmasTab from "@/components/fezone/admin-puskesmas";
 import AdminPetugasTab from "@/components/fezone/admin-petugas";
 import AdminAuditTab from "@/components/fezone/admin-audit";
@@ -125,12 +124,32 @@ interface Overview {
   }[];
 }
 
+interface GiziTerakhir {
+  tanggalPemeriksaan: string; bb: number; tb: number; imt: number;
+  tbUZ: number; tbUStatus: string; imtUZ: number; imtUStatus: string;
+}
+
 interface AdminRow {
   id: string; name: string; age: number; school: string; schoolCity: string | null; schoolDistrict: string | null; schoolType: string | null;
   educationLevel: string; phone: string | null; nik: string | null; username: string; joinedAt: string;
   xp: number; level: number; levelName: string; levelIcon: string; badges: string[];
   missionsCompleted: number; ttdTaken: number; hbValue: number | null; hbCheckDate: string | null; streakWeeks: number; preTestScore: number | null; postTestScore: number | null;
   isDutaCandidate: boolean; isDuta: boolean; hasPendingVideo: boolean;
+  domisiliKecamatan?: string | null; domisiliKelurahan?: string | null;
+  gizi?: GiziTerakhir | null; // pemeriksaan terakhir (pembaruan 20 T2)
+}
+
+type SortGiziKey = "name" | "age" | "bb" | "tb" | "imt" | "tgl";
+
+interface GiziDetailData {
+  participant: { id: string; name: string; username: string; school: string; educationLevel: string; jenisKelamin: string | null; tanggalLahir: string | null };
+  rows: {
+    id: string; tanggalPemeriksaan: string; usiaLabel: string;
+    beratBadanKg: number; tinggiBadanCm: number; imt: number;
+    tbUZscore: number; tbUPercentile: number; tbUStatus: string;
+    imtUZscore: number; imtUPercentile: number; imtUStatus: string;
+    interpretation: string; recommendation: string; calculationVersion: string | null;
+  }[];
 }
 
 interface PendingVideo { id: string; participantId: string; missionKey: string; fileUrl: string; fileName: string; status: string; grade: number | null; participant?: { name: string; school: string } }
@@ -148,12 +167,43 @@ function fmtDateId(iso: string): string {
 
 const EXPORT_HEADERS = [
   "No", "Nama", "Email", "Usia", "Sekolah", "Kota", "Kecamatan", "Status Sekolah", "Tingkat", "Telepon", "NIK",
+  "BB Terakhir (kg)", "TB Terakhir (cm)", "IMT Terakhir", "TB/U (SD)", "Status TB/U", "IMT/U (SD)", "Status IMT/U", "Status Gizi", "Tanggal Pengukuran",
   "XP", "Level", "Misi Selesai", "Jumlah Badge", "Streak (pekan)", "Tablet TTD Diminum", "Nilai Pre-Test", "Nilai Post-Test",
   "Hb (g/dL)", "Tanggal Pemeriksaan Hb", "Status Duta", "Tanggal Gabung",
 ];
 
 function fmtHb(v: number | null): string {
   return v === null || v === undefined ? "–" : String(v).replace(".", ",");
+}
+
+// Pembaruan 20 T2 — format angka desimal Indonesia (koma)
+function fmtDec(v: number, digits = 1): string {
+  return v.toLocaleString("id-ID", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+// Format z-score dengan tanda: -0,72 SD / +0,45 SD
+function fmtSD(v: number): string {
+  const s = v.toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (v > 0 ? "+" : "") + s + " SD";
+}
+
+// Badge warna status gizi (pembaruan 20 T2) — lembut, tidak menstigma
+const GIZI_BADGE: Record<string, string> = {
+  Normal: "bg-emerald-100 text-emerald-700",
+  Pendek: "bg-amber-100 text-amber-700",
+  "Sangat Pendek": "bg-rose-100 text-rose-700",
+  Kurus: "bg-orange-100 text-orange-700",
+  "Sangat Kurus": "bg-rose-100 text-rose-700",
+  "Gizi Lebih": "bg-amber-100 text-amber-700",
+  Obesitas: "bg-rose-100 text-rose-700",
+};
+
+function GiziBadge({ status }: { status?: string | null }) {
+  if (!status) return <span className="text-[10px] font-bold text-[#3d1526]/35">Belum diperiksa</span>;
+  return (
+    <span className={`inline-block rounded-full px-2 py-0.5 font-extrabold ${GIZI_BADGE[status] ?? "bg-[#3d1526]/5 text-[#3d1526]/60"}`}>
+      {status}
+    </span>
+  );
 }
 
 function toExportRows(rows: AdminRow[]): (string | number)[][] {
@@ -169,6 +219,16 @@ function toExportRows(rows: AdminRow[]): (string | number)[][] {
     r.educationLevel,
     r.phone ?? "–",
     r.nik ?? "–",
+    // Pembaruan 20 T2 — hasil pengukuran TERAKHIR (bila ada)
+    r.gizi ? fmtDec(r.gizi.bb, 1) : "–",
+    r.gizi ? fmtDec(r.gizi.tb, 1) : "–",
+    r.gizi ? fmtDec(r.gizi.imt, 2) : "–",
+    r.gizi ? fmtSD(r.gizi.tbUZ) : "–",
+    r.gizi?.tbUStatus ?? "Belum diperiksa",
+    r.gizi ? fmtSD(r.gizi.imtUZ) : "–",
+    r.gizi?.imtUStatus ?? "Belum diperiksa",
+    r.gizi?.imtUStatus ?? "Belum diperiksa",
+    r.gizi ? fmtDateId(r.gizi.tanggalPemeriksaan) : "–",
     r.xp,
     `Lv${r.level}`,
     `${r.missionsCompleted}/9`,
@@ -189,6 +249,7 @@ async function exportExcel(rows: AdminRow[]): Promise<void> {
   const ws = XLSX.utils.aoa_to_sheet([EXPORT_HEADERS, ...toExportRows(rows)]);
   ws["!cols"] = [
     { wch: 4 }, { wch: 26 }, { wch: 28 }, { wch: 5 }, { wch: 40 }, { wch: 14 }, { wch: 17 }, { wch: 15 }, { wch: 9 }, { wch: 16 },
+    { wch: 9 }, { wch: 10 }, { wch: 9 }, { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 17 },
     { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 13 }, { wch: 14 }, { wch: 16 }, { wch: 15 }, { wch: 16 }, { wch: 10 }, { wch: 18 }, { wch: 16 }, { wch: 16 },
   ];
   const wb = XLSX.utils.book_new();
@@ -426,13 +487,23 @@ interface ModContent {
 
 export function AdminDashboard() {
   const { reset } = useFez();
-  const [tab, setTab] = useState<"overview" | "traffic" | "participants" | "gizi" | "puskesmas" | "petugas" | "audit" | "duta" | "videos" | "moderation" | "konten" | "soal" | "misi" | "settings">("overview");
+  const [tab, setTab] = useState<"overview" | "traffic" | "participants" | "puskesmas" | "petugas" | "audit" | "duta" | "videos" | "moderation" | "konten" | "soal" | "misi" | "settings">("overview");
   const [petugasPending, setPetugasPending] = useState(0);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [rows, setRows] = useState<AdminRow[]>([]);
   const [schools, setSchools] = useState<string[]>([]);
   const [videos, setVideos] = useState<PendingVideo[]>([]);
-  const [filters, setFilters] = useState({ level: "", school: "", q: "", lvl: "", duta: "" });
+  // Pembaruan 20 T2 — Status Gizi terintegrasi di Daftar Pengguna
+  const [filters, setFilters] = useState({ level: "", school: "", q: "", lvl: "", duta: "", gizi: "", tbStatus: "", imtStatus: "", usiaMin: "", usiaMax: "", kecamatan: "", kelurahan: "", puskesmas: "" });
+  const [opsiKecamatan, setOpsiKecamatan] = useState<string[]>([]);
+  const [opsiKelurahan, setOpsiKelurahan] = useState<string[]>([]);
+  const [opsiPuskesmas, setOpsiPuskesmas] = useState<string[]>([]);
+  const [giziStats, setGiziStats] = useState<{ totalPemeriksaan: number; totalOrang: number; hariIni: number; bulanIni: number } | null>(null);
+  const [sortState, setSortState] = useState<{ key: SortGiziKey; dir: "asc" | "desc" } | null>(null);
+  const [pageGizi, setPageGizi] = useState(1);
+  const [pageSizeGizi, setPageSizeGizi] = useState(20);
+  const [giziDetail, setGiziDetail] = useState<GiziDetailData | null>(null);
+  const [giziDetailLoading, setGiziDetailLoading] = useState(false);
   const [grades, setGrades] = useState<Record<string, { grade: string; note: string }>>({});
   const [winners, setWinners] = useState(1);
   // PEMBARUAN 18 — picker Kandidat Duta manual
@@ -463,6 +534,48 @@ export function AdminDashboard() {
   // Hapus peserta
   const [deleteTarget, setDeleteTarget] = useState<AdminRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Pembaruan 20 T2 — urutan & paginasi sisi klien Daftar Pengguna
+  const rowsSorted = useMemo(() => {
+    const arr = [...rows];
+    if (!sortState) return arr;
+    const val = (r: AdminRow): number | string =>
+      sortState.key === "name" ? r.name.toLowerCase()
+      : sortState.key === "age" ? r.age
+      : sortState.key === "bb" ? r.gizi?.bb ?? -1
+      : sortState.key === "tb" ? r.gizi?.tb ?? -1
+      : sortState.key === "imt" ? r.gizi?.imt ?? -1
+      : r.gizi?.tanggalPemeriksaan ?? "";
+    arr.sort((a, b) => {
+      const va = val(a);
+      const vb = val(b);
+      const c = va < vb ? -1 : va > vb ? 1 : 0;
+      return sortState.dir === "asc" ? c : -c;
+    });
+    return arr;
+  }, [rows, sortState]);
+  const totalPagesGizi = Math.max(1, Math.ceil(rowsSorted.length / pageSizeGizi));
+  const pageSafeGizi = Math.min(pageGizi, totalPagesGizi);
+  const rowsPaged = rowsSorted.slice((pageSafeGizi - 1) * pageSizeGizi, pageSafeGizi * pageSizeGizi);
+
+  // Kepala kolom yang bisa diklik untuk mengurutkan
+  function thSort(label: string, key: SortGiziKey) {
+    const active = sortState?.key === key;
+    return (
+      <button
+        onClick={() => setSortState((s) => (s && s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }))}
+        className="inline-flex items-center gap-1 uppercase hover:text-[#3d1526]"
+        title="Klik untuk mengurutkan"
+      >
+        {label}
+        {active ? (
+          sortState!.dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+        ) : (
+          <ArrowUpDown className="h-3 w-3 opacity-40" />
+        )}
+      </button>
+    );
+  }
 
   async function doResetPassword() {
     if (!resetTarget) return;
@@ -596,6 +709,25 @@ export function AdminDashboard() {
     }
   }
 
+  // Pembaruan 20 T2 — buka Detail Status Gizi (modal)
+  async function openGiziDetail(r: AdminRow) {
+    setGiziDetailLoading(true);
+    setGiziDetail(null);
+    try {
+      const res = await fetch(`/api/admin/participants/${r.id}/nutrition`);
+      if (res.ok) {
+        setGiziDetail(await res.json());
+      } else {
+        const d = await res.json().catch(() => null);
+        toast({ title: "Gagal memuat riwayat status gizi", description: d?.error, variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Gagal memuat riwayat status gizi", variant: "destructive" });
+    } finally {
+      setGiziDetailLoading(false);
+    }
+  }
+
   const loadOverview = useCallback(async () => {
     const res = await fetch("/api/admin/overview");
     if (res.ok) setOverview(await res.json());
@@ -608,13 +740,31 @@ export function AdminDashboard() {
     if (filters.q) params.set("q", filters.q);
     if (filters.lvl) params.set("lvl", filters.lvl);
     if (filters.duta) params.set("duta", filters.duta);
+    // Pembaruan 20 T2 — filter status gizi
+    if (filters.gizi) params.set("gizi", filters.gizi);
+    if (filters.tbStatus) params.set("tbStatus", filters.tbStatus);
+    if (filters.imtStatus) params.set("imtStatus", filters.imtStatus);
+    if (filters.usiaMin) params.set("usiaMin", filters.usiaMin);
+    if (filters.usiaMax) params.set("usiaMax", filters.usiaMax);
+    if (filters.kecamatan) params.set("kecamatan", filters.kecamatan);
+    if (filters.kelurahan) params.set("kelurahan", filters.kelurahan);
+    if (filters.puskesmas) params.set("puskesmas", filters.puskesmas);
     const res = await fetch(`/api/admin/participants?${params}`);
     if (res.ok) {
       const d = await res.json();
       setRows(d.participants ?? []);
       setSchools(d.schools ?? []);
+      setOpsiKecamatan(d.opsiKecamatan ?? []);
+      setOpsiKelurahan(d.opsiKelurahan ?? []);
+      setOpsiPuskesmas(d.opsiPuskesmas ?? []);
+      setGiziStats(d.giziStats ?? null);
     }
   }, [filters]);
+
+  // Pembaruan 20 T2 — kembali ke halaman 1 saat filter berubah
+  useEffect(() => {
+    setPageGizi(1);
+  }, [filters, sortState, pageSizeGizi]);
 
   const loadVideos = useCallback(async () => {
     const res = await fetch("/api/admin/videos");
@@ -833,8 +983,7 @@ export function AdminDashboard() {
             {([
               { k: "overview", label: "Ringkasan", icon: LayoutDashboard },
               { k: "traffic", label: "Kunjungan Web", icon: Activity },
-              { k: "participants", label: "Data Peserta", icon: Users },
-              { k: "gizi", label: "Data Status Gizi", icon: HeartPulse },
+              { k: "participants", label: "Daftar Pengguna", icon: Users },
               { k: "puskesmas", label: "Data Induk", icon: Building2 },
               { k: "petugas", label: "Manajemen Petugas", icon: UserCog },
               { k: "audit", label: "Log Audit", icon: ShieldCheck },
@@ -1266,7 +1415,7 @@ export function AdminDashboard() {
         {tab === "participants" && (
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h1 className="font-display text-2xl font-extrabold text-[#3d1526]">Data Peserta ({rows.length})</h1>
+              <h1 className="font-display text-2xl font-extrabold text-[#3d1526]">Daftar Pengguna ({rows.length})</h1>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -1297,7 +1446,7 @@ export function AdminDashboard() {
               </div>
             </div>
 
-            {/* Filter */}
+            {/* Filter — pembaruan 20 T2: + status gizi, TB/U, IMT/U, usia, kecamatan, kelurahan, puskesmas */}
             <div className="flex flex-wrap items-end gap-2 rounded-2xl border border-[#3d1526]/10 bg-white p-3">
               <div>
                 <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Tingkat</Label>
@@ -1314,10 +1463,85 @@ export function AdminDashboard() {
                 <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Sekolah</Label>
                 <select
                   value={filters.school} onChange={(e) => setFilters((f) => ({ ...f, school: e.target.value }))}
-                  className="mt-1 h-10 max-w-[200px] rounded-xl border-2 border-[#3d1526]/15 bg-white px-3 text-sm font-bold"
+                  className="mt-1 h-10 max-w-[190px] rounded-xl border-2 border-[#3d1526]/15 bg-white px-3 text-sm font-bold"
                 >
                   <option value="">Semua</option>
                   {schools.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Status Gizi</Label>
+                <select
+                  value={filters.gizi} onChange={(e) => setFilters((f) => ({ ...f, gizi: e.target.value }))}
+                  className="mt-1 h-10 rounded-xl border-2 border-[#3d1526]/15 bg-white px-3 text-sm font-bold"
+                >
+                  <option value="">Semua</option>
+                  <option value="belum">Belum diperiksa</option>
+                  {"Sangat Kurus,Kurus,Normal,Gizi Lebih,Obesitas".split(",").map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Status TB/U</Label>
+                <select
+                  value={filters.tbStatus} onChange={(e) => setFilters((f) => ({ ...f, tbStatus: e.target.value }))}
+                  className="mt-1 h-10 rounded-xl border-2 border-[#3d1526]/15 bg-white px-3 text-sm font-bold"
+                >
+                  <option value="">Semua</option>
+                  {"Sangat Pendek,Pendek,Normal".split(",").map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Status IMT/U</Label>
+                <select
+                  value={filters.imtStatus} onChange={(e) => setFilters((f) => ({ ...f, imtStatus: e.target.value }))}
+                  className="mt-1 h-10 rounded-xl border-2 border-[#3d1526]/15 bg-white px-3 text-sm font-bold"
+                >
+                  <option value="">Semua</option>
+                  {"Sangat Kurus,Kurus,Normal,Gizi Lebih,Obesitas".split(",").map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Usia (th)</Label>
+                <div className="mt-1 flex items-center gap-1">
+                  <Input
+                    type="number" min={1} max={25} value={filters.usiaMin} onChange={(e) => setFilters((f) => ({ ...f, usiaMin: e.target.value }))}
+                    placeholder="min" className="h-10 w-[68px] rounded-xl border-2 border-[#3d1526]/15"
+                  />
+                  <span className="font-extrabold text-[#3d1526]/30">–</span>
+                  <Input
+                    type="number" min={1} max={25} value={filters.usiaMax} onChange={(e) => setFilters((f) => ({ ...f, usiaMax: e.target.value }))}
+                    placeholder="maks" className="h-10 w-[68px] rounded-xl border-2 border-[#3d1526]/15"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Kecamatan</Label>
+                <select
+                  value={filters.kecamatan} onChange={(e) => setFilters((f) => ({ ...f, kecamatan: e.target.value }))}
+                  className="mt-1 h-10 max-w-[170px] rounded-xl border-2 border-[#3d1526]/15 bg-white px-3 text-sm font-bold"
+                >
+                  <option value="">Semua</option>
+                  {opsiKecamatan.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Kelurahan Domisili</Label>
+                <select
+                  value={filters.kelurahan} onChange={(e) => setFilters((f) => ({ ...f, kelurahan: e.target.value }))}
+                  className="mt-1 h-10 max-w-[170px] rounded-xl border-2 border-[#3d1526]/15 bg-white px-3 text-sm font-bold"
+                >
+                  <option value="">Semua</option>
+                  {opsiKelurahan.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Puskesmas</Label>
+                <select
+                  value={filters.puskesmas} onChange={(e) => setFilters((f) => ({ ...f, puskesmas: e.target.value }))}
+                  className="mt-1 h-10 max-w-[190px] rounded-xl border-2 border-[#3d1526]/15 bg-white px-3 text-sm font-bold"
+                >
+                  <option value="">Semua</option>
+                  {opsiPuskesmas.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
@@ -1342,7 +1566,7 @@ export function AdminDashboard() {
                 </select>
               </div>
               <div className="min-w-[180px] flex-1">
-                <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Cari Nama</Label>
+                <Label className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">Cari Nama / Email / Sekolah</Label>
                 <div className="relative mt-1">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#3d1526]/30" />
                   <Input
@@ -1351,19 +1575,57 @@ export function AdminDashboard() {
                   />
                 </div>
               </div>
+              {(filters.gizi || filters.tbStatus || filters.imtStatus || filters.usiaMin || filters.usiaMax || filters.kecamatan || filters.kelurahan || filters.puskesmas || filters.level || filters.school || filters.q || filters.lvl || filters.duta) && (
+                <Button
+                  variant="outline"
+                  onClick={() => setFilters({ level: "", school: "", q: "", lvl: "", duta: "", gizi: "", tbStatus: "", imtStatus: "", usiaMin: "", usiaMax: "", kecamatan: "", kelurahan: "", puskesmas: "" })}
+                  className="h-10 rounded-xl border-2 border-[#3d1526]/15 px-3 text-xs font-extrabold"
+                >
+                  Reset Filter
+                </Button>
+              )}
             </div>
 
-            <div className="thin-scroll overflow-x-auto rounded-2xl border border-[#3d1526]/10 bg-white">
-              <table className="w-full min-w-[1400px] text-left text-xs">
-                <thead className="border-b-2 border-[#3d1526]/10 bg-[#faf0e8]">
-                  <tr className="[&>th]:px-3 [&>th]:py-2.5 [&>th]:font-extrabold [&>th]:uppercase [&>th]:text-[10px] [&>th]:text-[#3d1526]/50">
-                    <th>Nama</th><th>Usia</th><th>Sekolah</th><th>Kota</th><th>Kecamatan</th><th>Status Sekolah</th><th>Tingkat</th><th>Telepon</th><th>NIK</th><th>XP</th><th>Level</th>
-                    <th>Misi</th><th>Badge</th><th>Streak</th><th>💊 TTD</th><th>Pre</th><th>Post</th><th>🩸 Hb</th><th>Status Duta</th><th>Aksi</th>
+            {/* Kartu statistik pemeriksaan (pindahan dari tab Status Gizi lama) */}
+            {giziStats && (
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+                {[
+                  { label: "Total Pemeriksaan", value: giziStats.totalPemeriksaan, icon: "🩺" },
+                  { label: "Total Orang Diperiksa", value: giziStats.totalOrang, icon: "👧" },
+                  { label: "Pemeriksaan Hari Ini", value: giziStats.hariIni, icon: "📅" },
+                  { label: "Pemeriksaan Bulan Ini", value: giziStats.bulanIni, icon: "🗓️" },
+                ].map((c) => (
+                  <div key={c.label} className="rounded-2xl border border-[#3d1526]/10 bg-white p-3">
+                    <p className="text-[10px] font-extrabold uppercase text-[#3d1526]/50">{c.icon} {c.label}</p>
+                    <p className="font-display text-2xl font-extrabold text-[#3d1526]">{c.value.toLocaleString("id-ID")}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="thin-scroll max-h-[70vh] overflow-auto rounded-2xl border border-[#3d1526]/10 bg-white">
+              <table className="w-full min-w-[2600px] text-left text-xs">
+                <thead className="sticky top-0 z-10 border-b-2 border-[#3d1526]/10 bg-[#faf0e8] shadow-[0_1px_0_rgba(61,21,38,0.08)]">
+                  <tr className="[&>th]:px-3 [&>th]:py-2.5 [&>th]:font-extrabold [&>th]:text-[10px] [&>th]:text-[#3d1526]/50">
+                    <th className="uppercase">No</th>
+                    <th className="uppercase">{thSort("Nama", "name")}</th>
+                    <th className="uppercase">{thSort("Usia", "age")}</th>
+                    <th className="uppercase">Sekolah</th>
+                    <th className="uppercase">{thSort("BB (kg)", "bb")}</th>
+                    <th className="uppercase">{thSort("TB (cm)", "tb")}</th>
+                    <th className="uppercase">{thSort("IMT", "imt")}</th>
+                    <th className="uppercase">TB/U</th>
+                    <th className="uppercase">IMT/U</th>
+                    <th className="uppercase">Status Gizi</th>
+                    <th className="uppercase">{thSort("Tgl Ukur", "tgl")}</th>
+                    <th className="uppercase">Kota</th><th className="uppercase">Kecamatan</th><th className="uppercase">Status Sekolah</th><th className="uppercase">Tingkat</th><th className="uppercase">Telepon</th><th className="uppercase">NIK</th><th className="uppercase">XP</th><th className="uppercase">Level</th>
+                    <th className="uppercase">Misi</th><th className="uppercase">Badge</th><th className="uppercase">Streak</th><th className="uppercase">💊 TTD</th><th className="uppercase">Pre</th><th className="uppercase">Post</th><th className="uppercase">🩸 Hb</th><th className="uppercase">Status Duta</th><th className="uppercase">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#3d1526]/5">
-                  {rows.map((r) => (
+                  {rowsPaged.map((r, i) => (
                     <tr key={r.id} className="hover:bg-rose-50/40">
+                      <td className="px-3 py-2.5 font-bold text-[#3d1526]/40">{(pageSafeGizi - 1) * pageSizeGizi + i + 1}</td>
                       <td className="px-3 py-2.5 font-extrabold text-[#3d1526]">
                         <div className="flex items-center gap-2">
                           <span className="text-lg">👧</span>
@@ -1375,6 +1637,31 @@ export function AdminDashboard() {
                       </td>
                       <td className="px-3 py-2.5">{r.age}</td>
                       <td className="px-3 py-2.5">{r.school}</td>
+                      <td className="px-3 py-2.5 font-semibold">{r.gizi ? fmtDec(r.gizi.bb, 1) : <span className="text-[#3d1526]/30">–</span>}</td>
+                      <td className="px-3 py-2.5 font-semibold">{r.gizi ? fmtDec(r.gizi.tb, 1) : <span className="text-[#3d1526]/30">–</span>}</td>
+                      <td className="px-3 py-2.5 font-semibold">{r.gizi ? fmtDec(r.gizi.imt, 2) : <span className="text-[#3d1526]/30">–</span>}</td>
+                      <td className="px-3 py-2.5">
+                        {r.gizi ? (
+                          <div>
+                            <GiziBadge status={r.gizi.tbUStatus} />
+                            <p className="mt-0.5 text-[10px] font-bold text-[#3d1526]/45">{fmtSD(r.gizi.tbUZ)}</p>
+                          </div>
+                        ) : (
+                          <span className="text-[#3d1526]/30">–</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        {r.gizi ? (
+                          <div>
+                            <GiziBadge status={r.gizi.imtUStatus} />
+                            <p className="mt-0.5 text-[10px] font-bold text-[#3d1526]/45">{fmtSD(r.gizi.imtUZ)}</p>
+                          </div>
+                        ) : (
+                          <span className="text-[#3d1526]/30">–</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5"><GiziBadge status={r.gizi?.imtUStatus ?? null} /></td>
+                      <td className="px-3 py-2.5 font-semibold">{r.gizi ? fmtDateId(r.gizi.tanggalPemeriksaan) : <span className="text-[#3d1526]/30">–</span>}</td>
                       <td className="px-3 py-2.5">{r.schoolCity ?? "–"}</td>
                       <td className="px-3 py-2.5">{r.schoolDistrict ?? "–"}</td>
                       <td className="px-3 py-2.5">
@@ -1423,6 +1710,13 @@ export function AdminDashboard() {
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-1.5">
                           <button
+                            onClick={() => openGiziDetail(r)}
+                            title="Detail Status Gizi: data terbaru, riwayat & perkembangan"
+                            className="inline-flex items-center gap-1 rounded-lg border-2 border-[#3d1526]/15 bg-white px-2 py-1 text-[10px] font-extrabold text-[#3d1526]/70 hover:border-emerald-400 hover:bg-emerald-50 hover:text-emerald-700"
+                          >
+                            <HeartPulse className="h-3 w-3" /> Detail
+                          </button>
+                          <button
                             onClick={() => { setResetTarget(r); setResetPass(""); }}
                             title="Reset password peserta (untuk yang lupa password)"
                             className="inline-flex items-center gap-1 rounded-lg border-2 border-[#3d1526]/15 bg-white px-2 py-1 text-[10px] font-extrabold text-[#3d1526]/70 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700"
@@ -1440,17 +1734,149 @@ export function AdminDashboard() {
                       </td>
                     </tr>
                   ))}
-                  {rows.length === 0 && (
-                    <tr><td colSpan={19} className="px-3 py-8 text-center font-bold text-[#3d1526]/40">Tidak ada peserta yang cocok dengan filter</td></tr>
+                  {rowsPaged.length === 0 && (
+                    <tr><td colSpan={28} className="px-3 py-8 text-center font-bold text-[#3d1526]/40">Tidak ada pengguna yang cocok dengan filter</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
+
+            {/* Paginasi (pembaruan 20 T2) */}
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#3d1526]/10 bg-white px-3 py-2">
+              <p className="text-xs font-bold text-[#3d1526]/60">
+                Menampilkan <b>{rowsSorted.length === 0 ? 0 : (pageSafeGizi - 1) * pageSizeGizi + 1}–{Math.min(pageSafeGizi * pageSizeGizi, rowsSorted.length)}</b> dari <b>{rowsSorted.length}</b> pengguna
+              </p>
+              <div className="flex items-center gap-2">
+                <select
+                  value={pageSizeGizi} onChange={(e) => setPageSizeGizi(parseInt(e.target.value, 10) || 20)}
+                  className="h-8 rounded-lg border-2 border-[#3d1526]/15 bg-white px-2 text-xs font-bold"
+                  title="Jumlah baris per halaman"
+                >
+                  {[10, 20, 50, 100].map((n) => <option key={n} value={n}>{n} / halaman</option>)}
+                </select>
+                <Button variant="outline" disabled={pageSafeGizi <= 1} onClick={() => setPageGizi((p) => Math.max(1, p - 1))} className="h-8 rounded-lg px-3 text-xs font-extrabold">
+                  ← Sebelumnya
+                </Button>
+                <span className="text-xs font-extrabold text-[#3d1526]/70">Hal. {pageSafeGizi} / {totalPagesGizi}</span>
+                <Button variant="outline" disabled={pageSafeGizi >= totalPagesGizi} onClick={() => setPageGizi((p) => Math.min(totalPagesGizi, p + 1))} className="h-8 rounded-lg px-3 text-xs font-extrabold">
+                  Berikutnya →
+                </Button>
+              </div>
+            </div>
+
+            {/* ===== MODAL DETAIL STATUS GIZI (pembaruan 20 T2) ===== */}
+            {giziDetailLoading && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3d1526]/40">
+                <div className="flex items-center gap-2 rounded-2xl bg-white px-5 py-4 font-extrabold text-[#3d1526] shadow-xl">
+                  <Loader2 className="h-5 w-5 animate-spin" /> Memuat riwayat status gizi...
+                </div>
+              </div>
+            )}
+            {giziDetail && (() => {
+              const terbaru = giziDetail.rows[0];
+              const pertama = giziDetail.rows[giziDetail.rows.length - 1];
+              const delta = (a: number, b: number, d = 1) => `${a > b ? "+" : a < b ? "−" : "±"}${fmtDec(Math.abs(b - a), d)}`;
+              return (
+                <div className="fixed inset-0 z-50 overflow-auto bg-[#3d1526]/40 p-4" onClick={() => setGiziDetail(null)}>
+                  <div className="mx-auto max-w-4xl rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h2 className="font-display text-xl font-extrabold text-[#3d1526]">Detail Status Gizi — {giziDetail.participant.name}</h2>
+                        <p className="text-xs font-bold text-[#3d1526]/50">
+                          {giziDetail.participant.username} · {giziDetail.participant.school}
+                          {giziDetail.participant.jenisKelamin ? ` · ${giziDetail.participant.jenisKelamin === "P" ? "Perempuan" : "Laki-laki"}` : ""}
+                        </p>
+                      </div>
+                      <Button variant="outline" onClick={() => setGiziDetail(null)} className="h-9 rounded-xl border-2 border-[#3d1526]/15 px-3 text-xs font-extrabold">✕ Tutup</Button>
+                    </div>
+
+                    {terbaru ? (
+                      <>
+                        {/* Data terbaru */}
+                        <div className="mt-4 rounded-2xl border border-[#3d1526]/10 bg-[#faf0e8]/60 p-4">
+                          <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#3d1526]/50">Data Terbaru</p>
+                          <div className="mt-2 grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+                            <div><p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">Tanggal Pengukuran</p><p className="font-extrabold text-[#3d1526]">{fmtDateId(terbaru.tanggalPemeriksaan)}</p></div>
+                            <div><p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">Usia Saat Ukur</p><p className="font-extrabold text-[#3d1526]">{terbaru.usiaLabel}</p></div>
+                            <div><p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">BB</p><p className="font-extrabold text-[#3d1526]">{fmtDec(terbaru.beratBadanKg, 1)} kg</p></div>
+                            <div><p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">TB</p><p className="font-extrabold text-[#3d1526]">{fmtDec(terbaru.tinggiBadanCm, 1)} cm</p></div>
+                            <div><p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">IMT</p><p className="font-extrabold text-[#3d1526]">{fmtDec(terbaru.imt, 2)} kg/m²</p></div>
+                            <div><p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">TB/U</p><p className="font-extrabold text-[#3d1526]">{fmtSD(terbaru.tbUZscore)}</p><GiziBadge status={terbaru.tbUStatus} /></div>
+                            <div><p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">IMT/U</p><p className="font-extrabold text-[#3d1526]">{fmtSD(terbaru.imtUZscore)}</p><GiziBadge status={terbaru.imtUStatus} /></div>
+                            <div><p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">Status Gizi</p><GiziBadge status={terbaru.imtUStatus} /></div>
+                          </div>
+                          <p className="mt-3 text-[10px] font-bold text-[#3d1526]/40">
+                            Versi kalkulasi: {terbaru.calculationVersion ?? "data lama (sebelum versi)"} · Standar: WHO Growth Reference 2007 (metode WHO AnthroPlus)
+                          </p>
+                          <details className="mt-2">
+                            <summary className="cursor-pointer text-xs font-extrabold text-rose-600">Lihat interpretasi & rekomendasi</summary>
+                            <pre className="mt-2 whitespace-pre-wrap rounded-xl bg-white p-3 text-xs font-semibold text-[#3d1526]/80">{terbaru.interpretation + "\n\n" + terbaru.recommendation}</pre>
+                          </details>
+                        </div>
+
+                        {/* Perkembangan pengukuran (timeline) */}
+                        {giziDetail.rows.length >= 2 && (
+                          <div className="mt-3 rounded-2xl border border-[#3d1526]/10 bg-white p-4">
+                            <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#3d1526]/50">Perkembangan Pengukuran</p>
+                            <p className="mt-1 text-xs font-bold text-[#3d1526]/60">
+                              Pertama: {fmtDateId(pertama.tanggalPemeriksaan)} · Terbaru: {fmtDateId(terbaru.tanggalPemeriksaan)} · {giziDetail.rows.length} kali pengukuran
+                            </p>
+                            <div className="mt-2 grid grid-cols-2 gap-2 text-sm md:grid-cols-5">
+                              <div className="rounded-xl bg-[#faf0e8] p-2"><p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">BB</p><p className="font-extrabold text-[#3d1526]">{fmtDec(pertama.beratBadanKg, 1)} → {fmtDec(terbaru.beratBadanKg, 1)} kg <span className="text-[10px] text-emerald-700">({delta(pertama.beratBadanKg, terbaru.beratBadanKg, 1)})</span></p></div>
+                              <div className="rounded-xl bg-[#faf0e8] p-2"><p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">TB</p><p className="font-extrabold text-[#3d1526]">{fmtDec(pertama.tinggiBadanCm, 1)} → {fmtDec(terbaru.tinggiBadanCm, 1)} cm <span className="text-[10px] text-emerald-700">({delta(pertama.tinggiBadanCm, terbaru.tinggiBadanCm, 1)})</span></p></div>
+                              <div className="rounded-xl bg-[#faf0e8] p-2"><p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">IMT</p><p className="font-extrabold text-[#3d1526]">{fmtDec(pertama.imt, 2)} → {fmtDec(terbaru.imt, 2)} <span className="text-[10px] text-emerald-700">({delta(pertama.imt, terbaru.imt, 2)})</span></p></div>
+                              <div className="rounded-xl bg-[#faf0e8] p-2"><p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">TB/U (SD)</p><p className="font-extrabold text-[#3d1526]">{fmtSD(pertama.tbUZscore)} → {fmtSD(terbaru.tbUZscore)}</p></div>
+                              <div className="rounded-xl bg-[#faf0e8] p-2"><p className="text-[10px] font-extrabold uppercase text-[#3d1526]/45">IMT/U (SD)</p><p className="font-extrabold text-[#3d1526]">{fmtSD(pertama.imtUZscore)} → {fmtSD(terbaru.imtUZscore)}</p></div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Riwayat pengukuran */}
+                        <div className="mt-3">
+                          <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#3d1526]/50">Riwayat Pengukuran (terbaru → terlama)</p>
+                          <div className="thin-scroll mt-2 max-h-72 overflow-auto rounded-2xl border border-[#3d1526]/10">
+                            <table className="w-full min-w-[760px] text-left text-xs">
+                              <thead className="sticky top-0 bg-[#faf0e8]">
+                                <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:font-extrabold [&>th]:uppercase [&>th]:text-[10px] [&>th]:text-[#3d1526]/50">
+                                  <th>Tanggal</th><th>Usia</th><th>BB</th><th>TB</th><th>IMT</th><th>TB/U</th><th>IMT/U</th><th>Status Gizi</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-[#3d1526]/5">
+                                {giziDetail.rows.map((g) => (
+                                  <tr key={g.id}>
+                                    <td className="px-3 py-2 font-extrabold text-[#3d1526]">{fmtDateId(g.tanggalPemeriksaan)}</td>
+                                    <td className="px-3 py-2 font-semibold text-[#3d1526]/70">{g.usiaLabel}</td>
+                                    <td className="px-3 py-2">{fmtDec(g.beratBadanKg, 1)} kg</td>
+                                    <td className="px-3 py-2">{fmtDec(g.tinggiBadanCm, 1)} cm</td>
+                                    <td className="px-3 py-2">{fmtDec(g.imt, 2)}</td>
+                                    <td className="px-3 py-2"><span className="font-extrabold">{fmtSD(g.tbUZscore)}</span> <GiziBadge status={g.tbUStatus} /></td>
+                                    <td className="px-3 py-2"><span className="font-extrabold">{fmtSD(g.imtUZscore)}</span> <GiziBadge status={g.imtUStatus} /></td>
+                                    <td className="px-3 py-2"><GiziBadge status={g.imtUStatus} /></td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="mt-4 rounded-2xl border border-dashed border-[#3d1526]/20 p-8 text-center">
+                        <p className="text-3xl">🩺</p>
+                        <p className="mt-2 font-extrabold text-[#3d1526]">Belum ada data pemeriksaan status gizi</p>
+                        <p className="text-xs font-bold text-[#3d1526]/50">Pengguna ini belum pernah melakukan Cek Status Gizi.</p>
+                      </div>
+                    )}
+
+                    <p className="mt-4 rounded-xl bg-[#faf0e8] p-3 text-[10px] font-bold text-[#3d1526]/45">
+                      Sumber data: tabel pemeriksaan status gizi yang sama dipakai admin, petugas Puskesmas & remaja (satu sumber, tanpa duplikasi). Grafik pertumbuhan WHO akan ditambahkan pada tahap berikutnya.
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
-        {/* ============ DATA STATUS GIZI (pembaruan 17) ============ */}
-        {tab === "gizi" && <AdminGiziTab />}
         {tab === "puskesmas" && <AdminPuskesmasTab />}
 
         {/* ============ MANAJEMEN PETUGAS (pembaruan 19) ============ */}

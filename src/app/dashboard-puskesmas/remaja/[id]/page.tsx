@@ -53,6 +53,19 @@ interface DetailData {
     hbRecords: HbRecord[];
     ttdCount: number; ttdTerakhir: string | null; ttdRiwayat: string[];
   };
+  // Pembaruan 20 T2 — riwayat Cek Status Gizi (satu sumber data dgn admin & remaja)
+  statusGizi?: {
+    terakhir: {
+      tanggalPemeriksaan: string; usiaLabel: string;
+      beratBadanKg: number; tinggiBadanCm: number; imt: number;
+      tbUZscore: number; tbUStatus: string; imtUZscore: number; imtUStatus: string;
+    } | null;
+    riwayat: {
+      id: string; tanggalPemeriksaan: string; usiaLabel: string;
+      beratBadanKg: number; tinggiBadanCm: number; imt: number;
+      tbUZscore: number; tbUStatus: string; imtUZscore: number; imtUStatus: string;
+    }[];
+  };
   gamifikasi: {
     badges: { key: string; earnedAt: string }[];
     misi: { key: string; title: string; short: string; icon: string; status: string; score: number | null }[];
@@ -63,6 +76,12 @@ interface DetailData {
 function tgl(d: string | null) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+}
+
+// Format z-score dgn tanda (pembaruan 20 T2): -0,72 SD / +0,45 SD
+function fmtSD(v: number): string {
+  const s = v.toLocaleString("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (v > 0 ? "+" : "") + s + " SD";
 }
 
 // Cermin interpretasi server (standar default Kemenkes).
@@ -417,6 +436,54 @@ export default function DetailRemajaPage() {
                     </div>
                   )}
                 </div>
+              </Panel>
+
+              {/* Status Gizi (pembaruan 20 T2) — satu sumber data dgn admin & remaja */}
+              <Panel icon={<HeartPulse className="h-4 w-4 text-emerald-500" />} title="Status Gizi — Cek Mandiri Remaja">
+                {data.statusGizi?.terakhir ? (
+                  <>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-2xl border-2 border-fez-ink/10 bg-fez-cream/50 p-4">
+                        <p className="text-[10px] font-extrabold uppercase tracking-wide text-fez-ink/40">Pengukuran terakhir</p>
+                        <p className="mt-1 font-display text-2xl font-extrabold text-fez-ink">
+                          {data.statusGizi.terakhir.beratBadanKg.toLocaleString("id-ID")} <span className="text-sm">kg</span> · {data.statusGizi.terakhir.tinggiBadanCm.toLocaleString("id-ID")} <span className="text-sm">cm</span>
+                        </p>
+                        <p className="mt-1 text-[11px] font-semibold text-fez-ink/45">
+                          {tgl(data.statusGizi.terakhir.tanggalPemeriksaan)} · {data.statusGizi.terakhir.usiaLabel}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border-2 border-fez-ink/10 bg-fez-cream/50 p-4">
+                        <p className="text-[10px] font-extrabold uppercase tracking-wide text-fez-ink/40">Status (WHO 2007)</p>
+                        <p className="mt-1 text-xs font-extrabold text-fez-ink">IMT {data.statusGizi.terakhir.imt.toLocaleString("id-ID", { maximumFractionDigits: 2 })} kg/m²</p>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          <span className="rounded-full bg-fez-cream px-2 py-0.5 text-[11px] font-extrabold text-fez-ink">TB/U {fmtSD(data.statusGizi.terakhir.tbUZscore)} · {data.statusGizi.terakhir.tbUStatus}</span>
+                          <span className="rounded-full bg-fez-cream px-2 py-0.5 text-[11px] font-extrabold text-fez-ink">IMT/U {fmtSD(data.statusGizi.terakhir.imtUZscore)} · {data.statusGizi.terakhir.imtUStatus}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <p className="text-[10px] font-extrabold uppercase tracking-wide text-fez-ink/40">
+                        Riwayat pengukuran ({data.statusGizi.riwayat.length} terbaru)
+                      </p>
+                      <div className="mt-1.5 space-y-1.5">
+                        {data.statusGizi.riwayat.map((g) => (
+                          <div key={g.id} className="rounded-xl border border-fez-ink/10 bg-white px-3 py-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-fez-ink/70">
+                              <span><CalendarDays className="mr-1 inline h-3.5 w-3.5 text-fez-teal" />{tgl(g.tanggalPemeriksaan)}</span>
+                              <span className="font-extrabold text-fez-ink">{g.beratBadanKg.toLocaleString("id-ID")} kg · {g.tinggiBadanCm.toLocaleString("id-ID")} cm · IMT {g.imt.toLocaleString("id-ID", { maximumFractionDigits: 2 })}</span>
+                              <span className="text-fez-ink/45">{g.usiaLabel}</span>
+                            </div>
+                            <p className="mt-1 text-[11px] font-bold text-fez-ink/55">
+                              TB/U {fmtSD(g.tbUZscore)} · {g.tbUStatus} — IMT/U {fmtSD(g.imtUZscore)} · {g.imtUStatus}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-xs font-semibold italic text-fez-ink/45">Belum ada data cek status gizi dari remaja ini.</p>
+                )}
               </Panel>
 
               {/* Gamifikasi: misi + badge */}

@@ -1,0 +1,91 @@
+================================================================
+PEMBARUAN 20 - TAHAP 2
+Status Gizi Terintegrasi ke Daftar Pengguna (Admin & Petugas)
+FE-ZONE - Duta Remaja Putri Bebas Anemia
+================================================================
+
+Sesuai permintaan Anda, Status Gizi kini TIDAK lagi halaman
+terpisah, melainkan bagian dari Daftar Pengguna.
+
+ISI TAHAP 2
+-----------
+1. MENU ADMIN BERUBAH:
+   - "Data Peserta" menjadi "Daftar Pengguna".
+   - Menu "Data Status Gizi" DIHAPUS (fungsi pindah semua ke
+     Daftar Pengguna — sesuai instruksi Anda).
+2. KOLOM BARU di Daftar Pengguna (hasil pengukuran TERAKHIR):
+   BB (kg) · TB (cm) · IMT · TB/U (z + status) · IMT/U
+   (z + status) · Status Gizi · Tanggal Pengukuran.
+   Yang belum pernah diperiksa tampil "Belum diperiksa".
+3. KARTU STATISTIK (pindahan dari menu lama): total
+   pemeriksaan, total orang, hari ini, bulan ini.
+4. FILTER BARU: Status Gizi, Status TB/U, Status IMT/U,
+   Rentang usia, Kecamatan, Kelurahan Domisili, Puskesmas +
+   tombol Reset Filter. Pencarian kini: nama / email / sekolah.
+5. TABEL NYAMAN DIPAKAI: header menempel saat digulir,
+   klik judul kolom (Nama, Usia, BB, TB, IMT, Tgl) untuk
+   mengurutkan, paginasi 10/20/50/100 baris.
+6. TOMBOL "DETAIL" di tiap baris (ikon ❤️): modal berisi
+   Data Terbaru, Perkembangan Pengukuran (perubahan BB/TB/
+   IMT/z-score dari pemeriksaan pertama ke terbaru), dan
+   Riwayat lengkap (terbaru -> terlama). Grafik pertumbuhan
+   WHO menyusul di Tahap 3.
+7. EXPORT ikut menambah 9 kolom gizi (Excel/CSV/PDF).
+8. SISI PETUGAS PUSKESMAS: tabel Data Remaja kini punya kolom
+   Status Gizi, dan halaman detail remaja punya panel
+   "Status Gizi — Cek Mandiri Remaja" berisi data terakhir +
+   riwayat. Petugas tetap HANYA melihat remaja wilayahnya.
+
+SATU SUMBER DATA (TANPA DATA DUMMY)
+-----------------------------------
+Semua angka diambil dari tabel pemeriksaan yang SAMA dengan
+milik remaja (nutrition_assessments) — admin, petugas, dan
+remaja membaca sumber yang sama. TIDAK ada tabel baru dan
+TIDAK ada data yang diubah/dihapus.
+
+KABAR BAIK: TIDAK PERLU SQL MANUAL!
+-----------------------------------
+Tidak ada perubahan struktur database sama sekali.
+
+LANGKAH 1 - PASTIKAN TAHAP 1 MASIH JALAN
+-----------------------------------------
+1. Buka https://dutafe-zone.vercel.app/ — situs normal.
+
+LANGKAH 2 - EKSTRAK ZIP & UNGGAH KE GITHUB
+-------------------------------------------
+Ekstrak file FE-ZONE-P20-TAHAP2.zip, lalu upload SEMUA isinya
+ke repo GitHub (gizineglasari-hash/dutafe-zone). Ada 8 file:
+6 FILE PENGGANTI + 2 FILE BARU:
+
+A. FILE PENGGANTI (ganti isinya di path yang sama):
+   src/app/api/admin/participants/route.ts
+   src/app/api/puskesmas/remaja/route.ts
+   src/app/api/puskesmas/remaja/[id]/route.ts
+   src/app/dashboard-puskesmas/remaja/[id]/page.tsx
+   src/components/fezone/admin.tsx
+   src/components/fezone/puskesmas-remaja.tsx
+
+B. FILE BARU (buat folder bila perlu):
+   src/app/api/admin/participants/[id]/nutrition/route.ts
+   PETUNJUK-PEMBARUAN-20-TAHAP2.txt
+
+CATATAN PENTING:
+- File pertama di B berada di dalam folder [id] (dengan tanda
+  kurung siku). Di GitHub: buat folder baru bernama [id] di
+  dalam participants, lalu di dalamnya buat folder nutrition,
+  lalu upload route.ts ke sana.
+- Setelah unggah, Vercel otomatis deploy (2-5 menit).
+
+LANGKAH 3 - CEK HASILNYA
+--------------------------
+1. Masuk sebagai ADMIN -> menu "Daftar Pengguna":
+   - Kolom BB/TB/IMT/TB/U/IMT/U/Status Gizi/Tgl Ukur tampil.
+   - Menu "Data Status Gizi" sudah tidak ada.
+   - Klik tombol "Detail" pada salah satu peserta yang sudah
+     pernah cek gizi -> modal Data Terbaru + Riwayat muncul.
+   - Coba filter Status Gizi dan klik judul kolom "BB (kg)".
+2. Masuk sebagai PETUGAS -> Data Remaja: kolom Status Gizi
+   tampil; buka Detail remaja -> ada panel "Status Gizi".
+
+SELESAI - kirim hasil langkah ini kepada saya, lalu kita
+lanjut ke Tahap 3 (Grafik Pertumbuhan WHO + Export Riwayat).

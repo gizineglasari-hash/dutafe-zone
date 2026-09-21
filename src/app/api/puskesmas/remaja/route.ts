@@ -9,6 +9,9 @@ import { getWilayahScope, wilayahWhere } from "@/lib/puskesmas";
 // Tahap 3: kecamatan sekolah remaja = kecamatan wilayah kerja.
 // Tahap 5: DITAMBAH kelurahan domisili yang terpetakan ke
 //          Puskesmas petugas (remaja mengisi domisili di Profil).
+// Pembaruan 20 T2: ringkasan Status Gizi TERAKHIR per remaja
+//          (satu sumber data: nutrition_assessments — sama
+//          dengan milik admin & remaja).
 // Pencarian + 7 filter + paginasi server-side. Read-only.
 // Filter: jenjang | sekolah | kecamatan | hb | ttd | lvl | duta
 // ------------------------------------------------------------
@@ -77,7 +80,46 @@ export async function GET(req: NextRequest) {
       streakWeeks: p.streakWeeks,
       isDutaCandidate: p.isDutaCandidate,
       isDuta: p.isDuta,
+      gizi: null as null | {
+        tanggalPemeriksaan: string; bb: number; tb: number; imt: number;
+        tbUStatus: string; imtUStatus: string;
+      },
     }));
+
+    // ---- Pembaruan 20 T2: pemeriksaan gizi terakhir per remaja ----
+    const ids = participants.map((p) => p.id);
+    if (ids.length > 0) {
+      const semuaGizi = await db.nutritionAssessment.findMany({
+        where: { participantId: { in: ids } },
+        orderBy: [{ tanggalPemeriksaan: "desc" }, { createdAt: "desc" }],
+        select: {
+          participantId: true,
+          tanggalPemeriksaan: true,
+          beratBadanKg: true,
+          tinggiBadanCm: true,
+          imt: true,
+          tbUStatus: true,
+          imtUStatus: true,
+        },
+      });
+      const terakhir = new Map<string, (typeof semuaGizi)[number]>();
+      for (const g of semuaGizi) {
+        if (!terakhir.has(g.participantId)) terakhir.set(g.participantId, g);
+      }
+      for (const r of rows) {
+        const g = terakhir.get(r.id);
+        if (g) {
+          r.gizi = {
+            tanggalPemeriksaan: g.tanggalPemeriksaan.toISOString(),
+            bb: Number(g.beratBadanKg),
+            tb: Number(g.tinggiBadanCm),
+            imt: Number(g.imt),
+            tbUStatus: g.tbUStatus,
+            imtUStatus: g.imtUStatus,
+          };
+        }
+      }
+    }
 
     // ---- Filter (server-side, setelah scoping wilayah) ----
     if (jenjang === "SMP" || jenjang === "SMA") rows = rows.filter((r) => r.educationLevel === jenjang);
