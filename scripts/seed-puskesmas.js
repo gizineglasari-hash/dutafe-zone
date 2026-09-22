@@ -227,6 +227,13 @@ async function seedPuskesmas(db) {
     .$executeRawUnsafe(`ALTER TABLE "Participant" ADD COLUMN IF NOT EXISTS "domisiliKelurahan" TEXT;`)
     .catch((e) => console.warn("[seed-p19] kolom domisiliKelurahan:", e?.message || e));
 
+  // Kelurahan sekolah (data sekolah terbaru 2026): remaja otomatis masuk
+  // wilayah kerja Puskesmas sesuai kelurahan tempat sekolahnya berada.
+  // ADD COLUMN IF NOT EXISTS — aman dijalankan berulang.
+  await db
+    .$executeRawUnsafe(`ALTER TABLE "Participant" ADD COLUMN IF NOT EXISTS "schoolKelurahan" TEXT;`)
+    .catch((e) => console.warn("[seed-p19] kolom schoolKelurahan:", e?.message || e));
+
   // ------------------------------------------------------------
   // 2) DATA INDUK RESMI (insert-only, tidak pernah menimpa)
   // ------------------------------------------------------------

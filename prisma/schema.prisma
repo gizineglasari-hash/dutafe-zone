@@ -55,6 +55,7 @@ model Participant {
   school          String
   schoolCity      String? // Kota sekolah (dari daftar sekolah)
   schoolDistrict  String? // Kecamatan sekolah
+  schoolKelurahan String? // Kelurahan sekolah (data sekolah terbaru 2026) — dasar pemetaan presisi remaja ke Puskesmas wilayah sekolah
   schoolType      String? // Negeri | Swasta
   educationLevel  String // SMP | SMA
   avatar          String   @default("🌸")

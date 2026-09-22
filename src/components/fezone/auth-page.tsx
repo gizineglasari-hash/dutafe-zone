@@ -11,14 +11,32 @@ import { toast } from "@/hooks/use-toast";
 import { ArrowLeft, Eye, EyeOff, Loader2, Search, Sparkles, X } from "lucide-react";
 import { SiteCredit } from "@/components/fezone/ui-bits";
 
-// Data sekolah dari /data/schools.json — tuple: [nama, kota, kecamatan, status, jenjang]
-type SchoolRow = [string, string, string, string, string];
+// Data sekolah dari /data/schools.json — tuple: [nama, kota, kecamatan, status, jenjang, kelurahan]
+// Jenjang: SMP | SMA | SMK | MA | MTS (data resmi 2026).
+// Level pendidikan peserta tetap "SMP"|"SMA": SMP & MTs -> SMP, SMA/SMK/MA -> SMA.
+type SchoolRow = [string, string, string, string, string, string];
+
+const JENJANG_LEVEL: Record<string, "SMP" | "SMA"> = {
+  SMP: "SMP",
+  MTS: "SMP",
+  SMA: "SMA",
+  SMK: "SMA",
+  MA: "SMA",
+};
+
+function levelOf(jenjang: string): "SMP" | "SMA" {
+  return JENJANG_LEVEL[jenjang] ?? "SMA";
+}
+
+function labelJenjang(jenjang: string): string {
+  return jenjang === "MTS" ? "MTs" : jenjang;
+}
 
 export default function AuthPage() {
   const { authMode, setAuthMode, setView, setUser } = useFez();
   const isRegister = authMode === "register";
 
-  const [form, setForm] = useState({ name: "", age: "", school: "", schoolCity: "", schoolDistrict: "", schoolType: "", educationLevel: "", username: "", password: "", phone: "", nik: "" });
+  const [form, setForm] = useState({ name: "", age: "", school: "", schoolCity: "", schoolDistrict: "", schoolKelurahan: "", schoolType: "", educationLevel: "", username: "", password: "", phone: "", nik: "" });
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [welcome, setWelcome] = useState<string | null>(null);
@@ -63,14 +81,25 @@ export default function AuthPage() {
     setSelectedSchool(s);
     setQuery(s[0]);
     setSchoolOpen(false);
-    setForm((f) => ({ ...f, school: s[0], schoolCity: s[1], schoolDistrict: s[2], schoolType: s[3], educationLevel: s[4] }));
+    // educationLevel = LEVEL (SMP|SMA) hasil derivasi jenjang sekolah;
+    // kelurahan sekolah ikut disimpan agar remaja masuk wilayah kerja
+    // Puskesmas sesuai kelurahan tempat sekolah berada.
+    setForm((f) => ({
+      ...f,
+      school: s[0],
+      schoolCity: s[1],
+      schoolDistrict: s[2],
+      schoolKelurahan: s[5] ?? "",
+      schoolType: s[3],
+      educationLevel: levelOf(s[4]),
+    }));
   }
 
   function clearSchool() {
     setSelectedSchool(null);
     setQuery("");
     setSchoolOpen(false);
-    setForm((f) => ({ ...f, school: "", schoolCity: "", schoolDistrict: "", schoolType: "" }));
+    setForm((f) => ({ ...f, school: "", schoolCity: "", schoolDistrict: "", schoolKelurahan: "", schoolType: "" }));
   }
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -256,7 +285,7 @@ export default function AuthPage() {
                           }`}
                         >
                           <RadioGroupItem value={lv} id={`lv-${lv}`} className="sr-only" />
-                          <span>{lv === "SMP" ? "🏫 SMP" : "🎓 SMA/SMK"}</span>
+                          <span>{lv === "SMP" ? "🏫 SMP" : "🎓 SMA/SMK/MA"}</span>
                         </label>
                       ))}
                     </RadioGroup>
@@ -264,7 +293,7 @@ export default function AuthPage() {
                 </div>
                 <div ref={schoolBoxRef} className="relative">
                   <Label htmlFor="school" className="text-sm font-bold text-fez-ink">
-                    Nama Sekolah * <span className="text-[10px] font-semibold text-fez-ink/40">(SMP, SMA &amp; SMK Kota Bandung — ketik untuk mencari)</span>
+                    Nama Sekolah * <span className="text-[10px] font-semibold text-fez-ink/40">(SMP, MTs, SMA, MA &amp; SMK Kota Bandung — ketik untuk mencari)</span>
                   </Label>
                   <div className="relative mt-1">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fez-ink/30" />
@@ -277,7 +306,7 @@ export default function AuthPage() {
                         setSchoolOpen(true);
                       }}
                       onFocus={() => setSchoolOpen(true)}
-                      placeholder="cth. SMPN 2 Bandung · SMKN 1 Bandung · SMAN 5 Bandung"
+                      placeholder="cth. SMPN 2 Bandung · SMAN 5 Bandung · MTsN 1 Bandung"
                       className="h-12 rounded-xl border-2 bg-cream/50 pl-9"
                       autoComplete="off"
                     />
@@ -299,10 +328,10 @@ export default function AuthPage() {
                         >
                           <span className="min-w-0">
                             <span className="block truncate text-sm font-extrabold text-fez-ink">{s[0]}</span>
-                            <span className="block text-[11px] font-semibold text-fez-ink/50">Kec. {s[2]} · {s[1]}</span>
+                            <span className="block text-[11px] font-semibold text-fez-ink/50">Kel. {s[5]} · Kec. {s[2]}</span>
                           </span>
                           <span className="flex shrink-0 items-center gap-1">
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${s[4] === "SMP" ? "bg-teal-100 text-teal-700" : "bg-rose-100 text-rose-700"}`}>{s[4]}</span>
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${levelOf(s[4]) === "SMP" ? "bg-teal-100 text-teal-700" : "bg-rose-100 text-rose-700"}`}>{labelJenjang(s[4])}</span>
                             <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${s[3] === "Negeri" ? "bg-amber-100 text-amber-700" : "bg-violet-100 text-violet-700"}`}>{s[3]}</span>
                           </span>
                         </button>
@@ -316,7 +345,8 @@ export default function AuthPage() {
                           <p className="truncate text-sm font-extrabold text-fez-ink">🏫 {selectedSchool[0]}</p>
                           <div className="mt-1 flex flex-wrap gap-1.5 text-[11px] font-bold text-fez-ink/70">
                             <span className="rounded-full border border-fez-ink/10 bg-white px-2 py-0.5">🏙️ {selectedSchool[1]}</span>
-                            <span className="rounded-full border border-fez-ink/10 bg-white px-2 py-0.5">📍 Kec. {selectedSchool[2]}</span>
+                            <span className="rounded-full border border-fez-ink/10 bg-white px-2 py-0.5">📍 Kel. {selectedSchool[5]}</span>
+                            <span className="rounded-full border border-fez-ink/10 bg-white px-2 py-0.5">🗺️ Kec. {selectedSchool[2]}</span>
                             <span className={`rounded-full border border-fez-ink/10 px-2 py-0.5 ${selectedSchool[3] === "Negeri" ? "bg-amber-100 text-amber-700" : "bg-violet-100 text-violet-700"}`}>🏛️ {selectedSchool[3]}</span>
                           </div>
                         </div>
@@ -329,7 +359,10 @@ export default function AuthPage() {
                           <X className="h-4 w-4" />
                         </button>
                       </div>
-                      <p className="mt-1.5 text-[10px] font-semibold text-emerald-700">✓ Tingkat pendidikan otomatis terisi: {selectedSchool[4]}{selectedSchool[0].toUpperCase().startsWith("SMK") ? " (SMK setara SMA)" : ""}</p>
+                      <p className="mt-1.5 text-[10px] font-semibold text-emerald-700">
+                        ✓ Tingkat pendidikan otomatis terisi: {levelOf(selectedSchool[4])}
+                        {selectedSchool[4] === "MTS" ? " — MTs setara SMP" : selectedSchool[4] === "MA" ? " — MA setara SMA" : selectedSchool[0].toUpperCase().startsWith("SMK") ? " — SMK setara SMA" : ""}
+                      </p>
                     </div>
                   )}
                 </div>

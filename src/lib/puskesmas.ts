@@ -131,14 +131,19 @@ export async function syncParticipantHb(participantId: string): Promise<void> {
 }
 
 // ------------------------------------------------------------
-// Scoping wilayah kerja Puskesmas (pembaruan 19 Tahap 5)
+// Scoping wilayah kerja Puskesmas (pembaruan 19 Tahap 5 + presisi
+// kelurahan sekolah pada pembaruan lanjutan).
 // ------------------------------------------------------------
 // Satu remaja dianggap "dalam wilayah" Puskesmas bila SALAH SATU:
-//   1. Kecamatan SEKOLAHnya termasuk kecamatan wilayah kerja
-//      (aturan Tahap 3 — tetap berlaku), ATAU
-//   2. Kelurahan DOMISILInya terpetakan ke Puskesmas ini
-//      (baru Tahap 5 — remaja mengisi domisili di Profil,
-//      sistem otomatis memetakan kelurahan -> Puskesmas).
+//   1. Kelurahan SEKOLAHnya terpetakan ke Puskesmas ini (aturan
+//      presisi — sekolah membawa kelurahan sejak data sekolah
+//      terbaru; remaja otomatis masuk wilayah kerja Puskesmas
+//      tempat sekolahnya berada), ATAU
+//   2. Akun LAMA yang belum punya kelurahan sekolah: kecamatan
+//      SEKOLAHnya termasuk kecamatan wilayah kerja (aturan lama
+//      Tahap 3 — tetap berlaku sebagai fallback), ATAU
+//   3. Kelurahan DOMISILInya terpetakan ke Puskesmas ini
+//      (Tahap 5 — remaja mengisi domisili di Profil).
 // Helper ini mengambil daftar nama kecamatan + kelurahan milik
 // SATU Puskesmas agar semua route memakai aturan yang sama.
 export interface WilayahScope {
@@ -161,20 +166,27 @@ export async function getWilayahScope(puskesmasId: string): Promise<WilayahScope
 }
 
 // Klausa Prisma "where" untuk mengambil SEMUA remaja dalam wilayah
-// (kecamatan sekolah ATAU kelurahan domisili terpetakan).
+// (kelurahan sekolah ATAU kecamatan sekolah utk akun lama ATAU
+// kelurahan domisili terpetakan).
 export function wilayahWhere(scope: WilayahScope) {
   const or: Record<string, unknown>[] = [];
-  if (scope.kecamatanNames.length > 0) or.push({ schoolDistrict: { in: scope.kecamatanNames } });
-  if (scope.kelurahanNames.length > 0) or.push({ domisiliKelurahan: { in: scope.kelurahanNames } });
+  if (scope.kelurahanNames.length > 0) {
+    or.push({ schoolKelurahan: { in: scope.kelurahanNames } });
+    or.push({ domisiliKelurahan: { in: scope.kelurahanNames } });
+  }
+  if (scope.kecamatanNames.length > 0) {
+    or.push({ AND: [{ schoolKelurahan: null }, { schoolDistrict: { in: scope.kecamatanNames } }] });
+  }
   return or.length > 0 ? { OR: or } : { id: { in: [] } }; // wilayah kosong -> hasil kosong
 }
 
 // Cek apakah SATU remaja berada dalam wilayah (untuk guard detail).
 export function dalamWilayah(
   scope: WilayahScope,
-  remaja: { schoolDistrict?: string | null; domisiliKelurahan?: string | null }
+  remaja: { schoolKelurahan?: string | null; schoolDistrict?: string | null; domisiliKelurahan?: string | null }
 ): boolean {
-  if (remaja.schoolDistrict && scope.kecamatanNames.includes(remaja.schoolDistrict)) return true;
+  if (remaja.schoolKelurahan && scope.kelurahanNames.includes(remaja.schoolKelurahan)) return true;
+  if (!remaja.schoolKelurahan && remaja.schoolDistrict && scope.kecamatanNames.includes(remaja.schoolDistrict)) return true;
   if (remaja.domisiliKelurahan && scope.kelurahanNames.includes(remaja.domisiliKelurahan)) return true;
   return false;
 }
